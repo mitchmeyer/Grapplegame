@@ -173,6 +173,10 @@
     .event-chip { justify-content: start; padding: 12px; text-align: left; }
     .event-chip.selected { background: var(--lavender); border-color: var(--primary); }
     .shape-display { display: grid; place-items: center; gap: 12px; }
+    .sequence { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; align-items: center; }
+    .seq-dot, .color-token { min-width: 52px; min-height: 52px; display: grid; place-items: center; border-radius: 10px; background: white; border: 1px solid var(--line); font-size: 20px; font-weight: 950; color: var(--text); }
+    .color-token { color: transparent; border: 0; box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .12); }
+    .choice .color-token { min-width: 42px; min-height: 42px; }
     .shape { width: 74px; height: 74px; background: var(--primary); clip-path: polygon(50% 0%, 95% 36%, 78% 100%, 22% 100%, 5% 36%); }
     .shape.triangle { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
     .shape.arrow { clip-path: polygon(0 35%, 55% 35%, 55% 10%, 100% 50%, 55% 90%, 55% 65%, 0 65%); }
@@ -924,8 +928,6 @@
         <div class="game-body">
           <div class="game-title-row"><h2>${esc(game.title)}</h2><span class="timer-pill ${timed ? "" : "hidden"}">${timeLabel(initialSeconds)}</span></div>
           <div class="game-stats ${timed ? "" : "untimed"}">${timed ? `<span>Time: <b class="card-time">${timeLabel(initialSeconds)}</b></span>` : ""}<span>Score: <b class="card-score">0</b></span><span>Errors: <b class="card-errors">0</b></span></div>
-          <button class="game-help" title="Directions" aria-label="Directions">?</button>
-          <div class="directions-pop">${esc(directionsForGame(game))}</div>
           <div class="game-stage"></div>
           <div class="feedback-box"></div>
           <div class="hint-output"></div>
@@ -968,7 +970,6 @@
         stage.innerHTML = `<div class="start-cover"><div class="start-cover-inner"><h3>${esc(game.title)}</h3><p>${esc(directionsForGame(game))}</p><button class="start-btn">Start Game</button></div></div>`;
         $(".start-btn", stage).onclick = mount;
       };
-      $(".game-help", card).onclick = () => $(".directions-pop", card).classList.toggle("show");
       $(".like-btn", card).onclick = () => {
         state.liked ||= [];
         const index = state.liked.indexOf(game.title);
@@ -1580,6 +1581,27 @@
       });
     }
 
+    function colorToken(value) {
+      const colors = {
+        RED: "#EF4444",
+        ORANGE: "#F97316",
+        YELLOW: "#EAB308",
+        GREEN: "#22C55E",
+        BLUE: "#3B82F6",
+        VIOLET: "#8B5CF6",
+        PURPLE: "#8B5CF6",
+        BLACK: "#111827",
+        WHITE: "#FFFFFF"
+      };
+      return colors[String(value || "").toUpperCase()] || "";
+    }
+
+    function renderPatternToken(value) {
+      const color = colorToken(value);
+      if (!color) return `<div class="seq-dot">${esc(value)}</div>`;
+      return `<div class="color-token" title="${esc(value)}" style="background:${color}">${esc(value)}</div>`;
+    }
+
     function PatternNext(root, game, done) {
       const generatedPatterns = Array.isArray(game.gameSpec?.patterns)
         ? game.gameSpec.patterns
@@ -1592,11 +1614,11 @@
         { seq: ["S", "M", "T", "W"], ans: "T", opts: ["F", "T", "S", "M"] }
       ];
       const p = choice(patterns);
-      root.innerHTML = `<p class="muted">What comes next?</p><div class="sequence">${p.seq.map(x => `<div class="seq-dot">${x}</div>`).join("")}<div class="seq-dot">?</div></div><div class="choices"></div>`;
+      root.innerHTML = `<p class="muted">What comes next?</p><div class="sequence">${p.seq.map(renderPatternToken).join("")}<div class="seq-dot">?</div></div><div class="choices"></div>`;
       shuffle(p.opts).forEach(o => {
         const b = document.createElement("button");
         b.className = "choice";
-        b.textContent = o;
+        b.innerHTML = colorToken(o) ? renderPatternToken(o) : esc(o);
         b.onclick = () => done(o === p.ans ? 900 : 150, o === p.ans ? "Pattern complete." : `Answer: ${p.ans}`);
         $(".choices", root).appendChild(b);
       });
