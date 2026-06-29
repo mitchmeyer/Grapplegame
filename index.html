@@ -79,6 +79,7 @@
     .points-hud { position: fixed; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 0 13px; border-radius: 999px; color: white; background: var(--dark-purple); box-shadow: var(--shadow); font-weight: 900; }
     .points-hud.bump { animation: points-pop .32s ease; }
     .auth-bar { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 999px; background: white; border: 1px solid var(--line); box-shadow: var(--shadow); font-size: 12px; font-weight: 850; }
+    body.challenge-mode .auth-bar, body.challenge-mode .points-hud { display: none; }
     .auth-bar button { min-height: 30px; padding: 0 10px; border-radius: 999px; color: white; background: var(--primary); font-weight: 850; }
     .auth-bar .signout { color: var(--dark-purple); background: var(--lavender); }
     .auth-view { height: 100%; place-items: center; padding: 22px 16px 104px; background: white; }
@@ -144,6 +145,28 @@
     .admin-traits span { padding: 3px 6px; border-radius: 6px; background: var(--lavender); color: var(--dark-purple); font-size: 10px; font-weight: 850; text-transform: uppercase; }
     .admin-answer { color: var(--text); font-size: 13px; line-height: 1.35; }
     .admin-empty { padding: 18px; }
+    .challenge-shell { max-width: 560px; min-height: 100%; margin: 0 auto; display: grid; align-content: start; gap: 14px; padding-bottom: 18px; }
+    .challenge-header { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: env(safe-area-inset-top); border-bottom: 1px solid #EEF0F5; }
+    .challenge-header h1 { color: #9B7CF7; font-size: 29px; line-height: 1; text-transform: none; }
+    .challenge-icons { display: inline-flex; align-items: center; gap: 12px; color: #111827; }
+    .bell { position: relative; font-size: 24px; line-height: 1; }
+    .badge { position: absolute; top: -12px; right: -12px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: white; background: #EF4444; border: 2px solid white; font-size: 14px; font-weight: 950; }
+    .bot-avatar, .friend-avatar { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: #B9EEFF; font-size: 22px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.6); }
+    .challenge-tabs { display: grid; grid-template-columns: repeat(3, 1fr); min-height: 58px; padding: 8px; border-radius: 8px; background: #F7F7FA; }
+    .challenge-tabs button { border-radius: 8px; background: transparent; color: #687386; font-size: 17px; font-weight: 850; }
+    .challenge-tabs button.active { color: #111827; background: white; box-shadow: 0 1px 4px rgba(15, 23, 42, .08); }
+    .challenge-panel { display: none; gap: 12px; }
+    .challenge-panel.active { display: grid; }
+    .challenge-title { margin-top: 24px; text-align: center; font-size: 26px; text-transform: none; }
+    .challenge-start { min-height: 58px; border-radius: 7px; color: white; background: #9B7CF7; font-size: 19px; font-weight: 900; }
+    .friend-list { display: grid; gap: 12px; }
+    .friend-card { min-height: 106px; display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid #E5EAF2; border-radius: 10px; background: white; box-shadow: 0 2px 7px rgba(15,23,42,.05); text-align: left; }
+    .friend-avatar { width: 54px; height: 54px; border-radius: 16px; font-size: 27px; }
+    .friend-name { color: #111827; font-size: 20px; font-weight: 900; }
+    .friend-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; color: #697386; font-size: 16px; font-weight: 750; }
+    .active-pill { display: inline-flex; align-items: center; min-height: 30px; padding: 0 15px; border-radius: 999px; color: #168A43; background: #ECFDF5; border: 1px solid #BBF7D0; font-weight: 900; }
+    .challenge-empty { padding: 24px; border: 1px solid #E5EAF2; border-radius: 12px; text-align: center; color: var(--muted); }
+    .username-card { margin-bottom: 14px; }
     .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
     .tab { flex: 0 0 auto; padding: 0 13px; color: var(--dark-purple); background: white; }
     .tab.active { color: white; background: var(--primary); border-color: var(--primary); }
@@ -358,6 +381,15 @@
       .sequence { grid-template-columns: repeat(6, minmax(0, 40px)); gap: 6px; }
       .seq-dot, .color-token { min-width: 40px; min-height: 40px; font-size: 18px; }
       .choice .color-token { min-width: 34px; min-height: 34px; }
+      .challenge-shell { padding: 0 0 14px; }
+      .challenge-header { min-height: 54px; padding-inline: 12px; }
+      .challenge-tabs { border-radius: 0; }
+      .challenge-title { margin-top: 18px; font-size: 25px; }
+      .friend-card { min-height: 92px; grid-template-columns: 52px minmax(0, 1fr); padding: 12px 14px; }
+      .friend-card .btn { grid-column: 1 / -1; min-height: 34px; }
+      .friend-avatar { width: 48px; height: 48px; }
+      .friend-name { font-size: 18px; }
+      .friend-meta { font-size: 14px; }
       .admin-summary, .admin-toolbar { grid-template-columns: 1fr; }
     }
   </style>
@@ -403,26 +435,24 @@
         </div>
       </section>
 
-      <section id="challengesView" class="view">
-        <div class="topbar">
-          <div class="brand"><div class="logo">VS</div><div><h1>Challenge</h1><p class="tagline">Daily puzzles, friend battles, and the game library.</p></div></div>
-          <span class="pill">Streak <span id="streakCount">0</span></span>
-        </div>
-        <div class="tabs" id="challengeTabs">
-          <button class="tab active" data-panel="dailyPanel">Daily</button>
-          <button class="tab" data-panel="friendsPanel">Friends</button>
-          <button class="tab" data-panel="libraryPanel">Library</button>
-        </div>
-        <div id="dailyPanel" class="grid two challenge-panel" style="margin-top:14px;">
-          <div class="panel">
-            <h2>Today's Grapple</h2>
-            <p class="muted" style="margin:8px 0 16px;">A chess puzzle, a word puzzle, and a number puzzle.</p>
-            <div id="dailyList" class="library"></div>
+      <section id="challengesView" class="view" style="padding:0 0 104px;">
+        <div class="challenge-shell">
+          <div class="challenge-header">
+            <h1>Challenge</h1>
+            <div class="challenge-icons">
+              <span class="bell">🔔<span class="badge">3</span></span>
+              <span class="bot-avatar">🤖</span>
+            </div>
           </div>
-          <div class="panel"><h3>Last Result</h3><div id="resultSummary"></div></div>
+          <div class="challenge-tabs" id="challengeTabs">
+            <button class="active" data-panel="friendsPanel">Friends</button>
+            <button data-panel="activePanel">Active</button>
+            <button data-panel="historyPanel">History</button>
+          </div>
+          <div id="friendsPanel" class="challenge-panel active"></div>
+          <div id="activePanel" class="challenge-panel"></div>
+          <div id="historyPanel" class="challenge-panel"></div>
         </div>
-        <div id="friendsPanel" class="grid two challenge-panel" style="display:none;margin-top:14px;"></div>
-        <div id="libraryPanel" class="challenge-panel" style="display:none;margin-top:14px;"><div class="library" id="gameLibrary"></div></div>
       </section>
 
       <section id="rankingsView" class="view">
@@ -840,7 +870,7 @@
         return;
       }
       if (currentUser) {
-        status.textContent = currentProfile?.display_name || currentUser.email || "Signed in";
+        status.textContent = currentProfile?.username || currentProfile?.display_name || currentUser.email || "Signed in";
         button.textContent = "Sign out";
         button.className = "signout";
         createGate?.classList.remove("show");
@@ -870,19 +900,49 @@
       });
     }
 
+    function slugUsername(value) {
+      return String(value || "player")
+        .toLowerCase()
+        .replace(/@.*/, "")
+        .replace(/[^a-z0-9_]+/g, "")
+        .slice(0, 18) || "player";
+    }
+
+    function defaultUsername(user) {
+      const meta = user?.user_metadata || {};
+      const seed = meta.preferred_username || meta.name || user?.email || "player";
+      const suffix = String(user?.id || Math.random()).replace(/-/g, "").slice(0, 4);
+      return `${slugUsername(seed)}${suffix}`;
+    }
+
+    async function ensureProfile(data) {
+      if (!supabaseClient || !currentUser) return data || null;
+      const meta = currentUser.user_metadata || {};
+      const nextProfile = {
+        id: currentUser.id,
+        display_name: data?.display_name || meta.name || currentUser.email?.split("@")[0] || "Player",
+        username: data?.username || defaultUsername(currentUser)
+      };
+      const { data: saved, error } = await supabaseClient
+        .from("profiles")
+        .upsert(nextProfile, { onConflict: "id" })
+        .select("*")
+        .single();
+      return error ? { ...data, ...nextProfile } : saved;
+    }
+
     async function loadProfile() {
       if (!supabaseClient || !currentUser) return;
       const { data, error } = await supabaseClient
         .from("profiles")
         .select("*")
         .eq("id", currentUser.id)
-        .single();
-      if (!error && data) {
-        currentProfile = data;
-        renderAuth();
-        renderPoints();
-        renderProfile();
-      }
+        .maybeSingle();
+      if (error) return;
+      currentProfile = await ensureProfile(data);
+      renderAuth();
+      renderPoints();
+      renderProfile();
     }
 
     async function initSupabase() {
@@ -1727,18 +1787,6 @@
     }
 
     function renderDaily() {
-      $("#streakCount").textContent = state.streak;
-      const daily = [games[0], games[1], games[4]];
-      $("#dailyList").innerHTML = daily.map(g => `
-        <div class="mini-card">
-          <div><span class="pill">${g.category}</span><h3 style="margin-top:10px;">${g.title}</h3><p class="muted">${g.traits.join(" | ")}</p></div>
-          <button class="btn primary play-daily" data-id="${g.id}">Play</button>
-        </div>`).join("");
-      $$(".play-daily").forEach(b => b.onclick = () => {
-        showView("feedView");
-        const idx = rankedGames().findIndex(g => g.id === b.dataset.id);
-        $("#feed").children[Math.max(0, idx)]?.scrollIntoView({ behavior: "smooth" });
-      });
       renderResultSummary();
     }
 
@@ -1920,12 +1968,67 @@
       toast("Posted");
     }
 
-    function renderChallenges() {
-      $("#friendsPanel").innerHTML = `
-        <div class="panel"><h3>Incoming</h3>${["Avery sent a Chess Mate challenge", "Sam wants a Connections rematch", "Jordan dared you to clear Mini Sudoku"].map(x => `<div class="metric"><span>${x}</span><button class="btn ghost">Play</button></div>`).join("")}</div>
-        <div class="panel"><h3>Challenge Friend</h3><input class="input" placeholder="Friend username"><div class="library" style="margin-top:12px;">${games.slice(0, 4).map(g => `<button class="mini-card" onclick="toast('Challenge sent for ${g.title}')"><span class="pill">${g.category}</span><h3>${g.title}</h3></button>`).join("")}</div></div>
+    const challengeFriends = [
+      { name: "zach", avatar: "🤖", record: "0W-0L", active: 6 },
+      { name: "Demon", avatar: "🤖", record: "0W-1L", active: 41 },
+      { name: "W", avatar: "🛸", record: "0W-0L", active: 3 },
+      { name: "benrgolden04", avatar: "🤖", record: "0W-0L", active: 3 },
+      { name: "Sawyer", avatar: "🤖", record: "1W-1L", active: 3 }
+    ];
+
+    function challengeFriend(name) {
+      const game = choice(rankedGames().slice(0, 12));
+      toast(`Challenge sent to ${name}`);
+      state.plays.unshift({ title: `Challenge: ${name}`, category: game.category, points: 0, label: game.title, date: today });
+      state.plays = state.plays.slice(0, 30);
+      save();
+      renderChallenges();
+    }
+
+    function friendRow(friend) {
+      return `
+        <button class="friend-card" onclick="challengeFriend('${escAttr(friend.name)}')">
+          <span class="friend-avatar">${friend.avatar}</span>
+          <span>
+            <span class="friend-name">${esc(friend.name)}</span>
+            <span class="friend-meta"><span>🏆 ${esc(friend.record)}</span><span class="active-pill">${friend.active} Active</span></span>
+          </span>
+          <span class="btn ghost">Challenge</span>
+        </button>
       `;
-      $("#gameLibrary").innerHTML = games.map(g => `<div class="mini-card"><div><span class="pill">${g.source}</span><h3 style="margin-top:10px;">${g.title}</h3><p class="muted">${g.category} | ${g.traits.join(", ")}</p></div><button class="btn primary" onclick="showView('feedView')">Play</button></div>`).join("");
+    }
+
+    function renderChallenges() {
+      const me = currentProfile?.username || "your username";
+      $("#friendsPanel").innerHTML = `
+        <h2 class="challenge-title">Challenge Friends</h2>
+        <button class="challenge-start" onclick="toast('Pick a friend below to start')">Start New Challenge</button>
+        <div class="challenge-empty username-card">Your username: <b>${esc(me)}</b></div>
+        <div class="friend-list">${challengeFriends.map(friendRow).join("")}</div>
+      `;
+      $("#activePanel").innerHTML = `
+        <h2 class="challenge-title">Active Challenges</h2>
+        <div class="friend-list">
+          ${challengeFriends.slice(0, 3).map(f => `
+            <button class="friend-card" onclick="showView('feedView')">
+              <span class="friend-avatar">${f.avatar}</span>
+              <span><span class="friend-name">${esc(f.name)}</span><span class="friend-meta"><span>${esc(choice(games).title)}</span><span class="active-pill">Play</span></span></span>
+              <span class="btn primary">Open</span>
+            </button>
+          `).join("")}
+        </div>
+      `;
+      $("#historyPanel").innerHTML = `
+        <h2 class="challenge-title">History</h2>
+        <div class="friend-list">
+          ${state.plays.filter(p => /^Challenge:/.test(p.title)).slice(0, 8).map(p => `
+            <div class="friend-card">
+              <span class="friend-avatar">🏆</span>
+              <span><span class="friend-name">${esc(p.title.replace("Challenge: ", ""))}</span><span class="friend-meta"><span>${esc(p.label || "Puzzle challenge")}</span><span>${esc(p.date || today)}</span></span></span>
+            </div>
+          `).join("") || `<div class="challenge-empty">No completed friend challenges yet.</div>`}
+        </div>
+      `;
     }
 
     async function renderRankings() {
@@ -1953,9 +2056,25 @@
     }
     function profileLeaderRows(rows) {
       return rows.map((p, i) => {
-        const name = p.display_name || p.username || "Player";
+        const name = p.username || p.display_name || "Player";
         return `<div class="leader-row"><div class="avatar">${esc(name[0] || "P")}</div><div><b>#${i + 1} ${esc(name)}</b><p class="muted">Level ${p.brain_level || 1}</p></div><b>${p.total_points || 0}</b></div>`;
       }).join("");
+    }
+
+    async function saveUsername(value) {
+      const username = slugUsername(value);
+      if (!username) return toast("Enter a username");
+      currentProfile = { ...(currentProfile || {}), username };
+      renderAuth();
+      renderProfile();
+      renderChallenges();
+      if (supabaseClient && currentUser) {
+        const { error } = await supabaseClient.from("profiles").update({ username }).eq("id", currentUser.id);
+        if (error) toast("Saved locally");
+        else toast("Username saved");
+      } else {
+        toast("Username saved locally");
+      }
     }
 
     function renderProfile() {
@@ -1966,7 +2085,14 @@
         return `<div class="metric"><span>${t}</span><div class="bar"><span style="width:${val}%"></span></div><b>${val}</b></div>`;
       }).join("");
       const totalPoints = currentProfile?.total_points ?? state.points;
-      $("#historyList").innerHTML = `<div class="metric"><span><b>Total points</b><p class="muted">Synced when signed in</p></span><b>${totalPoints}</b></div>` + (state.plays.length ? state.plays.slice(0, 7).map(p => `<div class="metric"><span><b>${p.title}</b><p class="muted">${p.category}</p></span><b>+${p.points ?? Math.max(5, Math.round((p.score || 0) / 10))}</b></div>`).join("") : `<p class="muted">Played puzzles appear here.</p>`);
+      const username = currentProfile?.username || (currentUser ? defaultUsername(currentUser) : "Sign in");
+      $("#historyList").innerHTML = `
+        <div class="metric">
+          <span><b>Username</b><p class="muted">Used for friend challenges</p></span>
+          <span style="display:flex; gap:6px; align-items:center;"><input class="input" value="${escAttr(username)}" style="min-height:36px; max-width:150px; padding:7px 9px;" onchange="saveUsername(this.value)"><button class="btn ghost" onclick="saveUsername(this.previousElementSibling.value)">Save</button></span>
+        </div>
+        <div class="metric"><span><b>Total points</b><p class="muted">Synced when signed in</p></span><b>${totalPoints}</b></div>
+      ` + (state.plays.length ? state.plays.slice(0, 7).map(p => `<div class="metric"><span><b>${p.title}</b><p class="muted">${p.category}</p></span><b>+${p.points ?? Math.max(5, Math.round((p.score || 0) / 10))}</b></div>`).join("") : `<p class="muted">Played puzzles appear here.</p>`);
       const created = createdItems();
       $("#createdList").innerHTML = created.length ? created.slice(0, 8).map(d => `
         <div class="metric">
@@ -2113,6 +2239,7 @@
         toast("Admin access required");
         id = "profileView";
       }
+      document.body.classList.toggle("challenge-mode", id === "challengesView");
       $$(".view").forEach(v => v.classList.toggle("active", v.id === id));
       $$("#nav button").forEach(b => b.classList.toggle("active", b.dataset.view === id));
       if (id === "adminView") renderAdmin();
@@ -2128,10 +2255,10 @@
     };
     $("#continueOffline").onclick = () => showView("feedView");
     $("#challengeTabs").onclick = (e) => {
-      const tab = e.target.closest(".tab");
+      const tab = e.target.closest("button[data-panel]");
       if (!tab) return;
-      $$(".tab", $("#challengeTabs")).forEach(t => t.classList.toggle("active", t === tab));
-      $$(".challenge-panel").forEach(p => p.style.display = p.id === tab.dataset.panel ? (p.id === "libraryPanel" ? "block" : "grid") : "none");
+      $$("button[data-panel]", $("#challengeTabs")).forEach(t => t.classList.toggle("active", t === tab));
+      $$(".challenge-panel").forEach(p => p.classList.toggle("active", p.id === tab.dataset.panel));
     };
     async function generateDraft() {
       const prompt = $("#createPrompt").value.trim() || "A fresh puzzle for the Grapple feed";
