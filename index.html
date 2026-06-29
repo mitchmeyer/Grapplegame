@@ -1194,10 +1194,23 @@
       $("#generateDraft").disabled = true;
       $("#generateDraft").textContent = "Generating...";
       try {
-        const { data, error } = await supabaseClient.functions.invoke("create-game", {
-          body: { prompt }
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (!accessToken) {
+          showAuthModal("Sign in to create AI games.");
+          return;
+        }
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/create-game`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_PUBLISHABLE_KEY,
+            "Authorization": `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ prompt })
         });
-        if (!error && data?.game) {
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data?.game) {
           $("#createPrompt").value = "";
           games.unshift(normalizeGame(data.game));
           renderFeed();
@@ -1208,7 +1221,7 @@
           toast("AI game created");
           return;
         }
-        toast(functionErrorText(error, data));
+        toast(functionErrorText(null, data));
       } catch (err) {
         toast(err.message || "AI generation failed");
       } finally {
