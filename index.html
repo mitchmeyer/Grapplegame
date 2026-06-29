@@ -197,9 +197,6 @@
     .sudoku-cell.given { background: #F3F4F6; color: #111; font-weight: 850; }
     .sudoku-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
     .sudoku-pad button { min-height: 40px; border-radius: 8px; background: var(--lavender); color: var(--dark-purple); font-weight: 900; }
-    .tic-board { width: min(100%, 320px); aspect-ratio: 1; display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 auto; border: 3px solid #111; background: #111; gap: 0; }
-    .tic-cell { display: grid; place-items: center; border: 1px solid #111; border-radius: 0; background: white; color: var(--dark-purple); font-size: clamp(34px, 10vw, 62px); font-weight: 950; }
-    .tic-cell.win { background: var(--lavender); }
     .chess-shell { display: grid; gap: 10px; justify-items: center; }
     .chess-board { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); width: min(100%, 360px); border: 2px solid #4B3621; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
     .sq { position: relative; aspect-ratio: 1; display: grid; place-items: center; font-size: clamp(22px, 7vw, 34px); line-height: 1; color: #111; }
@@ -423,6 +420,7 @@
     const getDifficultyRank = (game) => Number(game.difficultyRank || game.difficulty_rank || difficultyRanks[game.difficulty] || 2);
     const gameUniqueKey = (game) => String(game.id || `${game.title}-${game.category}-${game.version || 1}`).toLowerCase().trim();
     const gameTitleKey = (game) => String(game.title || game.id || "").toLowerCase().trim();
+    const isTicTacToeGame = (game) => /(^|\b)tic[-_\s]*tac[-_\s]*toe\b|tiktaktoe|tictactoe|^tic-\d+|tic_tac_toe/i.test(`${game?.id || ""} ${game?.title || ""} ${game?.gameSpec?.kind || ""}`);
     const isAdmin = () => (currentUser?.email || "").toLowerCase() === adminEmail;
 
     const games = [
@@ -566,7 +564,7 @@
       if (type === 9) return { ...base, id: `shape-${index}`, title: `${seed} Shape Match`, category: "Visual Reasoning", time: "20s", traits: ["Spatial Reasoning"], renderer: ShapeMatch };
       if (type === 10) return { ...base, id: `memory-${index}`, title: `${seed} Memory Grid`, category: "Memory", time: "25s", traits: ["Working Memory"], renderer: MemoryGrid };
       if (type === 11) return { ...base, id: `number-${index}`, title: `${seed} Number Tap`, category: "Speed", time: "30s", traits: ["Processing Speed", "Focus"], renderer: NumberTap };
-      return { ...base, id: `tic-${index}`, title: `${seed} Tic-Tac-Toe`, category: "Strategy", time: "30s", traits: ["Strategy", "Pattern Recognition"], gameSpec: { kind: "tic_tac_toe", player: "X", opponent: "O", instructions: "Get three Xs in a row before the board blocks you." }, renderer: GeneratedVisualGame };
+      return { ...base, id: `strategy-${index}`, title: `${seed} Strategy Pattern`, category: "Strategy", time: "30s", traits: ["Strategy", "Pattern Recognition"], gameSpec: { patterns: [patternVariants[(index + 1) % patternVariants.length], patternVariants[(index + 3) % patternVariants.length]] }, renderer: PatternNext };
     }
 
     const seedNames = ["Arcade", "Neon", "Cipher", "Campus", "Orbit", "Pixel", "Summit", "Metro", "Vault", "Nova", "Echo", "Signal", "Vector", "Puzzle", "Focus", "Logic", "Tempo", "Grid", "Brain", "Flash", "Quest", "Riddle", "Zen", "Turbo", "Lunar", "Solar", "Prime", "Retro", "Jigsaw", "Matrix", "Beacon", "Sprint", "Clever", "Omega", "Atlas", "Delta", "Vertex", "Spark", "Radar", "Cosmic", "Marble", "Indigo", "Quartz", "Rocket", "Static", "Circuit", "Galaxy", "Nimble", "Anchor", "Crown", "Drift", "Ember", "Frost", "Harbor", "Ion", "Jolt", "Kite", "Legend", "Muse", "North", "Opal", "Pulse", "Relay", "Stone", "Trace", "Unity", "Vista", "Wave", "Yield", "Zenith", "Apex", "Bloom", "Cobalt", "Dynamo", "Everest", "Flare", "Glide", "Halo", "Ivory", "Jade", "Keystone", "Lagoon", "Mirage", "Nimbus", "Onyx", "Pioneer", "Quiver", "Ranger", "Sage", "Titan", "Umber", "Vivid", "Warden", "Xeno", "Yonder", "Zephyr", "Bolt", "Cinder", "Dune", "Elm", "Forge", "Grove", "Horizon", "Ink", "Juniper", "Knack", "Lotus", "Mosaic", "Nectar", "Oracle", "Pluto"];
@@ -578,6 +576,7 @@
       const seenTitles = new Set();
       const unique = [];
       games.forEach(game => {
+        if (isTicTacToeGame(game)) return;
         const idKey = gameUniqueKey(game);
         const titleKey = gameTitleKey(game);
         if (seenIds.has(idKey) || seenTitles.has(titleKey)) return;
@@ -1301,53 +1300,6 @@
 
     function GeneratedVisualGame(root, game, done) {
       const spec = game.gameSpec || {};
-      if (spec.kind === "tic_tac_toe") {
-        const board = Array(9).fill("");
-        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-        const player = String(spec.player || "X").slice(0, 1).toUpperCase();
-        const opponent = String(spec.opponent || "O").slice(0, 1).toUpperCase();
-        let over = false;
-        root.innerHTML = `<p class="muted">${esc(spec.instructions || "Play tic-tac-toe. Get three in a row.")}</p><div class="tic-board"></div><div class="chess-status">Your move: ${player}</div>`;
-        const status = $(".chess-status", root);
-        const winner = () => {
-          for (const line of wins) {
-            const [a, b, c] = line;
-            if (board[a] && board[a] === board[b] && board[a] === board[c]) return { mark: board[a], line };
-          }
-          return board.every(Boolean) ? { mark: "draw", line: [] } : null;
-        };
-        const paint = (winLine = []) => {
-          $(".tic-board", root).innerHTML = board.map((mark, i) => `<button class="tic-cell ${winLine.includes(i) ? "win" : ""}" data-i="${i}">${mark}</button>`).join("");
-          $$(".tic-cell", root).forEach(cell => {
-            cell.onclick = () => {
-              const i = Number(cell.dataset.i);
-              if (over || board[i]) return;
-              board[i] = player;
-              let result = winner();
-              if (!result) {
-                const open = board.map((v, idx) => v ? null : idx).filter(v => v !== null);
-                const center = open.includes(4) ? 4 : null;
-                const move = center ?? choice(open);
-                if (move !== undefined) board[move] = opponent;
-                result = winner();
-              }
-              if (result) {
-                over = true;
-                paint(result.line);
-                const label = result.mark === player ? "You won." : result.mark === opponent ? "The board won." : "Draw.";
-                status.textContent = label;
-                done(result.mark === player ? 950 : result.mark === "draw" ? 500 : 150, label);
-                return;
-              }
-              status.textContent = `Your move: ${player}`;
-              paint();
-            };
-          });
-        };
-        paint();
-        return;
-      }
-
       const cards = Array.isArray(spec.cards) ? spec.cards.map(String).slice(0, 6) : ["Start", "Choose", "Solve"];
       const correct = String(spec.correct || cards[0]);
       root.innerHTML = `<p class="muted">${esc(spec.instructions || game.title || "Interact with the generated game.")}</p><div class="choices"></div>`;
@@ -1418,7 +1370,7 @@
         status: d.status || "draft",
         game: null
       }));
-      return [...state.createdGames, ...localDrafts];
+      return [...state.createdGames, ...localDrafts].filter(item => !isTicTacToeGame(item) && !isTicTacToeGame(item.game));
     }
 
     function renderCreate() {
@@ -1546,6 +1498,7 @@
       const item = findCreatedGame(id);
       if (!item?.game) return toast("Generate the game first, then preview it");
       const normalized = normalizeGame(item.game);
+      if (isTicTacToeGame(normalized)) return toast("That game type was removed");
       if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(normalized) || gameTitleKey(existing) === gameTitleKey(normalized))) games.unshift(normalized);
       dedupeGameCatalog();
       renderFeed();
@@ -1559,6 +1512,7 @@
       item.status = "published";
       if (item.game) {
         const normalized = normalizeGame(item.game);
+        if (isTicTacToeGame(normalized)) return toast("That game type was removed");
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(normalized) || gameTitleKey(existing) === gameTitleKey(normalized))) games.unshift(normalized);
         dedupeGameCatalog();
         renderFeed();
