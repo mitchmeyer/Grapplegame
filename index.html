@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Grapple</title>
-  <link rel="icon" type="image/png" href="/favicon.png">
-  <link rel="apple-touch-icon" href="/favicon.png">
+  <link rel="icon" type="image/png" sizes="425x535" href="/favicon.png">
+  <link rel="apple-touch-icon" sizes="425x535" href="/favicon.png">
   <style>
     :root {
       --primary: #6C3BFF;
@@ -34,7 +34,20 @@
     .view.active { display: block; }
     .feed { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; padding: 0 12px 92px; background: white; }
     .feed-card-wrap { min-height: calc(100vh - 76px); display: grid; place-items: center; padding: 18px 0; scroll-snap-align: start; }
-    .game-card { width: min(100%, 580px); min-height: min(760px, calc(100vh - 120px)); display: flex; flex-direction: column; gap: 15px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: var(--shadow); }
+    .game-card { position: relative; width: min(100%, 580px); min-height: min(760px, calc(100vh - 120px)); display: flex; flex-direction: column; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: var(--shadow); }
+    .game-help { position: absolute; top: 12px; right: 12px; z-index: 2; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: var(--dark-purple); background: white; border: 1px solid var(--line); box-shadow: 0 8px 20px rgba(50, 18, 122, .08); font-weight: 950; }
+    .directions-pop { display: none; position: absolute; top: 50px; right: 12px; z-index: 3; width: min(280px, calc(100% - 24px)); padding: 12px; border-radius: 10px; background: white; border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--text); font-size: 13px; line-height: 1.35; }
+    .directions-pop.show { display: block; }
+    .game-social { display: grid; gap: 9px; padding: 2px 4px 0; }
+    .social-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .like-btn { min-height: 38px; padding: 0 12px; border-radius: 999px; color: var(--dark-purple); background: var(--lavender); border: 1px solid var(--line); font-weight: 900; }
+    .like-btn.liked { color: white; background: var(--primary); border-color: var(--primary); }
+    .comment-box { display: grid; gap: 8px; }
+    .comment-list { display: grid; gap: 6px; max-height: 92px; overflow: auto; }
+    .comment { padding: 8px 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); color: var(--text); font-size: 13px; line-height: 1.3; }
+    .comment-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+    .comment-form input { min-height: 38px; padding: 9px 10px; border-radius: 8px; background: white; }
+    .comment-form button { min-height: 38px; padding: 0 12px; border-radius: 8px; color: white; background: var(--primary); font-weight: 900; text-transform: uppercase; }
     .game-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .difficulty-meter { display: inline-flex; align-items: center; gap: 7px; min-height: 28px; padding: 6px 10px; border-radius: 8px; background: white; color: var(--dark-purple); border: 1px solid var(--line); font-size: 11px; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
@@ -49,7 +62,7 @@
     .tagline, .muted { color: var(--muted); }
     .tagline { font-size: 14px; margin-top: 4px; }
     .pill { display: inline-flex; align-items: center; min-height: 28px; padding: 6px 10px; border-radius: 8px; background: var(--lavender); color: var(--dark-purple); border: 1px solid var(--line); font-size: 11px; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
-    .game-stage { flex: 1; min-height: 330px; display: grid; align-content: center; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); overflow: hidden; }
+    .game-stage { flex: 1; min-height: 330px; display: grid; align-content: center; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); overflow: hidden; }
     .create-preview { display: grid; gap: 10px; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
     .preview-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .create-preview .game-stage { min-height: 220px; background: white; }
@@ -228,6 +241,8 @@
       .grid.two, .grid.three { grid-template-columns: 1fr; }
       .feed { padding-inline: 8px; }
       .game-card { min-height: calc(100vh - 116px); }
+      .game-stage { min-height: 280px; padding: 14px; }
+      .comment-list { max-height: 64px; }
       .choices, .two-col { grid-template-columns: 1fr; }
       .topbar { align-items: flex-start; }
       .connections-grid { grid-template-columns: repeat(2, 1fr); }
@@ -380,6 +395,7 @@
       plays: [],
       drafts: [],
       createdGames: [],
+      comments: {},
       streak: 2,
       points: 0,
       categoryAffinity: { Logic: 7, Language: 7, Strategy: 6, Math: 5, Memory: 4 }
@@ -388,6 +404,7 @@
     state.points ||= 0;
     state.drafts ||= [];
     state.createdGames ||= [];
+    state.comments ||= {};
     state.drafts.forEach((draft, index) => {
       draft.id ||= `local-draft-${index}-${today}`;
       draft.status ||= "draft";
@@ -641,6 +658,24 @@
       return `<span class="difficulty-meter" title="Difficulty: ${esc(game.difficulty || "Medium")}"><span>${esc(game.difficulty || "Medium")}</span><span class="difficulty-dots">${dots}</span></span>`;
     }
 
+    function directionsForGame(game) {
+      const name = String(game.title || "");
+      if (/chess/i.test(name)) return "Click the piece you want to move, then click the destination square.";
+      if (/wordle|word grid/i.test(name)) return "Guess the five-letter word. Green is correct, yellow is close, gray is not in the word.";
+      if (/connections/i.test(name)) return "Select four words that belong together, then submit the group.";
+      if (/crossword/i.test(name)) return "Fill the grid from the clues. Each square takes one letter.";
+      if (/sudoku/i.test(name)) return "Fill every empty square so each row, column, and box has each number once.";
+      if (/memory/i.test(name)) return "Watch the flashing pattern, then repeat it in order.";
+      if (/number tap/i.test(name)) return "Tap the numbers in order as quickly as you can.";
+      if (/math/i.test(name)) return "Choose the correct answer before the round ends.";
+      if (/scramble/i.test(name)) return "Unscramble the letters and choose the correct word.";
+      if (/country/i.test(name)) return "Pick the country with the larger requested value.";
+      if (/timeline/i.test(name)) return "Tap the events from earliest to latest.";
+      if (/shape/i.test(name)) return "Choose the shape that exactly matches the target rotation.";
+      if (/pattern|strategy/i.test(name)) return "Study the sequence and choose what comes next.";
+      return "Play the puzzle on the card. Correct answers add points automatically.";
+    }
+
     function renderPoints() {
       $("#pointsValue").textContent = currentProfile?.total_points ?? state.points;
       const hud = $("#pointsHud");
@@ -779,40 +814,51 @@
       wrap.className = "feed-card-wrap";
       const card = document.createElement("div");
       card.className = "game-card";
+      const key = gameUniqueKey(game);
+      const liked = state.liked?.includes(game.title);
+      const comments = (state.comments[key] || []).slice(-3);
       card.innerHTML = `
-        <div class="game-head">
-          <div>
-            <h2>${game.title}</h2>
-            <div class="meta">
-              <span class="pill">${game.category}</span>
-              ${difficultyBadge(game)}
-              <span class="pill">${game.time}</span>
-              <span class="pill">${game.source}</span>
-            </div>
-          </div>
-          <button class="icon-btn save" title="Save">+</button>
-        </div>
+        <button class="game-help" title="Directions" aria-label="Directions">?</button>
+        <div class="directions-pop">${esc(directionsForGame(game))}</div>
         <div class="game-stage"></div>
         <div class="feedback-box"></div>
-        <div class="action-row">
-          <button class="btn primary challenge">Challenge</button>
-          <button class="btn ghost replay">Replay</button>
-          <button class="btn ghost share">Share</button>
+        <div class="game-social">
+          <div class="social-row">
+            <button class="like-btn ${liked ? "liked" : ""}">${liked ? "Liked" : "Like"}</button>
+          </div>
+          <div class="comment-box">
+            <div class="comment-list">${comments.length ? comments.map(c => `<div class="comment">${esc(c)}</div>`).join("") : ""}</div>
+            <form class="comment-form">
+              <input placeholder="Add a comment" maxlength="140">
+              <button>Post</button>
+            </form>
+          </div>
         </div>
       `;
       const stage = $(".game-stage", card);
       const mount = () => { stage.innerHTML = ""; delete card.dataset.completed; $(".feedback-box", card).className = "feedback-box"; $(".feedback-box", card).innerHTML = ""; game.renderer(stage, game, (score, label) => finish(card, game, score, label)); };
-      $(".replay", card).onclick = mount;
-      $(".save", card).onclick = () => {
-        state.saved ||= [];
-        if (!state.saved.includes(game.title)) state.saved.push(game.title);
+      $(".game-help", card).onclick = () => $(".directions-pop", card).classList.toggle("show");
+      $(".like-btn", card).onclick = () => {
+        state.liked ||= [];
+        const index = state.liked.indexOf(game.title);
+        if (index >= 0) state.liked.splice(index, 1);
+        else state.liked.push(game.title);
         save();
-        $(".save", card).textContent = "OK";
-        toast("Saved");
+        $(".like-btn", card).classList.toggle("liked", index < 0);
+        $(".like-btn", card).textContent = index < 0 ? "Liked" : "Like";
       };
-      $(".challenge", card).onclick = () => toast(`Challenge sent: ${game.title}`);
-      $(".share", card).onclick = () => toast("Share link copied");
-      if (state.saved?.includes(game.title)) $(".save", card).textContent = "OK";
+      $(".comment-form", card).onsubmit = (e) => {
+        e.preventDefault();
+        const input = $("input", e.currentTarget);
+        const text = input.value.trim();
+        if (!text) return;
+        state.comments[key] ||= [];
+        state.comments[key].push(text);
+        state.comments[key] = state.comments[key].slice(-20);
+        save();
+        input.value = "";
+        $(".comment-list", card).innerHTML = state.comments[key].slice(-3).map(c => `<div class="comment">${esc(c)}</div>`).join("");
+      };
       mount();
       wrap.appendChild(card);
       return wrap;
