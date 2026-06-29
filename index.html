@@ -516,6 +516,16 @@
       </div>
     </div>
   </div>
+  <div id="usernameModal" class="auth-modal">
+    <div class="auth-card">
+      <div class="brand"><div class="logo">G</div><div><h1>Username</h1><p class="tagline">Choose a username for friend challenges.</p></div></div>
+      <input id="usernameInput" class="input" maxlength="18" placeholder="username">
+      <div class="auth-actions">
+        <button class="btn primary" id="saveUsernamePrompt">Save username</button>
+        <button class="btn ghost" id="skipUsernamePrompt">Not now</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -542,6 +552,7 @@
     state.drafts ||= [];
     state.createdGames ||= [];
     state.comments ||= {};
+    state.usernamePrompted ||= false;
     state.drafts.forEach((draft, index) => {
       draft.id ||= `local-draft-${index}-${today}`;
       draft.status ||= "draft";
@@ -890,6 +901,12 @@
       $("#authModal").classList.add("show");
     }
 
+    function maybePromptUsername() {
+      if (!currentUser || currentProfile?.username || state.usernamePrompted) return;
+      $("#usernameInput").value = defaultUsername(currentUser);
+      $("#usernameModal").classList.add("show");
+    }
+
     async function startGoogleAuth() {
       if (!supabaseClient) return toast("Supabase is not connected");
       const { error } = await supabaseClient.auth.signInWithOAuth({
@@ -916,14 +933,14 @@
       return `${slugUsername(seed)}${suffix}`;
     }
 
-    function localProfile(data) {
+    function localProfile(data, includeGeneratedUsername = false) {
       if (!currentUser) return data || null;
       const meta = currentUser.user_metadata || {};
       return {
         ...(data || {}),
         id: currentUser.id,
         display_name: data?.display_name || meta.name || currentUser.email?.split("@")[0] || "Player",
-        username: data?.username || defaultUsername(currentUser),
+        username: data?.username || (includeGeneratedUsername ? defaultUsername(currentUser) : ""),
         total_points: data?.total_points ?? state.points,
         brain_level: data?.brain_level || 1
       };
@@ -945,13 +962,6 @@
         .upsert(basePayload, { onConflict: "id" });
     }
 
-    async function ensureProfile(data) {
-      if (!supabaseClient || !currentUser) return data || null;
-      const profile = localProfile(data);
-      saveProfileUsernameFallback(profile).catch(() => {});
-      return profile;
-    }
-
     async function loadProfile() {
       if (!supabaseClient || !currentUser) return;
       currentProfile = localProfile(null);
@@ -964,12 +974,16 @@
         .select("*")
         .eq("id", currentUser.id)
         .maybeSingle();
-      if (error) return;
-      currentProfile = await ensureProfile(data);
+      if (error) {
+        maybePromptUsername();
+        return;
+      }
+      currentProfile = localProfile(data);
       renderAuth();
       renderPoints();
       renderProfile();
       renderChallenges();
+      maybePromptUsername();
     }
 
     async function initSupabase() {
@@ -2092,13 +2106,15 @@
       const username = slugUsername(value);
       if (!username) return toast("Enter a username");
       currentProfile = { ...(currentProfile || {}), username };
+      state.usernamePrompted = true;
+      save();
       renderAuth();
       renderProfile();
       renderChallenges();
+      $("#usernameModal")?.classList.remove("show");
       if (supabaseClient && currentUser) {
-        const { error } = await supabaseClient.from("profiles").update({ username }).eq("id", currentUser.id);
-        if (error) toast("Saved locally");
-        else toast("Username saved");
+        await saveProfileUsernameFallback(currentProfile);
+        toast("Username saved");
       } else {
         toast("Username saved locally");
       }
@@ -2349,6 +2365,9 @@
         await supabaseClient.auth.signOut();
         currentUser = null;
         currentProfile = null;
+        state.usernamePrompted = false;
+        save();
+        $("#usernameModal")?.classList.remove("show");
         renderAuth();
         renderPoints();
         showView("feedView");
@@ -2359,6 +2378,12 @@
     };
     $$(".auth-action").forEach(button => button.onclick = startGoogleAuth);
     $("#closeAuthModal").onclick = () => $("#authModal").classList.remove("show");
+    $("#saveUsernamePrompt").onclick = () => saveUsername($("#usernameInput").value);
+    $("#skipUsernamePrompt").onclick = () => {
+      state.usernamePrompted = true;
+      save();
+      $("#usernameModal").classList.remove("show");
+    };
 
     renderFeed();
     renderDaily();
