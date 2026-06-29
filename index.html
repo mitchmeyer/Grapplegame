@@ -328,17 +328,26 @@
       saved: ["Mini Sudoku"],
       plays: [],
       drafts: [],
+      createdGames: [],
       streak: 2,
       points: 0,
       categoryAffinity: { Logic: 7, Language: 7, Strategy: 6, Math: 5, Memory: 4 }
     };
     let state = JSON.parse(localStorage.getItem(storeKey) || "null") || baseState;
     state.points ||= 0;
+    state.drafts ||= [];
+    state.createdGames ||= [];
+    state.drafts.forEach((draft, index) => {
+      draft.id ||= `local-draft-${index}-${today}`;
+      draft.status ||= "draft";
+      draft.caption ||= "";
+    });
     let currentUser = null;
     let currentProfile = null;
     const rendererByType = {};
     const save = () => localStorage.setItem(storeKey, JSON.stringify(state));
     const esc = (value) => String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    const escAttr = esc;
     const shuffle = (arr) => arr.map(v => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(v => v[1]);
     const choice = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const now = () => performance.now();
@@ -1088,10 +1097,39 @@
       ` : `<p class="muted">Play any puzzle to see a result summary here.</p>`;
     }
 
+    function createdItems() {
+      const localDrafts = state.drafts.map((d, i) => ({
+        id: d.id || `local-draft-${i}`,
+        title: d.title,
+        category: d.category,
+        prompt: d.prompt,
+        caption: d.caption || "",
+        status: d.status || "draft",
+        game: null
+      }));
+      return [...state.createdGames, ...localDrafts];
+    }
+
     function renderCreate() {
-      $("#draftList").innerHTML = state.drafts.length ? state.drafts.map((d, i) => `
-        <div class="mini-card"><div><span class="pill">${esc(d.category)}</span><h3 style="margin-top:10px;">${esc(d.title)}</h3><p class="muted">${esc(d.prompt)}</p></div><button class="btn ghost" onclick="toast('Draft ${i + 1} opened')">Edit</button></div>
-      `).join("") : `<p class="muted">No drafts yet.</p>`;
+      const items = createdItems();
+      $("#draftList").innerHTML = items.length ? items.map((d) => `
+        <div class="mini-card">
+          <div style="display:grid; gap:10px; width:100%;">
+            <div>
+              <span class="pill">${esc(d.status || "draft")}</span>
+              <span class="pill">${esc(d.category || "Puzzle")}</span>
+              <input class="input" value="${escAttr(d.title || "Untitled game")}" onchange="updateCreatedGame('${escAttr(d.id)}', 'title', this.value)" style="margin-top:10px;">
+              <p class="muted">${esc(d.prompt || "Created in Grapple")}</p>
+            </div>
+            <textarea placeholder="Add a caption before you post" onchange="updateCreatedGame('${escAttr(d.id)}', 'caption', this.value)">${esc(d.caption || "")}</textarea>
+            <div class="action-row">
+              <button class="btn ghost" onclick="saveCreatedGame('${escAttr(d.id)}')">Save edits</button>
+              <button class="btn ghost" onclick="previewCreatedGame('${escAttr(d.id)}')">Preview</button>
+              <button class="btn primary" onclick="publishCreatedGame('${escAttr(d.id)}')">${d.status === "published" ? "Posted" : "Post"}</button>
+            </div>
+          </div>
+        </div>
+      `).join("") : `<p class="muted">No drafts yet. Generate a game to start editing.</p>`;
     }
 
     async function loadRemoteDrafts() {
@@ -1102,18 +1140,90 @@
         .order("created_at", { ascending: false })
         .limit(10);
       if (error || !data) return;
-      $("#draftList").innerHTML = data.length ? data.map((d) => `
-        <div class="mini-card"><div><span class="pill">${esc(d.category)}</span><h3 style="margin-top:10px;">${esc(d.title)}</h3><p class="muted">${esc(d.prompt)}</p></div><span class="pill">${esc(d.status)}</span></div>
-      `).join("") : `<p class="muted">No drafts yet.</p>`;
+      data.forEach(d => {
+        if (state.createdGames.some(g => g.id === d.id)) return;
+        state.createdGames.push({
+          id: d.id,
+          title: d.title,
+          category: d.category,
+          prompt: d.prompt,
+          caption: d.caption || "",
+          status: d.status || "draft",
+          game: {
+            id: d.id,
+            title: d.title,
+            category: d.category,
+            difficulty: d.difficulty || "Medium",
+            estimated_seconds: d.estimated_seconds || 60,
+            source: "AI",
+            traits: d.traits || [],
+            game_type: d.game_type || "logic",
+            game_spec: d.game_spec || {},
+            is_official: false
+          }
+        });
+      });
+      save();
+      renderCreate();
+      renderProfile();
     }
 
     function addDraft(prompt) {
       const cats = ["Logic", "Language", "Strategy", "Math"];
       const category = choice(cats);
-      state.drafts.unshift({ title: `${category} Puzzle`, category, prompt: prompt || "Untitled puzzle idea", date: today });
+      state.drafts.unshift({ id: crypto.randomUUID(), title: `${category} Puzzle`, category, prompt: prompt || "Untitled puzzle idea", caption: "", status: "draft", date: today });
       save();
       renderCreate();
       renderProfile();
+    }
+
+    function findCreatedGame(id) {
+      return state.createdGames.find(g => g.id === id) || state.drafts.find(g => g.id === id);
+    }
+
+    function updateCreatedGame(id, field, value) {
+      const item = findCreatedGame(id);
+      if (!item) return;
+      item[field] = value;
+      if (item.game && field === "title") item.game.title = value;
+      save();
+      renderProfile();
+    }
+
+    function saveCreatedGame(id) {
+      save();
+      renderCreate();
+      renderProfile();
+      toast("Saved edits");
+    }
+
+    function previewCreatedGame(id) {
+      const item = findCreatedGame(id);
+      if (!item?.game) return toast("Generate the game first, then preview it");
+      games.unshift(normalizeGame(item.game));
+      renderFeed();
+      showView("feedView");
+      toast("Preview added to feed");
+    }
+
+    async function publishCreatedGame(id) {
+      const item = findCreatedGame(id);
+      if (!item) return;
+      item.status = "published";
+      if (item.game) {
+        const normalized = normalizeGame(item.game);
+        games.unshift(normalized);
+        renderFeed();
+        renderDaily();
+        renderChallenges();
+      }
+      save();
+      renderCreate();
+      renderProfile();
+      if (supabaseClient && currentUser && item.id && !String(item.id).startsWith("local-")) {
+        await supabaseClient.from("ai_game_drafts").update({ status: "published" }).eq("id", item.id);
+      }
+      toast("Posted");
     }
 
     function renderChallenges() {
@@ -1162,7 +1272,13 @@
       }).join("");
       const totalPoints = currentProfile?.total_points ?? state.points;
       $("#historyList").innerHTML = `<div class="metric"><span><b>Total points</b><p class="muted">Synced when signed in</p></span><b>${totalPoints}</b></div>` + (state.plays.length ? state.plays.slice(0, 7).map(p => `<div class="metric"><span><b>${p.title}</b><p class="muted">${p.category}</p></span><b>+${p.points ?? Math.max(5, Math.round((p.score || 0) / 10))}</b></div>`).join("") : `<p class="muted">Played puzzles appear here.</p>`);
-      $("#createdList").innerHTML = state.drafts.length ? state.drafts.slice(0, 5).map(d => `<div class="metric"><span><b>${esc(d.title)}</b><p class="muted">${esc(d.category)}</p></span><span class="pill">Draft</span></div>`).join("") : `<p class="muted">Drafted games appear here.</p>`;
+      const created = createdItems();
+      $("#createdList").innerHTML = created.length ? created.slice(0, 8).map(d => `
+        <div class="metric">
+          <span><b>${esc(d.title || "Untitled game")}</b><p class="muted">${esc(d.caption || d.category || "Created game")}</p></span>
+          <span class="pill">${esc(d.status || "draft")}</span>
+        </div>
+      `).join("") : `<p class="muted">Created games and drafts appear here.</p>`;
     }
 
     function showView(id) {
@@ -1212,13 +1328,19 @@
         const data = await response.json().catch(() => ({}));
         if (response.ok && data?.game) {
           $("#createPrompt").value = "";
-          games.unshift(normalizeGame(data.game));
-          renderFeed();
-          renderDaily();
-          renderChallenges();
-          await loadRemoteDrafts();
-          showView("feedView");
-          toast("AI game created");
+          state.createdGames.unshift({
+            id: data.game.id || crypto.randomUUID(),
+            title: data.game.title,
+            category: data.game.category,
+            prompt,
+            caption: "",
+            status: "draft",
+            game: data.game
+          });
+          save();
+          renderCreate();
+          renderProfile();
+          toast("AI game created as draft");
           return;
         }
         toast(functionErrorText(null, data));
