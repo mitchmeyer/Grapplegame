@@ -48,9 +48,16 @@
     .timer-pill { min-width: 86px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 999px; background: #F3F4F6; color: #1F2937; font-size: 19px; font-weight: 850; }
     .game-stats { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #0F172A; font-size: 18px; }
     .game-stats b { font-weight: 950; }
+    .game-stats.untimed { justify-content: flex-start; gap: 28px; }
     .hint-output { min-height: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
     .hint-output.show { min-height: 18px; }
     .hint-btn { min-height: 48px; border-radius: 8px; color: #858995; background: white; border: 1px solid #E5E7EF; font-size: 17px; font-weight: 850; }
+    .timer-pill.hidden { display: none; }
+    .start-cover { min-height: 360px; display: grid; place-items: center; padding: 22px; border: 1px solid #E5E7EF; border-radius: 12px; background: #FBFAFF; }
+    .start-cover-inner { display: grid; gap: 14px; max-width: 340px; text-align: center; }
+    .start-cover h3 { font-size: 26px; line-height: 1.08; }
+    .start-cover p { color: var(--muted); font-size: 15px; line-height: 1.35; }
+    .start-cover .start-btn { min-height: 48px; border-radius: 10px; color: white; background: var(--purple); font-size: 16px; font-weight: 950; text-transform: uppercase; }
     .game-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .difficulty-meter { display: inline-flex; align-items: center; gap: 7px; min-height: 28px; padding: 6px 10px; border-radius: 8px; background: white; color: var(--dark-purple); border: 1px solid var(--line); font-size: 11px; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
@@ -860,9 +867,27 @@
       renderResultSummary();
     }
 
+    function isTimedGame(game) {
+      const id = String(game.id || "");
+      const title = String(game.title || "");
+      return /tetris|memory|number|math|scramble|shape/i.test(`${id} ${title}`);
+    }
+
+    function gameSeconds(game) {
+      const match = String(game.time || "").match(/\d+/);
+      return match ? Number(match[0]) : 60;
+    }
+
+    function timeLabel(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+
     function finish(card, game, score, label) {
       if (card.dataset.completed === "true") return;
       card.dataset.completed = "true";
+      if (card._timer) clearInterval(card._timer);
       const isCorrect = score >= 700;
       const hintPenalty = Number(card.dataset.hintPenalty || 0);
       const points = isCorrect ? Math.max(0, Math.round(score / 10) - hintPenalty) : 0;
@@ -886,6 +911,8 @@
       const liked = state.liked?.includes(game.title);
       const disliked = state.saved?.includes(`dislike:${game.title}`);
       const likeCount = baseLikeCount(game) + (liked ? 1 : 0);
+      const timed = isTimedGame(game);
+      const initialSeconds = gameSeconds(game);
       card.innerHTML = `
         <div class="game-card-strip">
           <span class="category-chip">${esc(game.category || "Puzzle")}</span>
@@ -895,8 +922,8 @@
           </div>
         </div>
         <div class="game-body">
-          <div class="game-title-row"><h2>${esc(game.title)}</h2><span class="timer-pill">${esc(game.time || "60s")}</span></div>
-          <div class="game-stats"><span>Time: <b>${esc(game.time || "60s")}</b></span><span>Score: <b class="card-score">0</b></span><span>Errors: <b class="card-errors">0</b></span></div>
+          <div class="game-title-row"><h2>${esc(game.title)}</h2><span class="timer-pill ${timed ? "" : "hidden"}">${timeLabel(initialSeconds)}</span></div>
+          <div class="game-stats ${timed ? "" : "untimed"}">${timed ? `<span>Time: <b class="card-time">${timeLabel(initialSeconds)}</b></span>` : ""}<span>Score: <b class="card-score">0</b></span><span>Errors: <b class="card-errors">0</b></span></div>
           <button class="game-help" title="Directions" aria-label="Directions">?</button>
           <div class="directions-pop">${esc(directionsForGame(game))}</div>
           <div class="game-stage"></div>
@@ -906,7 +933,41 @@
         </div>
       `;
       const stage = $(".game-stage", card);
-      const mount = () => { stage.innerHTML = ""; delete card.dataset.completed; card.dataset.hintPenalty = "0"; $(".feedback-box", card).className = "feedback-box"; $(".feedback-box", card).innerHTML = ""; $(".hint-output", card).className = "hint-output"; $(".hint-output", card).textContent = ""; $(".card-score", card).textContent = "0"; $(".card-errors", card).textContent = "0"; game.renderer(stage, game, (score, label) => finish(card, game, score, label)); };
+      const resetCard = () => {
+        if (card._timer) clearInterval(card._timer);
+        delete card.dataset.completed;
+        card.dataset.hintPenalty = "0";
+        $(".feedback-box", card).className = "feedback-box";
+        $(".feedback-box", card).innerHTML = "";
+        $(".hint-output", card).className = "hint-output";
+        $(".hint-output", card).textContent = "";
+        $(".card-score", card).textContent = "0";
+        $(".card-errors", card).textContent = "0";
+      };
+      const startCountdown = () => {
+        let remaining = initialSeconds;
+        const update = () => {
+          $(".timer-pill", card).textContent = timeLabel(remaining);
+          $(".card-time", card).textContent = timeLabel(remaining);
+        };
+        update();
+        card._timer = setInterval(() => {
+          remaining -= 1;
+          update();
+          if (remaining <= 0) finish(card, game, 0, "Time is up.");
+        }, 1000);
+      };
+      const mount = () => {
+        stage.innerHTML = "";
+        resetCard();
+        game.renderer(stage, game, (score, label) => finish(card, game, score, label));
+        if (timed) startCountdown();
+      };
+      const showStartCover = () => {
+        resetCard();
+        stage.innerHTML = `<div class="start-cover"><div class="start-cover-inner"><h3>${esc(game.title)}</h3><p>${esc(directionsForGame(game))}</p><button class="start-btn">Start Game</button></div></div>`;
+        $(".start-btn", stage).onclick = mount;
+      };
       $(".game-help", card).onclick = () => $(".directions-pop", card).classList.toggle("show");
       $(".like-btn", card).onclick = () => {
         state.liked ||= [];
@@ -933,7 +994,8 @@
         out.textContent = hintForGame(game);
         toast("Hint used: -10 pts");
       };
-      mount();
+      if (timed) showStartCover();
+      else mount();
       wrap.appendChild(card);
       return wrap;
     }
