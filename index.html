@@ -1,0 +1,1250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grapple</title>
+  <style>
+    :root {
+      --primary: #6C3BFF;
+      --dark-purple: #32127A;
+      --lavender: #EEE8FF;
+      --bg: #F7F4FF;
+      --white: #FFFFFF;
+      --text: #1E1E2F;
+      --muted: #77738A;
+      --success: #22C55E;
+      --warning: #FACC15;
+      --error: #EF4444;
+      --line: #DDD3FF;
+      --shadow: 0 14px 34px rgba(50, 18, 122, .1);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: white; color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { overflow: hidden; }
+    button, input, textarea { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    .app { height: 100vh; display: grid; grid-template-rows: 1fr 76px; background: white; }
+    .screen { overflow: hidden; min-height: 0; }
+    .view { height: 100%; overflow: auto; display: none; padding: 18px 16px 104px; }
+    .view.active { display: block; }
+    .feed { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; padding: 0 12px 92px; background: white; }
+    .feed-card-wrap { min-height: calc(100vh - 76px); display: grid; place-items: center; padding: 18px 0; scroll-snap-align: start; }
+    .game-card { width: min(100%, 580px); min-height: min(760px, calc(100vh - 120px)); display: flex; flex-direction: column; gap: 15px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: var(--shadow); }
+    .game-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: clamp(26px, 4vw, 44px); line-height: 1; text-transform: uppercase; }
+    h2 { font-size: 24px; line-height: 1.1; text-transform: uppercase; }
+    h3 { font-size: 18px; text-transform: uppercase; }
+    .tagline, .muted { color: var(--muted); }
+    .tagline { font-size: 14px; margin-top: 4px; }
+    .pill { display: inline-flex; align-items: center; min-height: 28px; padding: 6px 10px; border-radius: 8px; background: var(--lavender); color: var(--dark-purple); border: 1px solid var(--line); font-size: 11px; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
+    .game-stage { flex: 1; min-height: 330px; display: grid; align-content: center; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); overflow: hidden; }
+    .points-hud { position: fixed; top: 14px; right: 14px; z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 0 13px; border-radius: 999px; color: white; background: var(--dark-purple); box-shadow: var(--shadow); font-weight: 900; }
+    .points-hud.bump { animation: points-pop .32s ease; }
+    .auth-bar { position: fixed; top: 14px; left: 14px; z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 999px; background: white; border: 1px solid var(--line); box-shadow: var(--shadow); font-size: 12px; font-weight: 850; }
+    .auth-bar button { min-height: 30px; padding: 0 10px; border-radius: 999px; color: white; background: var(--primary); font-weight: 850; }
+    .auth-bar .signout { color: var(--dark-purple); background: var(--lavender); }
+    .auth-view { height: 100%; display: grid; place-items: center; padding: 22px 16px 104px; background: white; }
+    .auth-card { width: min(100%, 520px); display: grid; gap: 18px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: var(--shadow); }
+    .auth-card h1 { font-size: clamp(34px, 9vw, 62px); }
+    .auth-card .logo { width: 54px; height: 54px; font-size: 22px; }
+    .auth-actions { display: grid; gap: 10px; }
+    .auth-note { display: grid; gap: 9px; padding: 13px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+    .auth-modal { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; padding: 18px; background: rgba(30, 30, 47, .26); backdrop-filter: blur(4px); }
+    .auth-modal.show { display: grid; }
+    .create-gate { display: none; gap: 10px; margin-bottom: 14px; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+    .create-gate.show { display: grid; }
+    .feedback-box { display: none; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 12px 14px; border-radius: 12px; color: white; font-weight: 900; text-align: center; }
+    .feedback-box.show { display: flex; animation: feedback-pop .26s ease; }
+    .feedback-box.good { background: var(--success); }
+    .feedback-box.bad { background: var(--error); }
+    .feedback-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.22); font-size: 20px; line-height: 1; flex: 0 0 auto; }
+    @keyframes feedback-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+    @keyframes points-pop { 50% { transform: scale(1.08); } }
+    .score-big { font-size: 34px; font-weight: 950; line-height: 1; margin: 4px 0; }
+    .action-row { display: flex; flex-wrap: wrap; gap: 9px; }
+    .btn, .tab, .icon-btn { min-height: 42px; border-radius: 8px; border: 1px solid var(--line); font-weight: 850; text-transform: uppercase; transition: transform .12s ease, background .12s ease; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; }
+    .btn:active, .tab:active, .icon-btn:active, .cell-btn:active { transform: translateY(1px); }
+    .primary { color: white; background: var(--primary); border-color: var(--primary); }
+    .ghost { color: var(--dark-purple); background: white; }
+    .icon-btn { width: 42px; display: grid; place-items: center; color: var(--dark-purple); background: var(--lavender); font-size: 20px; }
+    .nav { height: 76px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 8px max(8px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right)); background: white; border-top: 1px solid var(--line); }
+    .nav button { display: grid; place-items: center; gap: 1px; color: var(--muted); background: transparent; border-radius: 10px; font-size: 10px; font-weight: 850; text-transform: uppercase; }
+    .nav .active { color: var(--primary); background: var(--lavender); }
+    .nav .ico { width: 24px; height: 22px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 6px; font-size: 13px; font-weight: 850; }
+    .nav .create-tab { transform: translateY(-8px); color: white; background: var(--primary); box-shadow: 0 10px 24px rgba(108, 59, 255, .25); }
+    .nav .create-tab .ico { width: 34px; height: 34px; border-radius: 50%; border-color: rgba(255,255,255,.75); font-size: 18px; }
+    .nav .create-tab.active { color: white; background: var(--dark-purple); }
+    .topbar { max-width: 1120px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .logo { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 8px; color: white; background: var(--primary); font-weight: 900; }
+    .grid { max-width: 1120px; margin: 0 auto; display: grid; gap: 14px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .panel, .mini-card { border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: var(--shadow); }
+    .panel { padding: 18px; }
+    .mini-card { min-height: 150px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; text-align: left; color: var(--text); }
+    .library { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .tab { flex: 0 0 auto; padding: 0 13px; color: var(--dark-purple); background: white; }
+    .tab.active { color: white; background: var(--primary); border-color: var(--primary); }
+    .metric, .leader-row { display: grid; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--lavender); }
+    .metric { grid-template-columns: 1fr auto; }
+    .leader-row { grid-template-columns: 36px 1fr auto; }
+    .metric:last-child, .leader-row:last-child { border-bottom: 0; }
+    .avatar { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; color: white; background: var(--primary); font-weight: 950; }
+    .bar { height: 10px; min-width: 70px; border-radius: 999px; background: var(--lavender); overflow: hidden; }
+    .bar span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+    .input, textarea { width: 100%; border: 1px solid var(--line); outline: 0; border-radius: 10px; padding: 12px 14px; background: var(--bg); color: var(--text); }
+    textarea { min-height: 100px; resize: vertical; }
+    .choices, .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .cell-btn, .choice, .tile, .event-chip, .country, .shape-choice { min-height: 50px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--text); font-weight: 850; user-select: none; }
+    .choice.correct, .cell-btn.correct, .cw-cell.correct, .sudoku-cell.correct { border-color: var(--success); background: #ECFDF5; }
+    .choice.wrong, .cell-btn.wrong { border-color: var(--error); background: #FEF2F2; }
+    .memory-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+    .tile { aspect-ratio: 1; min-height: 0; }
+    .tile.flash, .tile.selected { background: var(--primary); border-color: var(--primary); }
+    .number-field { position: relative; min-height: 330px; border: 1px solid var(--line); border-radius: 12px; background: white; overflow: hidden; }
+    .bubble { position: absolute; width: 48px; height: 48px; min-height: 0; border-radius: 50%; color: var(--dark-purple); background: var(--lavender); }
+    .bubble.done { opacity: .25; transform: scale(.82); }
+    .big-text { font-size: clamp(32px, 9vw, 72px); font-weight: 950; text-align: center; color: var(--dark-purple); }
+    .logic-text { font-size: 22px; line-height: 1.35; font-weight: 850; text-align: center; }
+    .country { min-height: 130px; padding: 16px; text-align: center; gap: 8px; }
+    .event-list { display: grid; gap: 9px; }
+    .event-chip { justify-content: start; padding: 12px; text-align: left; }
+    .event-chip.selected { background: var(--lavender); border-color: var(--primary); }
+    .shape-display { display: grid; place-items: center; gap: 12px; }
+    .shape { width: 74px; height: 74px; background: var(--primary); clip-path: polygon(50% 0%, 95% 36%, 78% 100%, 22% 100%, 5% 36%); }
+    .shape.triangle { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+    .shape.arrow { clip-path: polygon(0 35%, 55% 35%, 55% 10%, 100% 50%, 55% 90%, 55% 65%, 0 65%); }
+    .shape.l { clip-path: polygon(0 0, 38% 0, 38% 62%, 100% 62%, 100% 100%, 0 100%); }
+    .shape-choice { min-height: 120px; }
+    .sequence, .wordle-row, .connections-grid { display: grid; gap: 8px; }
+    .sequence { grid-template-columns: repeat(6, minmax(0, 54px)); justify-content: center; }
+    .seq-dot { height: 54px; display: grid; place-items: center; border-radius: 10px; font-size: 24px; font-weight: 950; background: white; border: 1px solid var(--line); }
+    .wordle-board { width: min(100%, 300px); margin: 0 auto; display: grid; gap: 5px; }
+    .wordle-row { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+    .wordle-cell { aspect-ratio: 1; display: grid; place-items: center; border: 2px solid #D3D6DA; background: white; color: #1A1A1B; font-size: 24px; font-weight: 900; text-transform: uppercase; }
+    .wordle-cell.filled { border-color: #878A8C; }
+    .wordle-cell.hit { color: white; background: #6AAA64; border-color: #6AAA64; }
+    .wordle-cell.near { color: white; background: #C9B458; border-color: #C9B458; }
+    .wordle-cell.miss { color: white; background: #787C7E; border-color: #787C7E; }
+    .wordle-keyboard { display: grid; gap: 6px; width: min(100%, 420px); margin: 0 auto; }
+    .key-row { display: flex; justify-content: center; gap: 5px; }
+    .key { min-width: 28px; height: 38px; padding: 0 8px; border-radius: 4px; background: #D3D6DA; color: #1A1A1B; font-weight: 850; text-transform: uppercase; }
+    .key.wide { min-width: 58px; font-size: 12px; }
+    .key.hit { color: white; background: #6AAA64; }
+    .key.near { color: white; background: #C9B458; }
+    .key.miss { color: white; background: #787C7E; }
+    .connections-grid { grid-template-columns: repeat(4, 1fr); }
+    .conn { min-height: 58px; padding: 8px; border: 0; border-radius: 6px; background: #EFEBE0; color: #111; font-size: 13px; font-weight: 900; text-align: center; }
+    .conn.selected { color: white; background: #5A594E; }
+    .connections-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 850; }
+    .mistakes { display: flex; gap: 5px; align-items: center; color: var(--muted); font-size: 13px; }
+    .mistake-dot { width: 10px; height: 10px; border-radius: 50%; background: #5A594E; opacity: .35; }
+    .found-group { padding: 12px; border-radius: 6px; color: #111; background: #F9DF6D; text-align: center; font-weight: 900; text-transform: uppercase; }
+    .found-group small { display: block; margin-top: 3px; font-size: 11px; font-weight: 750; text-transform: none; }
+    .crossword-wrap { display: grid; grid-template-columns: auto minmax(150px, 1fr); gap: 16px; align-items: start; justify-content: center; }
+    .crossword { display: grid; grid-template-columns: repeat(5, 42px); grid-template-rows: repeat(5, 42px); border: 2px solid #111; background: #111; gap: 0; justify-content: center; width: max-content; }
+    .cw-square { position: relative; width: 42px; height: 42px; background: white; border: 1px solid #111; }
+    .cw-square.block { background: #111; }
+    .cw-num { position: absolute; top: 2px; left: 3px; font-size: 9px; line-height: 1; color: #111; font-weight: 800; }
+    .cw-cell { width: 100%; height: 100%; border: 0; background: transparent; text-align: center; font-size: 22px; font-weight: 850; text-transform: uppercase; padding-top: 8px; }
+    .crossword-clues { display: grid; gap: 12px; font-size: 13px; }
+    .crossword-clues ol { margin: 6px 0 0 20px; padding: 0; }
+    .crossword-clues li { margin: 4px 0; }
+    .sudoku-shell { width: min(100%, 292px); margin: 0 auto; display: grid; gap: 12px; justify-items: center; }
+    .sudoku-grid { display: grid; grid-template-columns: repeat(4, 64px); grid-template-rows: repeat(4, 64px); border: 3px solid #111; background: #111; gap: 0; }
+    .sudoku-cell { width: 64px; height: 64px; border: 1px solid #111; border-radius: 0; background: white; text-align: center; font-size: 28px; font-weight: 500; color: #111; }
+    .sudoku-cell:nth-child(2), .sudoku-cell:nth-child(6), .sudoku-cell:nth-child(10), .sudoku-cell:nth-child(14) { border-right-width: 3px; }
+    .sudoku-cell:nth-child(n+5):nth-child(-n+8) { border-bottom-width: 3px; }
+    .sudoku-cell.given { background: #F3F4F6; color: #111; font-weight: 850; }
+    .sudoku-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
+    .sudoku-pad button { min-height: 40px; border-radius: 8px; background: var(--lavender); color: var(--dark-purple); font-weight: 900; }
+    .chess-shell { display: grid; gap: 10px; justify-items: center; }
+    .chess-board { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); width: min(100%, 360px); border: 2px solid #4B3621; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+    .sq { position: relative; aspect-ratio: 1; display: grid; place-items: center; font-size: clamp(22px, 7vw, 34px); line-height: 1; color: #111; }
+    .sq.light { background: #F0D9B5; }
+    .sq.dark { background: #B58863; }
+    .sq.has-piece { cursor: pointer; }
+    .sq.selected { outline: 4px solid rgba(250, 204, 21, .95); outline-offset: -4px; }
+    .sq.targetable::after { content: ""; width: 28%; height: 28%; border-radius: 50%; background: rgba(50, 18, 122, .28); }
+    .sq.last-move { box-shadow: inset 0 0 0 4px rgba(34, 197, 94, .55); }
+    .sq .coord { position: absolute; left: 3px; top: 2px; font-size: 9px; color: rgba(0,0,0,.55); font-weight: 800; }
+    .sq.dark .coord { color: rgba(255,255,255,.75); }
+    .chess-status { width: min(100%, 360px); min-height: 42px; display: grid; place-items: center; padding: 10px 12px; border-radius: 10px; background: white; border: 1px solid var(--line); color: var(--muted); text-align: center; font-weight: 850; }
+    .math-card { width: min(100%, 360px); margin: 0 auto; padding: 20px; border-radius: 14px; background: white; border: 1px solid var(--line); text-align: center; }
+    .scramble-rack { width: min(100%, 430px); margin: 0 auto; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+    .letter-tile { width: 48px; height: 54px; display: grid; place-items: center; border-radius: 8px; background: white; border: 1px solid var(--line); box-shadow: 0 3px 0 var(--line); font-size: 24px; font-weight: 950; color: var(--dark-purple); }
+    .memory-board { width: min(100%, 310px); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 12px; border-radius: 16px; background: #1E1E2F; }
+    .memory-board .tile { background: #2D2D44; border: 0; border-radius: 10px; }
+    .memory-board .tile.flash, .memory-board .tile.selected { background: var(--primary); box-shadow: 0 0 0 3px rgba(255,255,255,.45) inset; }
+    .number-field::before { content: ""; position: absolute; inset: 50% auto auto 50%; width: 1px; height: 1px; box-shadow: 0 0 0 110px rgba(108,59,255,.04), 0 0 0 180px rgba(108,59,255,.03); border-radius: 50%; transform: translate(-50%, -50%); }
+    .country .country-name { font-size: 28px; font-weight: 950; }
+    .country .country-sub { color: var(--muted); font-size: 13px; }
+    .timeline-track { position: relative; display: grid; gap: 10px; padding-left: 18px; }
+    .timeline-track::before { content: ""; position: absolute; left: 6px; top: 12px; bottom: 12px; width: 2px; background: var(--line); }
+    .event-chip { position: relative; }
+    .event-chip::before { content: ""; position: absolute; left: -17px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
+    .toast { position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(120px); padding: 12px 16px; border-radius: 10px; color: white; background: var(--dark-purple); box-shadow: var(--shadow); z-index: 10; transition: transform .25s ease; font-weight: 850; text-transform: uppercase; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    @media (max-width: 760px) {
+      .grid.two, .grid.three { grid-template-columns: 1fr; }
+      .feed { padding-inline: 8px; }
+      .game-card { min-height: calc(100vh - 116px); }
+      .choices, .two-col { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; }
+      .connections-grid { grid-template-columns: repeat(2, 1fr); }
+      .crossword-wrap { grid-template-columns: 1fr; }
+      .crossword { grid-template-columns: repeat(5, 38px); grid-template-rows: repeat(5, 38px); }
+      .cw-square { width: 38px; height: 38px; }
+      .sudoku-grid { grid-template-columns: repeat(4, 56px); grid-template-rows: repeat(4, 56px); }
+      .sudoku-cell { width: 56px; height: 56px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="screen">
+      <section id="authView" class="view auth-view">
+        <div class="auth-card">
+          <div class="brand"><div class="logo">G</div><div><h1>Grapple</h1><p class="tagline">Sign in to sync points, rankings, saved games, and AI Create.</p></div></div>
+          <div class="auth-actions">
+            <button class="btn primary auth-action">Continue with Google</button>
+            <button class="btn ghost" id="continueOffline">Browse without signing in</button>
+          </div>
+          <div class="auth-note">
+            <b>AI Create needs sign-in.</b>
+            <p class="muted">Playing the local feed works offline, but generated games, profile stats, and rankings use your Supabase account.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="feedView" class="view active" style="padding:0;"><div class="feed" id="feed"></div></section>
+
+      <section id="createView" class="view">
+        <div class="topbar">
+          <div class="brand"><div class="logo">G</div><div><h1>Create</h1><p class="tagline">Draft puzzle ideas for the feed.</p></div></div>
+        </div>
+        <div class="grid two">
+          <div class="panel">
+            <h3>Prompt</h3>
+            <div id="createAuthGate" class="create-gate">
+              <b>Sign in to create AI games.</b>
+              <p class="muted">Grapple uses your account to call the secure Create function and save the generated game.</p>
+              <button class="btn primary auth-action">Continue with Google</button>
+            </div>
+            <textarea id="createPrompt" placeholder="Example: a 4x4 logic puzzle about chess forks"></textarea>
+            <div class="action-row" style="margin-top:12px;">
+              <button class="btn primary" id="generateDraft">Generate</button>
+              <button class="btn ghost" id="saveDraft">Save Blank</button>
+            </div>
+          </div>
+          <div class="panel"><h3>Drafts</h3><div id="draftList" class="library"></div></div>
+        </div>
+      </section>
+
+      <section id="challengesView" class="view">
+        <div class="topbar">
+          <div class="brand"><div class="logo">VS</div><div><h1>Challenge</h1><p class="tagline">Daily puzzles, friend battles, and the game library.</p></div></div>
+          <span class="pill">Streak <span id="streakCount">0</span></span>
+        </div>
+        <div class="tabs" id="challengeTabs">
+          <button class="tab active" data-panel="dailyPanel">Daily</button>
+          <button class="tab" data-panel="friendsPanel">Friends</button>
+          <button class="tab" data-panel="libraryPanel">Library</button>
+        </div>
+        <div id="dailyPanel" class="grid two challenge-panel" style="margin-top:14px;">
+          <div class="panel">
+            <h2>Today's Grapple</h2>
+            <p class="muted" style="margin:8px 0 16px;">A chess puzzle, a word puzzle, and a number puzzle.</p>
+            <div id="dailyList" class="library"></div>
+          </div>
+          <div class="panel"><h3>Last Result</h3><div id="resultSummary"></div></div>
+        </div>
+        <div id="friendsPanel" class="grid two challenge-panel" style="display:none;margin-top:14px;"></div>
+        <div id="libraryPanel" class="challenge-panel" style="display:none;margin-top:14px;"><div class="library" id="gameLibrary"></div></div>
+      </section>
+
+      <section id="rankingsView" class="view">
+        <div class="topbar">
+          <div class="brand"><div class="logo">#</div><div><h1>Rankings</h1><p class="tagline">Friend and global puzzle leaderboards.</p></div></div>
+          <span class="pill">Top 18%</span>
+        </div>
+        <div id="rankingsPanel" class="grid two"></div>
+      </section>
+
+      <section id="profileView" class="view">
+        <div class="topbar">
+          <div class="brand"><div class="logo">M</div><div><h1>Profile</h1><p class="tagline">Your stats, history, strengths, and created games.</p></div></div>
+          <span class="pill">Brain Level 12</span>
+        </div>
+        <div class="grid three">
+          <div class="panel"><h3>Brain Stats</h3><div id="brainStats"></div></div>
+          <div class="panel"><h3>History</h3><div id="historyList"></div></div>
+          <div class="panel"><h3>Created</h3><div id="createdList"></div></div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="nav" id="nav">
+      <button class="active" data-view="feedView"><span class="ico">#</span>Home</button>
+      <button data-view="challengesView"><span class="ico">VS</span>Challenge</button>
+      <button class="create-tab" data-view="createView"><span class="ico">+</span>Create</button>
+      <button data-view="rankingsView"><span class="ico">1</span>Rankings</button>
+      <button data-view="profileView"><span class="ico">@</span>Profile</button>
+    </nav>
+  </div>
+  <div id="authBar" class="auth-bar"><span id="authStatus">Offline mode</span><button id="googleLogin">Google</button></div>
+  <div id="pointsHud" class="points-hud"><span id="pointsValue">0</span> pts</div>
+  <div id="toast" class="toast"></div>
+  <div id="authModal" class="auth-modal">
+    <div class="auth-card">
+      <div class="brand"><div class="logo">G</div><div><h1>Sign up</h1><p class="tagline" id="authModalText">Sign in to continue.</p></div></div>
+      <div class="auth-actions">
+        <button class="btn primary auth-action">Continue with Google</button>
+        <button class="btn ghost" id="closeAuthModal">Not now</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+    const SUPABASE_URL = "https://gwjdauzcprcpdwgoebmi.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_eeB4Zne0rUThJtj7Q-4XzQ_hcMq0oH2";
+    const supabaseClient = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) || null;
+    const storeKey = "grapple-state-v2";
+    const today = new Date().toISOString().slice(0, 10);
+    const baseState = {
+      liked: ["Chess Mate in One", "Wordle"],
+      saved: ["Mini Sudoku"],
+      plays: [],
+      drafts: [],
+      streak: 2,
+      points: 0,
+      categoryAffinity: { Logic: 7, Language: 7, Strategy: 6, Math: 5, Memory: 4 }
+    };
+    let state = JSON.parse(localStorage.getItem(storeKey) || "null") || baseState;
+    state.points ||= 0;
+    let currentUser = null;
+    let currentProfile = null;
+    const rendererByType = {};
+    const save = () => localStorage.setItem(storeKey, JSON.stringify(state));
+    const esc = (value) => String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    const shuffle = (arr) => arr.map(v => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(v => v[1]);
+    const choice = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const now = () => performance.now();
+    const toast = (msg) => {
+      const el = $("#toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => el.classList.remove("show"), 1700);
+    };
+    const functionErrorText = (error, data) =>
+      data?.details || data?.error || error?.context?.details || error?.message || "AI generation failed";
+
+    const games = [
+      { id: "chess", title: "Chess Mate in One", category: "Strategy", difficulty: "Medium", time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], renderer: ChessMate },
+      { id: "wordle", title: "Wordle", category: "Language", difficulty: "Medium", time: "60s", source: "Official", traits: ["Verbal Reasoning", "Pattern Recognition"], renderer: WordGrid },
+      { id: "connections", title: "Connections", category: "Language", difficulty: "Medium", time: "60s", source: "Community", traits: ["Mental Flexibility", "Verbal Reasoning"], renderer: Connections },
+      { id: "crossword", title: "Mini Crossword", category: "Language", difficulty: "Medium", time: "60s", source: "Community", traits: ["Verbal Reasoning", "Focus"], renderer: MiniCrossword },
+      { id: "sudoku", title: "Mini Sudoku", category: "Logic", difficulty: "Medium", time: "60s", source: "Official", traits: ["Logical Reasoning", "Focus"], renderer: MiniSudoku },
+      { id: "memory", title: "Memory Grid", category: "Memory", difficulty: "Medium", time: "20s", source: "Official", traits: ["Working Memory"], renderer: MemoryGrid },
+      { id: "number", title: "Number Tap", category: "Speed", difficulty: "Medium", time: "30s", source: "Community", traits: ["Processing Speed", "Focus"], renderer: NumberTap },
+      { id: "math", title: "Quick Math", category: "Math", difficulty: "Medium", time: "45s", source: "AI", traits: ["Quantitative Reasoning"], renderer: QuickMath },
+      { id: "scramble", title: "Word Scramble", category: "Language", difficulty: "Easy", time: "20s", source: "Community", traits: ["Verbal Reasoning"], renderer: WordScramble },
+      { id: "country", title: "Country Bigger", category: "Geography", difficulty: "Easy", time: "20s", source: "Official", traits: ["Knowledge", "Comparison Reasoning"], renderer: CountryBigger },
+      { id: "timeline", title: "Timeline Sort", category: "History", difficulty: "Medium", time: "45s", source: "Community", traits: ["Sequencing", "Knowledge"], renderer: TimelineSort },
+      { id: "shape", title: "Shape Match", category: "Visual Reasoning", difficulty: "Medium", time: "15s", source: "AI", traits: ["Spatial Reasoning"], renderer: ShapeMatch },
+      { id: "pattern", title: "Pattern Next", category: "Logic", difficulty: "Easy", time: "15s", source: "Official", traits: ["Pattern Recognition"], renderer: PatternNext },
+      { id: "logic", title: "Mini Logic", category: "Logic", difficulty: "Medium", time: "25s", source: "AI", traits: ["Logical Reasoning"], renderer: MiniLogic }
+    ];
+    Object.assign(rendererByType, {
+      chess_mate: ChessMate,
+      wordle: WordGrid,
+      connections: Connections,
+      crossword: MiniCrossword,
+      sudoku_4x4: MiniSudoku,
+      memory: MemoryGrid,
+      number_tap: NumberTap,
+      quick_math: QuickMath,
+      word_scramble: WordScramble,
+      country_bigger: CountryBigger,
+      timeline_sort: TimelineSort,
+      shape_match: ShapeMatch,
+      pattern: PatternNext,
+      logic: MiniLogic,
+      trivia: MiniLogic
+    });
+
+    function normalizeGame(row) {
+      return {
+        id: row.slug || row.id,
+        dbId: row.id,
+        title: row.title,
+        category: row.category,
+        difficulty: row.difficulty || "Medium",
+        time: `${row.estimated_seconds || 60}s`,
+        source: row.source || (row.is_official ? "Official" : "Community"),
+        traits: row.traits || [],
+        gameSpec: row.game_spec || {},
+        renderer: rendererByType[row.game_type] || MiniLogic
+      };
+    }
+
+    async function loadRemoteGames() {
+      if (!supabaseClient || !currentUser) return;
+      const { data, error } = await supabaseClient
+        .from("games")
+        .select("*")
+        .eq("is_public", true)
+        .order("created_at", { ascending: false });
+      if (error || !data?.length) return;
+      games.splice(0, games.length, ...data.map(normalizeGame));
+      renderFeed();
+      renderDaily();
+      renderChallenges();
+    }
+
+    function recommendationScore(game) {
+      const affinity = state.categoryAffinity[game.category] || 2;
+      const saved = state.saved?.includes(game.title) ? 10 : 0;
+      const liked = state.liked?.includes(game.title) ? 8 : 0;
+      const puzzleBoost = ["Strategy", "Language", "Logic"].includes(game.category) ? 7 : 0;
+      const fatigue = state.plays.slice(0, 4).some(p => p.title === game.title) ? -10 : 0;
+      return affinity * 3 + saved + liked + puzzleBoost + fatigue + Math.random() * 3;
+    }
+    const rankedGames = () => [...games].sort((a, b) => recommendationScore(b) - recommendationScore(a));
+
+    function renderPoints() {
+      $("#pointsValue").textContent = currentProfile?.total_points ?? state.points;
+      const hud = $("#pointsHud");
+      hud.classList.remove("bump");
+      void hud.offsetWidth;
+      hud.classList.add("bump");
+    }
+
+    function renderAuth() {
+      const status = $("#authStatus");
+      const button = $("#googleLogin");
+      const createGate = $("#createAuthGate");
+      const generateButton = $("#generateDraft");
+      if (!supabaseClient) {
+        status.textContent = "Offline mode";
+        button.style.display = "none";
+        createGate?.classList.add("show");
+        if (generateButton) generateButton.disabled = true;
+        return;
+      }
+      if (currentUser) {
+        status.textContent = currentProfile?.display_name || currentUser.email || "Signed in";
+        button.textContent = "Sign out";
+        button.className = "signout";
+        createGate?.classList.remove("show");
+        if (generateButton) generateButton.disabled = false;
+        $("#authModal")?.classList.remove("show");
+      } else {
+        status.textContent = "Sign in";
+        button.textContent = "Google";
+        button.className = "";
+        createGate?.classList.add("show");
+        if (generateButton) generateButton.disabled = false;
+      }
+    }
+
+    function showAuthModal(message = "Sign in to continue.") {
+      $("#authModalText").textContent = message;
+      $("#authModal").classList.add("show");
+    }
+
+    async function startGoogleAuth() {
+      if (!supabaseClient) return toast("Supabase is not connected");
+      await supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.href.split("#")[0]
+        }
+      });
+    }
+
+    async function loadProfile() {
+      if (!supabaseClient || !currentUser) return;
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("*")
+        .eq("id", currentUser.id)
+        .single();
+      if (!error && data) {
+        currentProfile = data;
+        renderAuth();
+        renderPoints();
+        renderProfile();
+      }
+    }
+
+    async function initSupabase() {
+      if (!supabaseClient) {
+        renderAuth();
+        return;
+      }
+      const { data } = await supabaseClient.auth.getSession();
+      currentUser = data.session?.user || null;
+      renderAuth();
+      await loadProfile();
+      await loadRemoteGames();
+      await renderRankings();
+      if (currentUser && $("#authView").classList.contains("active")) showView("feedView");
+      supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+        currentUser = session?.user || null;
+        currentProfile = null;
+        renderAuth();
+        await loadProfile();
+        await loadRemoteGames();
+        await renderRankings();
+        if (currentUser) showView("feedView");
+      });
+    }
+
+    async function syncPlay(game, points, isCorrect, label) {
+      if (!supabaseClient || !currentUser || !game.dbId) return;
+      const { error } = await supabaseClient.from("game_plays").insert({
+        user_id: currentUser.id,
+        game_id: game.dbId,
+        points,
+        correct: isCorrect,
+        answer: { feedback: label }
+      });
+      if (error) {
+        toast("Saved locally");
+        return;
+      }
+      await loadProfile();
+      await renderRankings();
+    }
+
+    function recordPlay(game, score, label, points) {
+      state.plays.unshift({ title: game.title, category: game.category, points, label, date: today });
+      state.plays = state.plays.slice(0, 30);
+      state.categoryAffinity[game.category] = (state.categoryAffinity[game.category] || 0) + 1;
+      save();
+      renderPoints();
+      renderProfile();
+      renderResultSummary();
+    }
+
+    function finish(card, game, score, label) {
+      if (card.dataset.completed === "true") return;
+      card.dataset.completed = "true";
+      const points = Math.max(5, Math.round(score / 10));
+      const isCorrect = score >= 700;
+      state.points += points;
+      const box = $(".feedback-box", card);
+      box.className = `feedback-box show ${isCorrect ? "good" : "bad"}`;
+      box.innerHTML = isCorrect
+        ? `<span class="feedback-mark">✓</span>`
+        : `<span class="feedback-mark">!</span><span>${label}</span>`;
+      recordPlay(game, score, label, points);
+      syncPlay(game, points, isCorrect, label);
+    }
+
+    function buildGameCard(game) {
+      const wrap = document.createElement("article");
+      wrap.className = "feed-card-wrap";
+      const card = document.createElement("div");
+      card.className = "game-card";
+      card.innerHTML = `
+        <div class="game-head">
+          <div>
+            <h2>${game.title}</h2>
+            <div class="meta">
+              <span class="pill">${game.category}</span>
+              <span class="pill">${game.difficulty}</span>
+              <span class="pill">${game.time}</span>
+              <span class="pill">${game.source}</span>
+            </div>
+          </div>
+          <button class="icon-btn save" title="Save">+</button>
+        </div>
+        <div class="game-stage"></div>
+        <div class="feedback-box"></div>
+        <div class="action-row">
+          <button class="btn primary challenge">Challenge</button>
+          <button class="btn ghost replay">Replay</button>
+          <button class="btn ghost share">Share</button>
+        </div>
+      `;
+      const stage = $(".game-stage", card);
+      const mount = () => { stage.innerHTML = ""; delete card.dataset.completed; $(".feedback-box", card).className = "feedback-box"; $(".feedback-box", card).innerHTML = ""; game.renderer(stage, game, (score, label) => finish(card, game, score, label)); };
+      $(".replay", card).onclick = mount;
+      $(".save", card).onclick = () => {
+        state.saved ||= [];
+        if (!state.saved.includes(game.title)) state.saved.push(game.title);
+        save();
+        $(".save", card).textContent = "OK";
+        toast("Saved");
+      };
+      $(".challenge", card).onclick = () => toast(`Challenge sent: ${game.title}`);
+      $(".share", card).onclick = () => toast("Share link copied");
+      if (state.saved?.includes(game.title)) $(".save", card).textContent = "OK";
+      mount();
+      wrap.appendChild(card);
+      return wrap;
+    }
+
+    function renderFeed() {
+      const feed = $("#feed");
+      feed.innerHTML = "";
+      rankedGames().concat(rankedGames().slice(0, 4)).forEach(g => feed.appendChild(buildGameCard(g)));
+    }
+
+    function ChessMate(root, game, done) {
+      const puzzles = [
+        { pieces: { e8: "♚", g7: "♕", e6: "♔" }, q: "White to move. Find mate in one.", from: "g7", to: "g8", san: "Qg8#" },
+        { pieces: { h8: "♚", f7: "♕", g6: "♔" }, q: "White to move. Find mate in one.", from: "f7", to: "f8", san: "Qf8#" }
+      ];
+      const p = choice(puzzles);
+      const files = ["a","b","c","d","e","f","g","h"];
+      const pieces = { ...p.pieces };
+      let selected = null;
+      let locked = false;
+      const whitePieces = new Set(["♕", "♔", "♖", "♗", "♘", "♙"]);
+
+      const queenTargets = (from) => {
+        const fileIndex = files.indexOf(from[0]);
+        const rank = Number(from[1]);
+        const targets = [];
+        for (let f = 0; f < 8; f++) if (f !== fileIndex) targets.push(`${files[f]}${rank}`);
+        for (let r = 1; r <= 8; r++) if (r !== rank) targets.push(`${from[0]}${r}`);
+        for (const df of [-1, 1]) {
+          for (const dr of [-1, 1]) {
+            let f = fileIndex + df;
+            let r = rank + dr;
+            while (f >= 0 && f < 8 && r >= 1 && r <= 8) {
+              targets.push(`${files[f]}${r}`);
+              f += df;
+              r += dr;
+            }
+          }
+        }
+        return new Set(targets);
+      };
+
+      const legalTargets = (from) => pieces[from] === "♕" ? queenTargets(from) : new Set();
+      const draw = (lastMove = null) => {
+        const squares = [];
+        const targets = selected ? legalTargets(selected) : new Set();
+        for (let rank = 8; rank >= 1; rank--) {
+          files.forEach((file, fileIndex) => {
+            const square = `${file}${rank}`;
+            const dark = (fileIndex + rank) % 2 === 1;
+            const coord = file === "a" || rank === 1 ? `<span class="coord">${file === "a" ? rank : file}</span>` : "";
+            const piece = pieces[square] || "";
+            const classes = [
+              "sq",
+              dark ? "dark" : "light",
+              piece ? "has-piece" : "",
+              selected === square ? "selected" : "",
+              selected && targets.has(square) && !pieces[square] ? "targetable" : "",
+              lastMove?.includes(square) ? "last-move" : ""
+            ].filter(Boolean).join(" ");
+            squares.push(`<div class="${classes}" data-square="${square}">${coord}<span>${piece}</span></div>`);
+          });
+        }
+        $(".chess-board", root).innerHTML = squares.join("");
+        $$(".sq", root).forEach(squareEl => squareEl.onclick = () => onSquare(squareEl.dataset.square));
+      };
+
+      const onSquare = (square) => {
+        if (locked) return;
+        const piece = pieces[square];
+        if (!selected) {
+          if (!whitePieces.has(piece)) return toast("Select a white piece");
+          selected = square;
+          $(".chess-status", root).textContent = `Selected ${piece} on ${square}. Choose a destination.`;
+          draw();
+          return;
+        }
+        if (square === selected) {
+          selected = null;
+          $(".chess-status", root).textContent = "Select a white piece, then its destination.";
+          draw();
+          return;
+        }
+        if (whitePieces.has(piece)) {
+          selected = square;
+          $(".chess-status", root).textContent = `Selected ${piece} on ${square}. Choose a destination.`;
+          draw();
+          return;
+        }
+        const from = selected;
+        const moving = pieces[from];
+        const legal = legalTargets(from);
+        if (!legal.has(square)) return toast("That piece can't move there");
+        delete pieces[from];
+        pieces[square] = moving;
+        selected = null;
+        locked = true;
+        draw([from, square]);
+        if (from === p.from && square === p.to) {
+          $(".chess-status", root).textContent = `${p.san} - checkmate.`;
+          done(1000, "Mate found.");
+        } else {
+          $(".chess-status", root).textContent = `Not mate. Best move: ${p.san}`;
+          done(160, `Best move: ${p.san}`);
+        }
+      };
+
+      root.innerHTML = `<div class="chess-shell"><p class="muted">${p.q}</p><div class="chess-board"></div><div class="chess-status">Select a white piece, then its destination.</div></div>`;
+      draw();
+    }
+
+    function WordGrid(root, game, done) {
+      const answers = Array.isArray(game.gameSpec?.answers)
+        ? game.gameSpec.answers.map(w => String(w).toUpperCase().replace(/[^A-Z]/g, "")).filter(w => w.length === 5)
+        : [];
+      const answer = choice(answers.length ? answers : ["BRAIN", "LOGIC", "FOCUS", "MATCH"]);
+      let tries = 0;
+      root.innerHTML = `
+        <p class="muted">Guess the five-letter word.</p>
+        <div class="wordle-board" id="wordleRows">${Array.from({ length: 6 }, () => `<div class="wordle-row">${Array.from({ length: 5 }, () => `<div class="wordle-cell"></div>`).join("")}</div>`).join("")}</div>
+        <div class="action-row"><input class="input guess" maxlength="5" placeholder="Type guess"><button class="btn primary submit">Enter</button></div>
+        <div class="wordle-keyboard">
+          <div class="key-row">${[..."QWERTYUIOP"].map(k => `<button class="key" data-key="${k}">${k}</button>`).join("")}</div>
+          <div class="key-row">${[..."ASDFGHJKL"].map(k => `<button class="key" data-key="${k}">${k}</button>`).join("")}</div>
+          <div class="key-row"><button class="key wide" data-key="ENTER">Enter</button>${[..."ZXCVBNM"].map(k => `<button class="key" data-key="${k}">${k}</button>`).join("")}<button class="key wide" data-key="DEL">Del</button></div>
+        </div>
+      `;
+      const submitGuess = () => {
+        if (tries >= 6) return;
+        const guess = $(".guess", root).value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 5);
+        if (guess.length !== 5) return toast("Use five letters");
+        const cells = $$(".wordle-row", root)[tries].children;
+        [...guess].forEach((ch, i) => {
+          const state = ch === answer[i] ? "hit" : answer.includes(ch) ? "near" : "miss";
+          cells[i].textContent = ch;
+          cells[i].className = `wordle-cell filled ${state}`;
+          const key = $(`.key[data-key="${ch}"]`, root);
+          if (key && !key.classList.contains("hit")) key.className = `key ${state}`;
+        });
+        tries++;
+        $(".guess", root).value = "";
+        if (guess === answer) done(Math.max(300, 1200 - tries * 140), `Solved in ${tries} guesses.`);
+        else if (tries >= 6) done(120, `Answer: ${answer}`);
+      };
+      $(".submit", root).onclick = () => {
+        submitGuess();
+      };
+      $(".guess", root).onkeydown = (e) => { if (e.key === "Enter") submitGuess(); };
+      $$(".key", root).forEach(k => k.onclick = () => {
+        const input = $(".guess", root);
+        if (k.dataset.key === "ENTER") return submitGuess();
+        if (k.dataset.key === "DEL") {
+          input.value = input.value.slice(0, -1);
+          return;
+        }
+        if (input.value.length < 5) input.value += k.dataset.key;
+      });
+    }
+
+    function Connections(root, game, done) {
+      const generatedGroups = Array.isArray(game.gameSpec?.groups)
+        ? game.gameSpec.groups
+            .map(g => ({ name: String(g.name || "Group"), words: Array.isArray(g.words) ? g.words.map(w => String(w).toUpperCase()).slice(0, 4) : [] }))
+            .filter(g => g.words.length === 4)
+            .slice(0, 4)
+        : [];
+      const groups = generatedGroups.length === 4 ? generatedGroups : [
+        { name: "Chess pieces", words: ["KING", "QUEEN", "ROOK", "BISHOP"] },
+        { name: "Word games", words: ["CLUE", "GRID", "LETTER", "GUESS"] },
+        { name: "Math terms", words: ["SUM", "ANGLE", "PRIME", "RATIO"] },
+        { name: "Logic words", words: ["IF", "THEN", "NOT", "AND"] }
+      ];
+      let pool = shuffle(groups.flatMap(g => g.words));
+      let selected = new Set();
+      let found = 0;
+      let mistakes = 4;
+      root.innerHTML = `<div class="connections-header"><span>Select four words that share a category.</span><span class="mistakes">Mistakes ${Array.from({ length: 4 }, () => `<span class="mistake-dot"></span>`).join("")}</span></div><div id="foundGroups" class="sequence" style="display:block;"></div><div class="connections-grid"></div><button class="btn primary check">Submit</button>`;
+      const draw = () => {
+        const grid = $(".connections-grid", root);
+        grid.innerHTML = "";
+        pool.forEach(w => {
+          const b = document.createElement("button");
+          b.className = "cell-btn conn" + (selected.has(w) ? " selected" : "");
+          b.textContent = w;
+          b.onclick = () => {
+            selected.has(w) ? selected.delete(w) : selected.size < 4 && selected.add(w);
+            draw();
+          };
+          grid.appendChild(b);
+        });
+      };
+      $(".check", root).onclick = () => {
+        if (selected.size !== 4) return toast("Pick four");
+        const picked = [...selected].sort().join(",");
+        const match = groups.find(g => g.words.slice().sort().join(",") === picked);
+        if (!match) {
+          mistakes--;
+          $$(".mistake-dot", root).slice(mistakes).forEach(d => d.style.opacity = "0");
+          selected.clear();
+          draw();
+          if (mistakes <= 0) done(100, `Answers: ${groups.map(g => g.name).join(", ")}`);
+          return toast("Not a group");
+        }
+        found++;
+        pool = pool.filter(w => !selected.has(w));
+        selected.clear();
+        $("#foundGroups", root).insertAdjacentHTML("beforeend", `<div class="found-group">${match.name}<small>${match.words.join(", ")}</small></div>`);
+        found === 4 ? done(1100, "All four groups solved.") : draw();
+      };
+      draw();
+    }
+
+    function MiniCrossword(root, game, done) {
+      const cells = [
+        "B","E","G","I","N",
+        "O",null,"A",null,"O",
+        "A",null,"M",null,"D",
+        "R",null,"E",null,"E",
+        "D",null,"S",null,"S"
+      ];
+      const nums = { 0: 1, 2: 2, 4: 3 };
+      root.innerHTML = `<p class="muted">Fill the mini crossword.</p><div class="crossword-wrap"><div class="crossword"></div><div class="crossword-clues"><div><b>Across</b><ol><li>Start</li></ol></div><div><b>Down</b><ol><li>Flat game surface</li><li>Play contests</li><li>Graph puzzle points</li></ol></div></div></div><button class="btn primary check">Check</button>`;
+      const grid = $(".crossword", root);
+      cells.forEach((ch, i) => {
+        if (ch === null) {
+          const block = document.createElement("div");
+          block.className = "cw-square block";
+          grid.appendChild(block);
+        } else {
+          const square = document.createElement("div");
+          square.className = "cw-square";
+          if (nums[i]) square.insertAdjacentHTML("beforeend", `<span class="cw-num">${nums[i]}</span>`);
+          const input = document.createElement("input");
+          input.className = "cw-cell";
+          input.maxLength = 1;
+          input.dataset.answer = ch;
+          input.setAttribute("aria-label", `Crossword cell ${i + 1}`);
+          square.appendChild(input);
+          grid.appendChild(square);
+        }
+      });
+      $(".check", root).onclick = () => {
+        const inputs = $$(".cw-cell", root);
+        const hits = inputs.filter(i => i.value.toUpperCase() === i.dataset.answer).length;
+        inputs.forEach(i => i.classList.toggle("correct", i.value.toUpperCase() === i.dataset.answer));
+        done(Math.round(hits / inputs.length * 1000), `Answer: BEGIN / BOARD / GAMES / NODES`);
+      };
+    }
+
+    function MiniSudoku(root, game, done) {
+      const specSolution = Array.isArray(game.gameSpec?.solution) ? game.gameSpec.solution.map(Number) : [];
+      const specGivens = Array.isArray(game.gameSpec?.givens) ? game.gameSpec.givens.map(Number) : [];
+      const validSolution = specSolution.length === 16 && specSolution.every(n => n >= 1 && n <= 4);
+      const validGivens = specGivens.length === 16 && specGivens.every(n => n >= 0 && n <= 4);
+      const solution = validSolution ? specSolution : [1,2,3,4,3,4,1,2,2,1,4,3,4,3,2,1];
+      const givens = validGivens ? specGivens : [1,0,0,4,0,4,0,0,0,0,4,0,4,0,0,1];
+      root.innerHTML = `<p class="muted">Complete the 4x4 sudoku. Use 1-4 in each row, column, and 2x2 box.</p><div class="sudoku-shell"><div class="sudoku-grid"></div><div class="sudoku-pad">${[1,2,3,4].map(n => `<button data-num="${n}">${n}</button>`).join("")}</div></div><button class="btn primary check">Check</button>`;
+      const grid = $(".sudoku-grid", root);
+      let activeCell = null;
+      givens.forEach((n, i) => {
+        const input = document.createElement("input");
+        input.className = "sudoku-cell" + (n ? " given" : "");
+        input.maxLength = 1;
+        input.inputMode = "numeric";
+        input.dataset.answer = solution[i];
+        input.value = n || "";
+        input.disabled = !!n;
+        input.onclick = () => { activeCell = input; };
+        grid.appendChild(input);
+      });
+      $$(".sudoku-pad button", root).forEach(b => b.onclick = () => {
+        if (activeCell && !activeCell.disabled) activeCell.value = b.dataset.num;
+      });
+      $(".check", root).onclick = () => {
+        const inputs = $$(".sudoku-cell", root);
+        const hits = inputs.filter(i => i.value === i.dataset.answer).length;
+        inputs.forEach(i => i.classList.toggle("correct", i.value === i.dataset.answer));
+        done(Math.round(hits / 16 * 1000), `Solution: 1234 / 3412 / 2143 / 4321`);
+      };
+    }
+
+    function MemoryGrid(root, game, done) {
+      const count = 5;
+      const targets = shuffle([...Array(16).keys()]).slice(0, count);
+      const selected = new Set();
+      root.innerHTML = `<p class="muted">Memorize the lit squares, then repeat the pattern.</p><div class="memory-board"></div><button class="btn primary check" disabled>Check</button>`;
+      const grid = $(".memory-board", root);
+      for (let i = 0; i < 16; i++) {
+        const b = document.createElement("button");
+        b.className = "tile" + (targets.includes(i) ? " flash" : "");
+        b.onclick = () => {
+          if (b.classList.contains("flash")) return;
+          selected.has(i) ? selected.delete(i) : selected.add(i);
+          b.classList.toggle("selected");
+          $(".check", root).disabled = selected.size !== count;
+        };
+        grid.appendChild(b);
+      }
+      setTimeout(() => $$(".tile", root).forEach(t => t.classList.remove("flash")), 2000);
+      $(".check", root).onclick = () => {
+        const hits = targets.filter(t => selected.has(t)).length;
+        done(hits * 180, `${hits}/${count} tiles remembered.`);
+      };
+    }
+
+    function NumberTap(root, game, done) {
+      const nums = shuffle([...Array(20).keys()].map(i => i + 1));
+      let next = 1, mistakes = 0;
+      const start = now();
+      root.innerHTML = `<p class="muted">Tap the numbered targets in ascending order.</p><div class="number-field"></div><span class="pill">Target <b class="next">1</b></span>`;
+      const field = $(".number-field", root);
+      nums.forEach(n => {
+        const b = document.createElement("button");
+        b.className = "cell-btn bubble";
+        b.textContent = n;
+        b.style.left = `${7 + Math.random() * 76}%`;
+        b.style.top = `${8 + Math.random() * 72}%`;
+        b.onclick = () => {
+          if (n === next) {
+            b.classList.add("done");
+            next++;
+            $(".next", root).textContent = next;
+            if (next === 21) {
+              const elapsed = (now() - start) / 1000;
+              done(Math.max(100, Math.round(1600 - elapsed * 35 - mistakes * 80)), `${elapsed.toFixed(1)}s with ${mistakes} mistakes.`);
+            }
+          } else mistakes++;
+        };
+        field.appendChild(b);
+      });
+    }
+
+    function QuickMath(root, game, done) {
+      let q = 0, hits = 0, start = now();
+      const ask = () => {
+        const a = 3 + Math.floor(Math.random() * 17), b = 2 + Math.floor(Math.random() * 12), op = choice(["+", "-", "x"]);
+        const answer = op === "+" ? a + b : op === "-" ? a - b : a * b;
+        const opts = shuffle([answer, answer + 1, answer - 2, answer + 4 + Math.floor(Math.random() * 5)]);
+        root.innerHTML = `<p class="muted">Question ${q + 1} of 10</p><div class="math-card"><div class="big-text">${a} ${op} ${b}</div><p class="muted">Choose the correct answer</p></div><div class="choices"></div>`;
+        opts.forEach(o => {
+          const btn = document.createElement("button");
+          btn.className = "choice";
+          btn.textContent = o;
+          btn.onclick = () => { if (o === answer) hits++; q++; q === 10 ? done(Math.round(hits * 120 + Math.max(0, 500 - (now() - start) / 80)), `${hits}/10 correct.`) : ask(); };
+          $(".choices", root).appendChild(btn);
+        });
+      };
+      ask();
+    }
+
+    function WordScramble(root, game, done) {
+      const words = ["GRAPPLE", "FOCUS", "PUZZLE", "MEMORY", "VECTOR", "LOGIC"];
+      const word = choice(words);
+      const scrambled = shuffle(word.split("")).join("");
+      const opts = shuffle([word, choice(words.filter(w => w !== word)), "PATTERN", "BRAIN"]);
+      root.innerHTML = `<p class="muted">Unscramble the letter rack.</p><div class="scramble-rack">${[...scrambled].map(ch => `<div class="letter-tile">${ch}</div>`).join("")}</div><div class="choices"></div>`;
+      opts.forEach(o => {
+        const b = document.createElement("button");
+        b.className = "choice";
+        b.textContent = o;
+        b.onclick = () => done(o === word ? 900 : 150, o === word ? "Clean solve." : `Answer: ${word}`);
+        $(".choices", root).appendChild(b);
+      });
+    }
+
+    function CountryBigger(root, game, done) {
+      const data = [["India", 1428, 3287], ["Brazil", 216, 8516], ["Japan", 125, 378], ["Nigeria", 224, 924], ["Canada", 40, 9985], ["France", 68, 644]];
+      const [a, b] = shuffle(data).slice(0, 2);
+      const mode = choice(["population", "land area"]);
+      const idx = mode === "population" ? 1 : 2;
+      root.innerHTML = `<p class="muted">Which country has the larger ${mode}?</p><div class="two-col"></div>`;
+      [a, b].forEach(c => {
+        const el = document.createElement("button");
+        el.className = "country";
+        el.innerHTML = `<span class="country-name">${c[0]}</span><span class="country-sub">${mode === "population" ? "population" : "land area"}</span>`;
+        el.onclick = () => done(c[idx] >= (c === a ? b[idx] : a[idx]) ? 850 : 140, `${a[0]}: ${a[idx]} | ${b[0]}: ${b[idx]}`);
+        $(".two-col", root).appendChild(el);
+      });
+    }
+
+    function TimelineSort(root, game, done) {
+      const events = [
+        { t: "Printing press popularized", y: 1450 },
+        { t: "US Declaration of Independence", y: 1776 },
+        { t: "First powered airplane flight", y: 1903 },
+        { t: "First moon landing", y: 1969 }
+      ];
+      const picked = [];
+      root.innerHTML = `<p class="muted">Tap events from earliest to latest.</p><div class="timeline-track event-list"></div><button class="btn primary check" disabled>Submit</button>`;
+      shuffle(events).forEach(e => {
+        const b = document.createElement("button");
+        b.className = "event-chip";
+        b.textContent = e.t;
+        b.onclick = () => {
+          if (picked.includes(e)) return;
+          picked.push(e);
+          b.classList.add("selected");
+          b.textContent = `${picked.length}. ${e.t}`;
+          $(".check", root).disabled = picked.length !== 4;
+        };
+        $(".event-list", root).appendChild(b);
+      });
+      $(".check", root).onclick = () => {
+        const correct = picked.every((e, i) => e.y === events[i].y);
+        done(correct ? 1000 : 300, correct ? "Chronology locked." : "Correct order: 1450, 1776, 1903, 1969.");
+      };
+    }
+
+    function ShapeMatch(root, game, done) {
+      const type = choice(["triangle", "arrow", "l"]);
+      const targetRot = choice([0, 90, 180, 270]);
+      const opts = shuffle([targetRot, (targetRot + 90) % 360, (targetRot + 180) % 360, (targetRot + 270) % 360]);
+      root.innerHTML = `<p class="muted">Pick the exact matching rotation.</p><div class="shape-display"><div class="shape ${type}" style="transform:rotate(${targetRot}deg)"></div></div><div class="choices"></div>`;
+      opts.forEach(rot => {
+        const b = document.createElement("button");
+        b.className = "shape-choice";
+        b.innerHTML = `<div class="shape ${type}" style="transform:rotate(${rot}deg)"></div>`;
+        b.onclick = () => done(rot === targetRot ? 900 : 120, rot === targetRot ? "Spatial match." : "The target rotation was the match.");
+        $(".choices", root).appendChild(b);
+      });
+    }
+
+    function PatternNext(root, game, done) {
+      const generatedPatterns = Array.isArray(game.gameSpec?.patterns)
+        ? game.gameSpec.patterns
+            .map(p => ({ seq: Array.isArray(p.seq) ? p.seq.map(String).slice(0, 5) : [], ans: String(p.ans || ""), opts: Array.isArray(p.opts) ? p.opts.map(String).slice(0, 4) : [] }))
+            .filter(p => p.seq.length >= 2 && p.ans && p.opts.length >= 2)
+        : [];
+      const patterns = generatedPatterns.length ? generatedPatterns : [
+        { seq: ["A", "C", "E", "G"], ans: "I", opts: ["H", "I", "J", "K"] },
+        { seq: ["2", "4", "8", "16"], ans: "32", opts: ["20", "24", "32", "64"] },
+        { seq: ["S", "M", "T", "W"], ans: "T", opts: ["F", "T", "S", "M"] }
+      ];
+      const p = choice(patterns);
+      root.innerHTML = `<p class="muted">What comes next?</p><div class="sequence">${p.seq.map(x => `<div class="seq-dot">${x}</div>`).join("")}<div class="seq-dot">?</div></div><div class="choices"></div>`;
+      shuffle(p.opts).forEach(o => {
+        const b = document.createElement("button");
+        b.className = "choice";
+        b.textContent = o;
+        b.onclick = () => done(o === p.ans ? 900 : 150, o === p.ans ? "Pattern complete." : `Answer: ${p.ans}`);
+        $(".choices", root).appendChild(b);
+      });
+    }
+
+    function MiniLogic(root, game, done) {
+      const generatedPuzzles = Array.isArray(game.gameSpec?.puzzles)
+        ? game.gameSpec.puzzles
+            .map(p => ({ q: String(p.q || ""), a: String(p.a || "") }))
+            .filter(p => p.q && p.a)
+        : [];
+      const puzzles = generatedPuzzles.length ? generatedPuzzles : [
+        { q: "All Bloops are Zips. Some Zips are Lums. Are all Bloops definitely Lums?", a: "Can't Tell" },
+        { q: "No Vens are Torks. Mina is a Ven. Is Mina a Tork?", a: "No" },
+        { q: "Every Plim is a Dax. Rolo is a Plim. Is Rolo a Dax?", a: "Yes" }
+      ];
+      const p = choice(puzzles);
+      root.innerHTML = `<p class="muted">Choose the logically guaranteed answer.</p><div class="logic-text">${p.q}</div><div class="choices"></div>`;
+      ["Yes", "No", "Can't Tell"].forEach(o => {
+        const b = document.createElement("button");
+        b.className = "choice";
+        b.textContent = o;
+        b.onclick = () => done(o === p.a ? 950 : 120, o === p.a ? "Reasoning checks out." : `Answer: ${p.a}`);
+        $(".choices", root).appendChild(b);
+      });
+    }
+
+    function renderDaily() {
+      $("#streakCount").textContent = state.streak;
+      const daily = [games[0], games[1], games[4]];
+      $("#dailyList").innerHTML = daily.map(g => `
+        <div class="mini-card">
+          <div><span class="pill">${g.category}</span><h3 style="margin-top:10px;">${g.title}</h3><p class="muted">${g.traits.join(" | ")}</p></div>
+          <button class="btn primary play-daily" data-id="${g.id}">Play</button>
+        </div>`).join("");
+      $$(".play-daily").forEach(b => b.onclick = () => {
+        showView("feedView");
+        const idx = rankedGames().findIndex(g => g.id === b.dataset.id);
+        $("#feed").children[Math.max(0, idx)]?.scrollIntoView({ behavior: "smooth" });
+      });
+      renderResultSummary();
+    }
+
+    function renderResultSummary() {
+      const latest = state.plays[0];
+      $("#resultSummary").innerHTML = latest ? `
+        <h3>${latest.title}</h3>
+        <p class="muted">${latest.label}</p>
+        <div class="metric"><span>Points added</span><b>+${latest.points ?? Math.max(5, Math.round((latest.score || 0) / 10))}</b></div>
+        <div class="action-row" style="margin-top:14px;"><button class="btn primary" onclick="toast('Friend challenge sent')">Challenge</button><button class="btn ghost" onclick="showView('feedView')">Back to feed</button></div>
+      ` : `<p class="muted">Play any puzzle to see a result summary here.</p>`;
+    }
+
+    function renderCreate() {
+      $("#draftList").innerHTML = state.drafts.length ? state.drafts.map((d, i) => `
+        <div class="mini-card"><div><span class="pill">${esc(d.category)}</span><h3 style="margin-top:10px;">${esc(d.title)}</h3><p class="muted">${esc(d.prompt)}</p></div><button class="btn ghost" onclick="toast('Draft ${i + 1} opened')">Edit</button></div>
+      `).join("") : `<p class="muted">No drafts yet.</p>`;
+    }
+
+    async function loadRemoteDrafts() {
+      if (!supabaseClient || !currentUser) return;
+      const { data, error } = await supabaseClient
+        .from("ai_game_drafts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error || !data) return;
+      $("#draftList").innerHTML = data.length ? data.map((d) => `
+        <div class="mini-card"><div><span class="pill">${esc(d.category)}</span><h3 style="margin-top:10px;">${esc(d.title)}</h3><p class="muted">${esc(d.prompt)}</p></div><span class="pill">${esc(d.status)}</span></div>
+      `).join("") : `<p class="muted">No drafts yet.</p>`;
+    }
+
+    function addDraft(prompt) {
+      const cats = ["Logic", "Language", "Strategy", "Math"];
+      const category = choice(cats);
+      state.drafts.unshift({ title: `${category} Puzzle`, category, prompt: prompt || "Untitled puzzle idea", date: today });
+      save();
+      renderCreate();
+      renderProfile();
+    }
+
+    function renderChallenges() {
+      $("#friendsPanel").innerHTML = `
+        <div class="panel"><h3>Incoming</h3>${["Avery sent a Chess Mate challenge", "Sam wants a Connections rematch", "Jordan dared you to clear Mini Sudoku"].map(x => `<div class="metric"><span>${x}</span><button class="btn ghost">Play</button></div>`).join("")}</div>
+        <div class="panel"><h3>Challenge Friend</h3><input class="input" placeholder="Friend username"><div class="library" style="margin-top:12px;">${games.slice(0, 4).map(g => `<button class="mini-card" onclick="toast('Challenge sent for ${g.title}')"><span class="pill">${g.category}</span><h3>${g.title}</h3></button>`).join("")}</div></div>
+      `;
+      $("#gameLibrary").innerHTML = games.map(g => `<div class="mini-card"><div><span class="pill">${g.source}</span><h3 style="margin-top:10px;">${g.title}</h3><p class="muted">${g.category} | ${g.traits.join(", ")}</p></div><button class="btn primary" onclick="showView('feedView')">Play</button></div>`).join("");
+    }
+
+    async function renderRankings() {
+      if (supabaseClient) {
+        const { data, error } = await supabaseClient
+          .from("profiles")
+          .select("display_name, username, total_points, brain_level")
+          .order("total_points", { ascending: false })
+          .limit(20);
+        if (!error && data?.length) {
+          $("#rankingsPanel").innerHTML = `
+            <div class="panel"><h3>Global</h3>${profileLeaderRows(data)}</div>
+            <div class="panel"><h3>You</h3>${currentProfile ? profileLeaderRows([currentProfile]) : `<p class="muted">Sign in to see your rank.</p>`}</div>
+          `;
+          return;
+        }
+      }
+      $("#rankingsPanel").innerHTML = `
+        <div class="panel"><h3>Friends</h3>${leaderRows(["Mitch", "Avery", "Sam", "Jordan"], [8840, 8510, 8114, 7902])}</div>
+        <div class="panel"><h3>Global</h3>${leaderRows(["Nova", "Kira", "Mitch", "Theo"], [12940, 11820, 8840, 8720])}</div>
+      `;
+    }
+    function leaderRows(names, scores) {
+      return names.map((n, i) => `<div class="leader-row"><div class="avatar">${n[0]}</div><div><b>#${i + 1} ${n}</b><p class="muted">${i === 0 ? "Puzzle master" : "Weekly climber"}</p></div><b>${scores[i]}</b></div>`).join("");
+    }
+    function profileLeaderRows(rows) {
+      return rows.map((p, i) => {
+        const name = p.display_name || p.username || "Player";
+        return `<div class="leader-row"><div class="avatar">${esc(name[0] || "P")}</div><div><b>#${i + 1} ${esc(name)}</b><p class="muted">Level ${p.brain_level || 1}</p></div><b>${p.total_points || 0}</b></div>`;
+      }).join("");
+    }
+
+    function renderProfile() {
+      const traits = ["Working Memory", "Pattern Recognition", "Processing Speed", "Verbal Reasoning", "Spatial Reasoning", "Focus", "Strategy", "Logic"];
+      $("#brainStats").innerHTML = traits.map((t, i) => {
+        const val = 58 + ((state.plays.filter(p => games.find(g => g.title === p.title)?.traits.join(" ").includes(t.split(" ")[0])).length * 9 + i * 5) % 38);
+        return `<div class="metric"><span>${t}</span><div class="bar"><span style="width:${val}%"></span></div><b>${val}</b></div>`;
+      }).join("");
+      const totalPoints = currentProfile?.total_points ?? state.points;
+      $("#historyList").innerHTML = `<div class="metric"><span><b>Total points</b><p class="muted">Synced when signed in</p></span><b>${totalPoints}</b></div>` + (state.plays.length ? state.plays.slice(0, 7).map(p => `<div class="metric"><span><b>${p.title}</b><p class="muted">${p.category}</p></span><b>+${p.points ?? Math.max(5, Math.round((p.score || 0) / 10))}</b></div>`).join("") : `<p class="muted">Played puzzles appear here.</p>`);
+      $("#createdList").innerHTML = state.drafts.length ? state.drafts.slice(0, 5).map(d => `<div class="metric"><span><b>${esc(d.title)}</b><p class="muted">${esc(d.category)}</p></span><span class="pill">Draft</span></div>`).join("") : `<p class="muted">Drafted games appear here.</p>`;
+    }
+
+    function showView(id) {
+      $$(".view").forEach(v => v.classList.toggle("active", v.id === id));
+      $$("#nav button").forEach(b => b.classList.toggle("active", b.dataset.view === id));
+    }
+    $("#nav").onclick = (e) => {
+      const btn = e.target.closest("button[data-view]");
+      if (!btn) return;
+      if (btn.dataset.view !== "feedView" && !currentUser) {
+        showAuthModal("Sign in to unlock Create, Challenge, Rankings, and Profile.");
+        return;
+      }
+      showView(btn.dataset.view);
+    };
+    $("#continueOffline").onclick = () => showView("feedView");
+    $("#challengeTabs").onclick = (e) => {
+      const tab = e.target.closest(".tab");
+      if (!tab) return;
+      $$(".tab", $("#challengeTabs")).forEach(t => t.classList.toggle("active", t === tab));
+      $$(".challenge-panel").forEach(p => p.style.display = p.id === tab.dataset.panel ? (p.id === "libraryPanel" ? "block" : "grid") : "none");
+    };
+    async function generateDraft() {
+      const prompt = $("#createPrompt").value.trim() || "A fresh puzzle for the Grapple feed";
+      if (!supabaseClient || !currentUser) {
+        showAuthModal("Sign in to create AI games.");
+        return;
+      }
+      $("#generateDraft").disabled = true;
+      $("#generateDraft").textContent = "Generating...";
+      try {
+        const { data, error } = await supabaseClient.functions.invoke("create-game", {
+          body: { prompt }
+        });
+        if (!error && data?.game) {
+          $("#createPrompt").value = "";
+          games.unshift(normalizeGame(data.game));
+          renderFeed();
+          renderDaily();
+          renderChallenges();
+          await loadRemoteDrafts();
+          showView("feedView");
+          toast("AI game created");
+          return;
+        }
+        toast(functionErrorText(error, data));
+      } catch (err) {
+        toast(err.message || "AI generation failed");
+      } finally {
+        $("#generateDraft").disabled = false;
+        $("#generateDraft").textContent = "Generate";
+      }
+    }
+    $("#generateDraft").onclick = generateDraft;
+    $("#saveDraft").onclick = () => {
+      addDraft($("#createPrompt").value.trim());
+      $("#createPrompt").value = "";
+      toast("Draft saved");
+    };
+    $("#googleLogin").onclick = async () => {
+      if (!supabaseClient) return;
+      if (currentUser) {
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        currentProfile = null;
+        renderAuth();
+        renderPoints();
+        showView("feedView");
+        toast("Signed out");
+        return;
+      }
+      await startGoogleAuth();
+    };
+    $$(".auth-action").forEach(button => button.onclick = startGoogleAuth);
+    $("#closeAuthModal").onclick = () => $("#authModal").classList.remove("show");
+
+    renderFeed();
+    renderDaily();
+    renderCreate();
+    renderChallenges();
+    renderRankings();
+    renderProfile();
+    renderPoints();
+    initSupabase();
+  </script>
+</body>
+</html>
