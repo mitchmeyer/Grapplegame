@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Grapple</title>
   <link rel="icon" type="image/png" sizes="425x535" href="/favicon.png">
   <link rel="apple-touch-icon" sizes="425x535" href="/favicon.png">
@@ -23,18 +23,18 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; background: white; color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body { overflow: hidden; }
+    html, body { margin: 0; height: 100%; background: white; color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; }
+    body { overflow: hidden; overscroll-behavior: none; }
     button, input, textarea, select { font: inherit; }
     button { border: 0; cursor: pointer; }
-    .app { height: 100vh; display: grid; grid-template-rows: 1fr 76px; background: white; }
+    .app { height: 100vh; height: 100svh; display: grid; grid-template-rows: minmax(0, 1fr) auto; background: white; }
     .screen { overflow: hidden; min-height: 0; }
     .view { height: 100%; overflow: auto; display: none; padding: 18px 16px 104px; }
     .view:not(.active) { display: none !important; }
     .view.active { display: block; }
-    .feed { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; padding: 0 12px 92px; background: white; }
-    .feed-card-wrap { min-height: calc(100vh - 76px); display: grid; place-items: center; padding: 12px 0; scroll-snap-align: start; }
-    .game-card { position: relative; width: min(100%, 520px); min-height: min(760px, calc(100vh - 116px)); display: grid; grid-template-rows: auto 1fr; overflow: hidden; border: 1px solid #E5E7EF; border-radius: 12px; background: white; box-shadow: 0 2px 8px rgba(15, 23, 42, .05); }
+    .feed { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; padding: 0 10px; background: white; -webkit-overflow-scrolling: touch; }
+    .feed-card-wrap { min-height: calc(100svh - 76px - env(safe-area-inset-bottom)); display: grid; place-items: center; padding: 8px 0; scroll-snap-align: start; }
+    .game-card { position: relative; width: min(100%, 520px); height: min(760px, calc(100svh - 92px - env(safe-area-inset-bottom))); max-height: calc(100svh - 92px - env(safe-area-inset-bottom)); display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; border: 1px solid #E5E7EF; border-radius: 12px; background: white; box-shadow: 0 2px 8px rgba(15, 23, 42, .05); }
     .game-card-strip { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 20px; border-bottom: 1px solid #E7EAF1; background: white; }
     .category-chip { display: inline-flex; align-items: center; min-height: 32px; padding: 0 16px; border-radius: 999px; color: white; background: #9B7CF7; font-size: 14px; font-weight: 950; text-transform: uppercase; }
     .vote-controls { display: inline-flex; gap: 18px; align-items: center; }
@@ -42,7 +42,7 @@
     .vote-btn span { font-size: 13px; }
     .vote-btn.liked { color: #22C55E; }
     .vote-btn.disliked { color: #EF4444; }
-    .game-body { display: flex; flex-direction: column; gap: 18px; padding: 22px 20px 18px; border: 1px solid #E5E7EF; border-top: 0; border-radius: 0 0 12px 12px; background: white; }
+    .game-body { min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 18px 20px 16px; border: 1px solid #E5E7EF; border-top: 0; border-radius: 0 0 12px 12px; background: white; }
     .game-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .game-title-row h2 { font-size: 24px; line-height: 1.1; text-transform: none; letter-spacing: 0; }
     .timer-pill { min-width: 86px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 999px; background: #F3F4F6; color: #1F2937; font-size: 19px; font-weight: 850; }
@@ -57,7 +57,7 @@
     .start-cover-inner { display: grid; gap: 14px; max-width: 340px; text-align: center; }
     .start-cover h3 { font-size: 26px; line-height: 1.08; }
     .start-cover p { color: var(--muted); font-size: 15px; line-height: 1.35; }
-    .start-cover .start-btn { min-height: 48px; border-radius: 10px; color: white; background: var(--purple); font-size: 16px; font-weight: 950; text-transform: uppercase; }
+    .start-cover .start-btn { min-height: 48px; border-radius: 10px; color: white; background: var(--primary); font-size: 16px; font-weight: 950; text-transform: uppercase; }
     .game-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .difficulty-meter { display: inline-flex; align-items: center; gap: 7px; min-height: 28px; padding: 6px 10px; border-radius: 8px; background: white; color: var(--dark-purple); border: 1px solid var(--line); font-size: 11px; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
@@ -72,13 +72,13 @@
     .tagline, .muted { color: var(--muted); }
     .tagline { font-size: 14px; margin-top: 4px; }
     .pill { display: inline-flex; align-items: center; min-height: 28px; padding: 6px 10px; border-radius: 8px; background: var(--lavender); color: var(--dark-purple); border: 1px solid var(--line); font-size: 11px; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
-    .game-stage { flex: 1; min-height: 360px; display: grid; align-content: center; gap: 16px; padding: 0; border: 0; border-radius: 0; background: white; overflow: hidden; }
+    .game-stage { flex: 1 1 auto; min-height: 0; display: grid; align-content: center; gap: 12px; padding: 0; border: 0; border-radius: 0; background: white; overflow: hidden; }
     .create-preview { display: grid; gap: 10px; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
     .preview-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .create-preview .game-stage { min-height: 220px; background: white; }
-    .points-hud { position: fixed; top: 14px; right: 14px; z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 0 13px; border-radius: 999px; color: white; background: var(--dark-purple); box-shadow: var(--shadow); font-weight: 900; }
+    .points-hud { position: fixed; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 0 13px; border-radius: 999px; color: white; background: var(--dark-purple); box-shadow: var(--shadow); font-weight: 900; }
     .points-hud.bump { animation: points-pop .32s ease; }
-    .auth-bar { position: fixed; top: 14px; left: 14px; z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 999px; background: white; border: 1px solid var(--line); box-shadow: var(--shadow); font-size: 12px; font-weight: 850; }
+    .auth-bar { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 999px; background: white; border: 1px solid var(--line); box-shadow: var(--shadow); font-size: 12px; font-weight: 850; }
     .auth-bar button { min-height: 30px; padding: 0 10px; border-radius: 999px; color: white; background: var(--primary); font-weight: 850; }
     .auth-bar .signout { color: var(--dark-purple); background: var(--lavender); }
     .auth-view { height: 100%; place-items: center; padding: 22px 16px 104px; background: white; }
@@ -107,7 +107,7 @@
     .primary { color: white; background: var(--primary); border-color: var(--primary); }
     .ghost { color: var(--dark-purple); background: white; }
     .icon-btn { width: 42px; display: grid; place-items: center; color: var(--dark-purple); background: var(--lavender); font-size: 20px; }
-    .nav { height: 76px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 8px max(8px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right)); background: white; border-top: 1px solid var(--line); }
+    .nav { min-height: 76px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 8px max(8px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right)); background: white; border-top: 1px solid var(--line); }
     .nav button { display: grid; place-items: center; gap: 1px; color: var(--muted); background: transparent; border-radius: 10px; font-size: 10px; font-weight: 850; text-transform: uppercase; }
     .nav .active { color: var(--primary); background: var(--lavender); }
     .nav .ico { width: 24px; height: 22px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 6px; font-size: 13px; font-weight: 850; }
@@ -281,17 +281,83 @@
     .toast.show { transform: translateX(-50%) translateY(0); }
     @media (max-width: 760px) {
       .grid.two, .grid.three { grid-template-columns: 1fr; }
-      .feed { padding-inline: 8px; }
-      .game-card { min-height: min(640px, calc(100vh - 116px)); }
-      .game-stage { min-height: 280px; padding: 14px; }
+      .feed { padding: calc(50px + env(safe-area-inset-top)) 6px 0; }
+      .feed-card-wrap { min-height: calc(100svh - 126px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding: 6px 0; }
+      .game-card { width: 100%; height: calc(100svh - 138px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); max-height: calc(100svh - 138px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); border-radius: 10px; }
+      .auth-bar { max-width: 52vw; min-height: 34px; gap: 5px; padding: 0 7px; overflow: hidden; }
+      #authStatus { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .auth-bar button { min-height: 26px; padding: 0 8px; }
+      .points-hud { min-height: 34px; padding: 0 10px; font-size: 14px; }
+      .game-card-strip { min-height: 44px; padding: 0 14px; }
+      .category-chip { min-height: 26px; padding: 0 12px; font-size: 12px; }
+      .vote-controls { gap: 12px; }
+      .vote-btn { min-height: 26px; font-size: 18px; }
+      .game-body { gap: 9px; padding: 12px 14px 10px; }
+      .game-title-row h2 { font-size: 20px; }
+      .timer-pill { min-width: 70px; min-height: 30px; padding: 0 10px; font-size: 16px; }
+      .game-stats { font-size: 15px; gap: 8px; }
+      .game-stats.untimed { gap: 18px; }
+      .game-stage { gap: 8px; padding: 0; }
+      .hint-btn { min-height: 38px; font-size: 14px; }
+      .feedback-box { min-height: 42px; padding: 9px 10px; border-radius: 10px; }
+      .start-cover { min-height: 0; height: 100%; padding: 16px; }
+      .start-cover h3 { font-size: 22px; }
+      .start-cover p { font-size: 14px; }
       .choices, .two-col { grid-template-columns: 1fr; }
       .topbar { align-items: flex-start; }
       .connections-grid { grid-template-columns: repeat(2, 1fr); }
+      .conn { min-height: 42px; padding: 6px; font-size: 11px; }
+      .wordle-board { width: min(100%, 238px); gap: 4px; }
+      .wordle-row { gap: 4px; }
+      .wordle-cell { font-size: 18px; }
+      .wordle-keyboard { gap: 4px; }
+      .key-row { gap: 3px; }
+      .key { min-width: 22px; height: 30px; padding: 0 5px; font-size: 12px; }
+      .key.wide { min-width: 45px; font-size: 10px; }
       .crossword-wrap { grid-template-columns: 1fr; }
-      .crossword { grid-template-columns: repeat(5, 38px); grid-template-rows: repeat(5, 38px); }
-      .cw-square { width: 38px; height: 38px; }
-      .sudoku-grid { grid-template-columns: repeat(4, 56px); grid-template-rows: repeat(4, 56px); }
-      .sudoku-cell { width: 56px; height: 56px; }
+      .crossword { grid-template-columns: repeat(5, 32px); grid-template-rows: repeat(5, 32px); }
+      .cw-square { width: 32px; height: 32px; }
+      .cw-cell { font-size: 17px; padding-top: 6px; }
+      .crossword-clues { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; font-size: 11px; }
+      .crossword-clues li { margin: 2px 0; }
+      .sudoku-shell { width: min(100%, 228px); gap: 8px; }
+      .sudoku-grid { grid-template-columns: repeat(4, 50px); grid-template-rows: repeat(4, 50px); }
+      .sudoku-cell { width: 50px; height: 50px; font-size: 22px; }
+      .sudoku-pad { gap: 6px; }
+      .sudoku-pad button { min-height: 32px; }
+      .hard-sudoku-shell { width: min(100%, 280px); gap: 8px; }
+      .hard-sudoku-grid { grid-template-columns: repeat(6, 36px); grid-template-rows: repeat(6, 36px); }
+      .hard-sudoku-cell { width: 36px; height: 36px; font-size: 16px; }
+      .hard-sudoku-pad { gap: 5px; }
+      .hard-sudoku-pad button { min-height: 28px; }
+      .go-shell, .poker-shell, .tetris-shell { width: min(100%, 300px); gap: 8px; }
+      .go-board { grid-template-columns: repeat(7, 34px); grid-template-rows: repeat(7, 34px); padding: 6px; }
+      .go-point { width: 34px; height: 34px; }
+      .stone { width: 24px; height: 24px; margin: 5px; }
+      .card-face { width: 42px; height: 58px; border-radius: 7px; font-size: 16px; }
+      .poker-options { gap: 6px; }
+      .tetris-board { grid-template-columns: repeat(10, 13px); grid-template-rows: repeat(18, 13px); }
+      .tet-cell { width: 13px; height: 13px; }
+      .tetris-controls { grid-template-columns: repeat(3, 48px); gap: 6px; }
+      .tetris-controls button { min-height: 36px; font-size: 18px; }
+      .chess-board, .chess-status { width: min(100%, 292px); }
+      .sq { font-size: 24px; }
+      .math-card { padding: 12px; }
+      .big-text { font-size: 34px; }
+      .scramble-rack { gap: 6px; }
+      .letter-tile { width: 40px; height: 44px; font-size: 20px; }
+      .memory-board { width: min(100%, 244px); gap: 7px; padding: 10px; }
+      .number-field { min-height: 220px; }
+      .bubble { width: 40px; height: 40px; }
+      .country { min-height: 90px; padding: 10px; }
+      .country .country-name { font-size: 22px; }
+      .event-list, .timeline-track { gap: 7px; }
+      .event-chip { min-height: 38px; padding: 8px 10px; font-size: 13px; }
+      .shape-choice { min-height: 84px; }
+      .shape { width: 56px; height: 56px; }
+      .sequence { grid-template-columns: repeat(6, minmax(0, 40px)); gap: 6px; }
+      .seq-dot, .color-token { min-width: 40px; min-height: 40px; font-size: 18px; }
+      .choice .color-token { min-width: 34px; min-height: 34px; }
       .admin-summary, .admin-toolbar { grid-template-columns: 1fr; }
     }
   </style>
