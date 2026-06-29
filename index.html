@@ -892,12 +892,13 @@
 
     async function startGoogleAuth() {
       if (!supabaseClient) return toast("Supabase is not connected");
-      await supabaseClient.auth.signInWithOAuth({
+      const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: window.location.href.split("#")[0]
         }
       });
+      if (error) toast(error.message || "Google sign-in failed");
     }
 
     function slugUsername(value) {
@@ -915,24 +916,49 @@
       return `${slugUsername(seed)}${suffix}`;
     }
 
-    async function ensureProfile(data) {
-      if (!supabaseClient || !currentUser) return data || null;
+    function localProfile(data) {
+      if (!currentUser) return data || null;
       const meta = currentUser.user_metadata || {};
-      const nextProfile = {
+      return {
+        ...(data || {}),
         id: currentUser.id,
         display_name: data?.display_name || meta.name || currentUser.email?.split("@")[0] || "Player",
-        username: data?.username || defaultUsername(currentUser)
+        username: data?.username || defaultUsername(currentUser),
+        total_points: data?.total_points ?? state.points,
+        brain_level: data?.brain_level || 1
       };
-      const { data: saved, error } = await supabaseClient
+    }
+
+    async function saveProfileUsernameFallback(profile) {
+      if (!supabaseClient || !currentUser || !profile?.username) return;
+      const basePayload = {
+        id: currentUser.id,
+        display_name: profile.display_name || "Player"
+      };
+      const withUsername = { ...basePayload, username: profile.username };
+      const first = await supabaseClient
         .from("profiles")
-        .upsert(nextProfile, { onConflict: "id" })
-        .select("*")
-        .single();
-      return error ? { ...data, ...nextProfile } : saved;
+        .upsert(withUsername, { onConflict: "id" });
+      if (!first.error) return;
+      await supabaseClient
+        .from("profiles")
+        .upsert(basePayload, { onConflict: "id" });
+    }
+
+    async function ensureProfile(data) {
+      if (!supabaseClient || !currentUser) return data || null;
+      const profile = localProfile(data);
+      saveProfileUsernameFallback(profile).catch(() => {});
+      return profile;
     }
 
     async function loadProfile() {
       if (!supabaseClient || !currentUser) return;
+      currentProfile = localProfile(null);
+      renderAuth();
+      renderPoints();
+      renderProfile();
+      renderChallenges();
       const { data, error } = await supabaseClient
         .from("profiles")
         .select("*")
@@ -943,6 +969,7 @@
       renderAuth();
       renderPoints();
       renderProfile();
+      renderChallenges();
     }
 
     async function initSupabase() {
