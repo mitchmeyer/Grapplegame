@@ -43,6 +43,9 @@
     .tagline { font-size: 14px; margin-top: 4px; }
     .pill { display: inline-flex; align-items: center; min-height: 28px; padding: 6px 10px; border-radius: 8px; background: var(--lavender); color: var(--dark-purple); border: 1px solid var(--line); font-size: 11px; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
     .game-stage { flex: 1; min-height: 330px; display: grid; align-content: center; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); overflow: hidden; }
+    .create-preview { display: grid; gap: 10px; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+    .preview-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .create-preview .game-stage { min-height: 220px; background: white; }
     .points-hud { position: fixed; top: 14px; right: 14px; z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 0 13px; border-radius: 999px; color: white; background: var(--dark-purple); box-shadow: var(--shadow); font-weight: 900; }
     .points-hud.bump { animation: points-pop .32s ease; }
     .auth-bar { position: fixed; top: 14px; left: 14px; z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 999px; background: white; border: 1px solid var(--line); box-shadow: var(--shadow); font-size: 12px; font-weight: 850; }
@@ -167,6 +170,9 @@
     .sudoku-cell.given { background: #F3F4F6; color: #111; font-weight: 850; }
     .sudoku-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
     .sudoku-pad button { min-height: 40px; border-radius: 8px; background: var(--lavender); color: var(--dark-purple); font-weight: 900; }
+    .tic-board { width: min(100%, 320px); aspect-ratio: 1; display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 auto; border: 3px solid #111; background: #111; gap: 0; }
+    .tic-cell { display: grid; place-items: center; border: 1px solid #111; border-radius: 0; background: white; color: var(--dark-purple); font-size: clamp(34px, 10vw, 62px); font-weight: 950; }
+    .tic-cell.win { background: var(--lavender); }
     .chess-shell { display: grid; gap: 10px; justify-items: center; }
     .chess-board { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); width: min(100%, 360px); border: 2px solid #4B3621; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
     .sq { position: relative; aspect-ratio: 1; display: grid; place-items: center; font-size: clamp(22px, 7vw, 34px); line-height: 1; color: #111; }
@@ -392,7 +398,8 @@
       shape_match: ShapeMatch,
       pattern: PatternNext,
       logic: MiniLogic,
-      trivia: MiniLogic
+      trivia: MiniLogic,
+      visual_board: GeneratedVisualGame
     });
 
     function normalizeGame(row) {
@@ -1049,6 +1056,67 @@
       });
     }
 
+    function GeneratedVisualGame(root, game, done) {
+      const spec = game.gameSpec || {};
+      if (spec.kind === "tic_tac_toe") {
+        const board = Array(9).fill("");
+        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        const player = String(spec.player || "X").slice(0, 1).toUpperCase();
+        const opponent = String(spec.opponent || "O").slice(0, 1).toUpperCase();
+        let over = false;
+        root.innerHTML = `<p class="muted">${esc(spec.instructions || "Play tic-tac-toe. Get three in a row.")}</p><div class="tic-board"></div><div class="chess-status">Your move: ${player}</div>`;
+        const status = $(".chess-status", root);
+        const winner = () => {
+          for (const line of wins) {
+            const [a, b, c] = line;
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) return { mark: board[a], line };
+          }
+          return board.every(Boolean) ? { mark: "draw", line: [] } : null;
+        };
+        const paint = (winLine = []) => {
+          $(".tic-board", root).innerHTML = board.map((mark, i) => `<button class="tic-cell ${winLine.includes(i) ? "win" : ""}" data-i="${i}">${mark}</button>`).join("");
+          $$(".tic-cell", root).forEach(cell => {
+            cell.onclick = () => {
+              const i = Number(cell.dataset.i);
+              if (over || board[i]) return;
+              board[i] = player;
+              let result = winner();
+              if (!result) {
+                const open = board.map((v, idx) => v ? null : idx).filter(v => v !== null);
+                const center = open.includes(4) ? 4 : null;
+                const move = center ?? choice(open);
+                if (move !== undefined) board[move] = opponent;
+                result = winner();
+              }
+              if (result) {
+                over = true;
+                paint(result.line);
+                const label = result.mark === player ? "You won." : result.mark === opponent ? "The board won." : "Draw.";
+                status.textContent = label;
+                done(result.mark === player ? 950 : result.mark === "draw" ? 500 : 150, label);
+                return;
+              }
+              status.textContent = `Your move: ${player}`;
+              paint();
+            };
+          });
+        };
+        paint();
+        return;
+      }
+
+      const cards = Array.isArray(spec.cards) ? spec.cards.map(String).slice(0, 6) : ["Start", "Choose", "Solve"];
+      const correct = String(spec.correct || cards[0]);
+      root.innerHTML = `<p class="muted">${esc(spec.instructions || game.title || "Interact with the generated game.")}</p><div class="choices"></div>`;
+      cards.forEach(label => {
+        const b = document.createElement("button");
+        b.className = "choice";
+        b.textContent = label;
+        b.onclick = () => done(label === correct ? 900 : 200, label === correct ? "Nice play." : `Try ${correct}`);
+        $(".choices", root).appendChild(b);
+      });
+    }
+
     function MiniLogic(root, game, done) {
       const generatedPuzzles = Array.isArray(game.gameSpec?.puzzles)
         ? game.gameSpec.puzzles
@@ -1122,14 +1190,20 @@
               <p class="muted">${esc(d.prompt || "Created in Grapple")}</p>
             </div>
             <textarea placeholder="Add a caption before you post" onchange="updateCreatedGame('${escAttr(d.id)}', 'caption', this.value)">${esc(d.caption || "")}</textarea>
+            <div class="create-preview" data-preview-id="${escAttr(d.id)}">
+              <div class="preview-title"><b>Preview</b><span class="pill">${d.game ? "Playable" : "Idea"}</span></div>
+              <div class="game-stage"></div>
+              <div class="feedback-box"></div>
+            </div>
             <div class="action-row">
               <button class="btn ghost" onclick="saveCreatedGame('${escAttr(d.id)}')">Save edits</button>
-              <button class="btn ghost" onclick="previewCreatedGame('${escAttr(d.id)}')">Preview</button>
+              <button class="btn ghost" onclick="refreshCreatedPreview('${escAttr(d.id)}')">Reset preview</button>
               <button class="btn primary" onclick="publishCreatedGame('${escAttr(d.id)}')">${d.status === "published" ? "Posted" : "Post"}</button>
             </div>
           </div>
         </div>
       `).join("") : `<p class="muted">No drafts yet. Generate a game to start editing.</p>`;
+      mountCreatedPreviews();
     }
 
     async function loadRemoteDrafts() {
@@ -1195,6 +1269,34 @@
       renderCreate();
       renderProfile();
       toast("Saved edits");
+    }
+
+    function refreshCreatedPreview(id) {
+      const box = $(`[data-preview-id="${CSS.escape(id)}"]`);
+      if (!box) return;
+      mountCreatedPreview(box, findCreatedGame(id));
+    }
+
+    function mountCreatedPreview(box, item) {
+      const stage = $(".game-stage", box);
+      const feedback = $(".feedback-box", box);
+      feedback.className = "feedback-box";
+      feedback.innerHTML = "";
+      stage.innerHTML = "";
+      if (!item?.game) {
+        stage.innerHTML = `<p class="muted">This is an idea draft. Generate a game to get a playable preview.</p>`;
+        return;
+      }
+      const game = normalizeGame(item.game);
+      game.renderer(stage, game, (score, label) => {
+        const good = score >= 700;
+        feedback.className = `feedback-box show ${good ? "good" : "bad"}`;
+        feedback.innerHTML = good ? `<span class="feedback-mark">✓</span>` : `<span class="feedback-mark">!</span><span>${esc(label)}</span>`;
+      });
+    }
+
+    function mountCreatedPreviews() {
+      $$("[data-preview-id]").forEach(box => mountCreatedPreview(box, findCreatedGame(box.dataset.previewId)));
     }
 
     function previewCreatedGame(id) {
