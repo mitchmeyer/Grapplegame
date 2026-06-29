@@ -34,17 +34,23 @@
     .view.active { display: block; }
     .feed { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; padding: 0 12px 92px; background: white; }
     .feed-card-wrap { min-height: calc(100vh - 76px); display: grid; place-items: center; padding: 12px 0; scroll-snap-align: start; }
-    .game-card { position: relative; width: min(100%, 520px); min-height: min(660px, calc(100vh - 132px)); display: flex; flex-direction: column; gap: 8px; padding: 8px; border: 1px solid rgba(221, 211, 255, .75); border-radius: 10px; background: white; box-shadow: 0 8px 22px rgba(50, 18, 122, .06); }
-    .game-help { position: absolute; top: 8px; right: 8px; z-index: 2; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; color: var(--muted); background: rgba(255,255,255,.86); border: 1px solid rgba(221, 211, 255, .8); font-size: 12px; font-weight: 850; }
-    .directions-pop { display: none; position: absolute; top: 34px; right: 8px; z-index: 3; width: min(260px, calc(100% - 16px)); padding: 10px; border-radius: 8px; background: white; border: 1px solid var(--line); box-shadow: 0 10px 24px rgba(50, 18, 122, .1); color: var(--text); font-size: 12px; line-height: 1.35; }
-    .directions-pop.show { display: block; }
-    .game-social { padding: 0 2px 1px; }
-    .social-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
-    .like-btn { min-height: 32px; min-width: 58px; padding: 0 10px; border-radius: 999px; color: var(--muted); background: white; border: 1px solid rgba(221, 211, 255, .9); font-size: 14px; font-weight: 900; }
-    .like-btn.liked { color: var(--success); background: #ECFDF5; border-color: rgba(34, 197, 94, .35); }
-    .comment-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
-    .comment-form input { min-height: 32px; padding: 7px 9px; border-radius: 999px; background: white; font-size: 13px; }
-    .comment-form button { min-height: 32px; padding: 0 10px; border-radius: 999px; color: var(--dark-purple); background: var(--lavender); border: 1px solid var(--line); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+    .game-card { position: relative; width: min(100%, 520px); min-height: min(760px, calc(100vh - 116px)); display: grid; grid-template-rows: auto 1fr; overflow: hidden; border: 1px solid #E5E7EF; border-radius: 12px; background: white; box-shadow: 0 2px 8px rgba(15, 23, 42, .05); }
+    .game-card-strip { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 20px; border-bottom: 1px solid #E7EAF1; background: white; }
+    .category-chip { display: inline-flex; align-items: center; min-height: 32px; padding: 0 16px; border-radius: 999px; color: white; background: #9B7CF7; font-size: 14px; font-weight: 950; text-transform: uppercase; }
+    .vote-controls { display: inline-flex; gap: 18px; align-items: center; }
+    .vote-btn { min-width: 26px; min-height: 30px; display: inline-flex; align-items: center; gap: 4px; color: #697386; background: transparent; font-size: 22px; line-height: 1; font-weight: 850; }
+    .vote-btn span { font-size: 13px; }
+    .vote-btn.liked { color: #22C55E; }
+    .vote-btn.disliked { color: #EF4444; }
+    .game-body { display: flex; flex-direction: column; gap: 18px; padding: 22px 20px 18px; border: 1px solid #E5E7EF; border-top: 0; border-radius: 0 0 12px 12px; background: white; }
+    .game-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .game-title-row h2 { font-size: 24px; line-height: 1.1; text-transform: none; letter-spacing: 0; }
+    .timer-pill { min-width: 86px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 999px; background: #F3F4F6; color: #1F2937; font-size: 19px; font-weight: 850; }
+    .game-stats { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #0F172A; font-size: 18px; }
+    .game-stats b { font-weight: 950; }
+    .hint-output { min-height: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .hint-output.show { min-height: 18px; }
+    .hint-btn { min-height: 48px; border-radius: 8px; color: #858995; background: white; border: 1px solid #E5E7EF; font-size: 17px; font-weight: 850; }
     .game-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .difficulty-meter { display: inline-flex; align-items: center; gap: 7px; min-height: 28px; padding: 6px 10px; border-radius: 8px; background: white; color: var(--dark-purple); border: 1px solid var(--line); font-size: 11px; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
@@ -59,7 +65,7 @@
     .tagline, .muted { color: var(--muted); }
     .tagline { font-size: 14px; margin-top: 4px; }
     .pill { display: inline-flex; align-items: center; min-height: 28px; padding: 6px 10px; border-radius: 8px; background: var(--lavender); color: var(--dark-purple); border: 1px solid var(--line); font-size: 11px; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
-    .game-stage { flex: 1; min-height: 300px; display: grid; align-content: center; gap: 16px; padding: 14px; border: 1px solid rgba(221, 211, 255, .75); border-radius: 8px; background: var(--bg); overflow: hidden; }
+    .game-stage { flex: 1; min-height: 360px; display: grid; align-content: center; gap: 16px; padding: 0; border: 0; border-radius: 0; background: white; overflow: hidden; }
     .create-preview { display: grid; gap: 10px; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
     .preview-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .create-preview .game-stage { min-height: 220px; background: white; }
@@ -207,6 +213,34 @@
     .sudoku-cell.given { background: #F3F4F6; color: #111; font-weight: 850; }
     .sudoku-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
     .sudoku-pad button { min-height: 40px; border-radius: 8px; background: var(--lavender); color: var(--dark-purple); font-weight: 900; }
+    .hard-sudoku-shell { width: min(100%, 372px); margin: 0 auto; display: grid; gap: 10px; justify-items: center; }
+    .hard-sudoku-grid { display: grid; grid-template-columns: repeat(6, 54px); grid-template-rows: repeat(6, 54px); border: 3px solid #111; background: #111; gap: 0; }
+    .hard-sudoku-cell { width: 54px; height: 54px; border: 1px solid #D1D5DB; border-radius: 0; background: white; text-align: center; color: #111827; font-size: 22px; font-weight: 650; }
+    .hard-sudoku-cell:nth-child(3n) { border-right: 3px solid #111; }
+    .hard-sudoku-cell:nth-child(n+13):nth-child(-n+18) { border-bottom: 3px solid #111; }
+    .hard-sudoku-cell.given { background: #F3F4F6; font-weight: 900; }
+    .hard-sudoku-pad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; width: 100%; }
+    .hard-sudoku-pad button { min-height: 36px; border-radius: 8px; background: #C9B8FF; color: white; font-weight: 950; }
+    .go-shell, .poker-shell, .tetris-shell { width: min(100%, 420px); margin: 0 auto; display: grid; gap: 12px; justify-items: center; }
+    .go-board { display: grid; grid-template-columns: repeat(7, 42px); grid-template-rows: repeat(7, 42px); padding: 8px; border: 2px solid #A16207; background: #D6A85A; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+    .go-point { position: relative; width: 42px; height: 42px; background: transparent; }
+    .go-point::before, .go-point::after { content: ""; position: absolute; background: rgba(0,0,0,.35); }
+    .go-point::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+    .go-point::after { top: 50%; left: 0; right: 0; height: 1px; }
+    .stone { position: relative; z-index: 1; width: 30px; height: 30px; margin: 6px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,.25); }
+    .stone.black { background: #111827; }
+    .stone.white { background: white; border: 1px solid #D1D5DB; }
+    .go-point.choice::after { box-shadow: 0 0 0 5px rgba(155,124,247,.22); }
+    .poker-hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .card-face { width: 54px; height: 76px; display: grid; place-items: center; border: 1px solid #D1D5DB; border-radius: 8px; background: white; box-shadow: 0 3px 8px rgba(15,23,42,.08); font-size: 20px; font-weight: 950; }
+    .card-face.red { color: #EF4444; }
+    .poker-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; }
+    .tetris-board { display: grid; grid-template-columns: repeat(10, 22px); grid-template-rows: repeat(18, 22px); border: 2px solid #CBD5E1; background: #F8FAFC; }
+    .tet-cell { width: 22px; height: 22px; border: 1px solid #E5E7EB; background: transparent; }
+    .tet-cell.filled { background: var(--c); }
+    .tetris-controls { display: grid; grid-template-columns: repeat(3, 58px); gap: 8px; justify-content: center; }
+    .tetris-controls button { min-height: 44px; border-radius: 8px; background: white; border: 1px solid #E5E7EF; font-size: 22px; }
+    .tetris-controls .drop { grid-column: 1 / -1; }
     .chess-shell { display: grid; gap: 10px; justify-items: center; }
     .chess-board { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); width: min(100%, 360px); border: 2px solid #4B3621; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
     .sq { position: relative; aspect-ratio: 1; display: grid; place-items: center; font-size: clamp(22px, 7vw, 34px); line-height: 1; color: #111; }
@@ -442,6 +476,16 @@
       { id: "connections", title: "Connections", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Mental Flexibility", "Verbal Reasoning"], renderer: Connections },
       { id: "crossword", title: "Mini Crossword", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Verbal Reasoning", "Focus"], renderer: MiniCrossword },
       { id: "sudoku", title: "Mini Sudoku", category: "Logic", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Logical Reasoning", "Focus"], renderer: MiniSudoku },
+      { id: "sudoku-hard", title: "Hard Sudoku", category: "Math", difficulty: "Hard", difficultyRank: 3, version: 1, time: "120s", source: "Official", traits: ["Logical Reasoning", "Focus"], renderer: HardSudoku },
+      { id: "timeline-random", title: "Timeline Challenge", category: "Trivia", difficulty: "Hard", difficultyRank: 3, version: 1, time: "90s", source: "Official", traits: ["Sequencing", "Knowledge"], gameSpec: { events: [
+        { t: "First modern zipper patented", y: 1917 },
+        { t: "Rubik's Cube invented", y: 1974 },
+        { t: "The Eiffel Tower opens", y: 1889 },
+        { t: "Bluetooth standard announced", y: 1998 }
+      ] }, renderer: TimelineSort },
+      { id: "go-capture", title: "Go Capture", category: "Strategy", difficulty: "Hard", difficultyRank: 3, version: 1, time: "90s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], renderer: GoCapture },
+      { id: "poker-read", title: "Poker Read", category: "Strategy", difficulty: "Medium", difficultyRank: 2, version: 1, time: "45s", source: "Official", traits: ["Probability", "Pattern Recognition"], renderer: PokerRead },
+      { id: "tetris-mini", title: "Tetris Mini", category: "Arcade", difficulty: "Medium", difficultyRank: 2, version: 1, time: "120s", source: "Official", traits: ["Spatial Reasoning", "Processing Speed"], renderer: TetrisMini },
       { id: "memory", title: "Memory Grid", category: "Memory", difficulty: "Medium", difficultyRank: 2, version: 1, time: "20s", source: "Official", traits: ["Working Memory"], renderer: MemoryGrid },
       { id: "number", title: "Number Tap", category: "Speed", difficulty: "Medium", difficultyRank: 2, version: 1, time: "30s", source: "Community", traits: ["Processing Speed", "Focus"], renderer: NumberTap },
       { id: "math", title: "Quick Math", category: "Math", difficulty: "Medium", difficultyRank: 2, version: 1, time: "45s", source: "AI", traits: ["Quantitative Reasoning"], renderer: QuickMath },
@@ -458,6 +502,11 @@
       connections: Connections,
       crossword: MiniCrossword,
       sudoku_4x4: MiniSudoku,
+      sudoku_hard: HardSudoku,
+      timeline_challenge: TimelineSort,
+      go: GoCapture,
+      poker: PokerRead,
+      tetris: TetrisMini,
       memory: MemoryGrid,
       number_tap: NumberTap,
       quick_math: QuickMath,
@@ -658,6 +707,20 @@
       return 8 + Math.abs([...gameUniqueKey(game)].reduce((sum, ch) => sum + ch.charCodeAt(0), 0)) % 93;
     }
 
+    function hintForGame(game) {
+      const name = String(game.title || "");
+      if (/sudoku/i.test(name)) return "Start with the row or box that has the most filled numbers.";
+      if (/wordle|word grid/i.test(name)) return "Try a word with common vowels before repeating letters.";
+      if (/crossword/i.test(name)) return "Fill the shortest clue first, then use crossing letters.";
+      if (/timeline/i.test(name)) return "Look for anchor events: inventions usually come after ancient history but before modern web events.";
+      if (/go/i.test(name)) return "Capture stones by filling their last liberty.";
+      if (/poker/i.test(name)) return "A flush beats a straight; pairs lose to two pair and trips.";
+      if (/tetris/i.test(name)) return "Keep the stack low and move the falling piece toward the deepest gap.";
+      if (/chess/i.test(name)) return "Look for checks first, especially queen moves near the king.";
+      if (/connections/i.test(name)) return "Say the possible category out loud before submitting four words.";
+      return directionsForGame(game);
+    }
+
     function directionsForGame(game) {
       const name = String(game.title || "");
       if (/chess/i.test(name)) return "Click the piece you want to move, then click the destination square.";
@@ -671,6 +734,9 @@
       if (/scramble/i.test(name)) return "Unscramble the letters and choose the correct word.";
       if (/country/i.test(name)) return "Pick the country with the larger requested value.";
       if (/timeline/i.test(name)) return "Tap the events from earliest to latest.";
+      if (/go/i.test(name)) return "Place one black stone to capture the marked white group.";
+      if (/poker/i.test(name)) return "Choose the strongest poker hand from the options.";
+      if (/tetris/i.test(name)) return "Move and rotate the falling piece to clear lines before the stack fills.";
       if (/shape/i.test(name)) return "Choose the shape that exactly matches the target rotation.";
       if (/pattern|strategy/i.test(name)) return "Study the sequence and choose what comes next.";
       return "Play the puzzle on the card. Correct answers add points automatically.";
@@ -797,9 +863,12 @@
     function finish(card, game, score, label) {
       if (card.dataset.completed === "true") return;
       card.dataset.completed = "true";
-      const points = Math.max(5, Math.round(score / 10));
       const isCorrect = score >= 700;
+      const hintPenalty = Number(card.dataset.hintPenalty || 0);
+      const points = isCorrect ? Math.max(0, Math.round(score / 10) - hintPenalty) : 0;
       state.points += points;
+      $(".card-score", card).textContent = points;
+      if (!isCorrect) $(".card-errors", card).textContent = String(Number($(".card-errors", card)?.textContent || 0) + 1);
       const box = $(".feedback-box", card);
       box.className = `feedback-box show ${isCorrect ? "good" : "bad"}`;
       box.innerHTML = isCorrect
@@ -814,26 +883,30 @@
       wrap.className = "feed-card-wrap";
       const card = document.createElement("div");
       card.className = "game-card";
-      const key = gameUniqueKey(game);
       const liked = state.liked?.includes(game.title);
+      const disliked = state.saved?.includes(`dislike:${game.title}`);
       const likeCount = baseLikeCount(game) + (liked ? 1 : 0);
       card.innerHTML = `
-        <button class="game-help" title="Directions" aria-label="Directions">?</button>
-        <div class="directions-pop">${esc(directionsForGame(game))}</div>
-        <div class="game-stage"></div>
-        <div class="feedback-box"></div>
-        <div class="game-social">
-          <div class="social-row">
-            <button class="like-btn ${liked ? "liked" : ""}" aria-label="Like">👍 <span>${likeCount}</span></button>
-            <form class="comment-form">
-              <input placeholder="Add a comment" maxlength="140">
-              <button>Post</button>
-            </form>
+        <div class="game-card-strip">
+          <span class="category-chip">${esc(game.category || "Puzzle")}</span>
+          <div class="vote-controls">
+            <button class="vote-btn like-btn ${liked ? "liked" : ""}" aria-label="Like">👍 <span>${likeCount}</span></button>
+            <button class="vote-btn dislike-btn ${disliked ? "disliked" : ""}" aria-label="Dislike">👎</button>
           </div>
+        </div>
+        <div class="game-body">
+          <div class="game-title-row"><h2>${esc(game.title)}</h2><span class="timer-pill">${esc(game.time || "60s")}</span></div>
+          <div class="game-stats"><span>Time: <b>${esc(game.time || "60s")}</b></span><span>Score: <b class="card-score">0</b></span><span>Errors: <b class="card-errors">0</b></span></div>
+          <button class="game-help" title="Directions" aria-label="Directions">?</button>
+          <div class="directions-pop">${esc(directionsForGame(game))}</div>
+          <div class="game-stage"></div>
+          <div class="feedback-box"></div>
+          <div class="hint-output"></div>
+          <button class="hint-btn">Get Hint (-10 pts)</button>
         </div>
       `;
       const stage = $(".game-stage", card);
-      const mount = () => { stage.innerHTML = ""; delete card.dataset.completed; $(".feedback-box", card).className = "feedback-box"; $(".feedback-box", card).innerHTML = ""; game.renderer(stage, game, (score, label) => finish(card, game, score, label)); };
+      const mount = () => { stage.innerHTML = ""; delete card.dataset.completed; card.dataset.hintPenalty = "0"; $(".feedback-box", card).className = "feedback-box"; $(".feedback-box", card).innerHTML = ""; $(".hint-output", card).className = "hint-output"; $(".hint-output", card).textContent = ""; $(".card-score", card).textContent = "0"; $(".card-errors", card).textContent = "0"; game.renderer(stage, game, (score, label) => finish(card, game, score, label)); };
       $(".game-help", card).onclick = () => $(".directions-pop", card).classList.toggle("show");
       $(".like-btn", card).onclick = () => {
         state.liked ||= [];
@@ -844,17 +917,21 @@
         $(".like-btn", card).classList.toggle("liked", index < 0);
         $("span", $(".like-btn", card)).textContent = baseLikeCount(game) + (index < 0 ? 1 : 0);
       };
-      $(".comment-form", card).onsubmit = (e) => {
-        e.preventDefault();
-        const input = $("input", e.currentTarget);
-        const text = input.value.trim();
-        if (!text) return;
-        state.comments[key] ||= [];
-        state.comments[key].push(text);
-        state.comments[key] = state.comments[key].slice(-20);
+      $(".dislike-btn", card).onclick = () => {
+        state.saved ||= [];
+        const marker = `dislike:${game.title}`;
+        const index = state.saved.indexOf(marker);
+        if (index >= 0) state.saved.splice(index, 1);
+        else state.saved.push(marker);
         save();
-        input.value = "";
-        toast("Comment posted");
+        $(".dislike-btn", card).classList.toggle("disliked", index < 0);
+      };
+      $(".hint-btn", card).onclick = () => {
+        card.dataset.hintPenalty = String(Number(card.dataset.hintPenalty || 0) + 10);
+        const out = $(".hint-output", card);
+        out.className = "hint-output show";
+        out.textContent = hintForGame(game);
+        toast("Hint used: -10 pts");
       };
       mount();
       wrap.appendChild(card);
@@ -1164,6 +1241,128 @@
         inputs.forEach(i => i.classList.toggle("correct", i.value === i.dataset.answer));
         done(Math.round(hits / 16 * 1000), `Solution: 1234 / 3412 / 2143 / 4321`);
       };
+    }
+
+    function HardSudoku(root, game, done) {
+      const solution = [
+        1,2,3,4,5,6,
+        4,5,6,1,2,3,
+        2,3,4,5,6,1,
+        5,6,1,2,3,4,
+        3,4,5,6,1,2,
+        6,1,2,3,4,5
+      ];
+      const givens = [
+        1,0,0,4,0,6,
+        0,5,0,0,2,0,
+        0,0,4,0,0,1,
+        5,0,0,2,0,0,
+        0,4,0,0,1,0,
+        6,0,2,0,0,5
+      ];
+      root.innerHTML = `<div class="hard-sudoku-shell"><div class="hard-sudoku-grid"></div><div class="hard-sudoku-pad">${[1,2,3,4,5,6].map(n => `<button data-num="${n}">${n}</button>`).join("")}</div></div><button class="btn primary check">Check</button>`;
+      const grid = $(".hard-sudoku-grid", root);
+      let activeCell = null;
+      givens.forEach((n, i) => {
+        const input = document.createElement("input");
+        input.className = "hard-sudoku-cell" + (n ? " given" : "");
+        input.maxLength = 1;
+        input.inputMode = "numeric";
+        input.dataset.answer = solution[i];
+        input.value = n || "";
+        input.disabled = !!n;
+        input.onclick = () => { activeCell = input; };
+        grid.appendChild(input);
+      });
+      $$(".hard-sudoku-pad button", root).forEach(b => b.onclick = () => {
+        if (activeCell && !activeCell.disabled) activeCell.value = b.dataset.num;
+      });
+      $(".check", root).onclick = () => {
+        const inputs = $$(".hard-sudoku-cell", root);
+        const hits = inputs.filter(i => i.value === i.dataset.answer).length;
+        inputs.forEach(i => i.classList.toggle("correct", i.value === i.dataset.answer));
+        done(Math.round(hits / 36 * 1200), "6x6 solution checked.");
+      };
+    }
+
+    function GoCapture(root, game, done) {
+      const black = new Set(["c3", "d2", "e3", "d4"]);
+      const white = new Set(["d3"]);
+      const correct = "c4";
+      const files = ["a","b","c","d","e","f","g"];
+      root.innerHTML = `<div class="go-shell"><p class="muted">Black to play. Capture the white stone.</p><div class="go-board"></div></div>`;
+      const board = $(".go-board", root);
+      for (let r = 7; r >= 1; r--) {
+        files.forEach(f => {
+          const p = `${f}${r}`;
+          const cell = document.createElement("button");
+          cell.className = "go-point" + (["c4", "d5", "e4"].includes(p) ? " choice" : "");
+          if (black.has(p)) cell.innerHTML = `<div class="stone black"></div>`;
+          if (white.has(p)) cell.innerHTML = `<div class="stone white"></div>`;
+          cell.onclick = () => {
+            if (black.has(p) || white.has(p)) return;
+            cell.innerHTML = `<div class="stone black"></div>`;
+            done(p === correct ? 1000 : 180, p === correct ? "Captured." : "The capture is at c4.");
+          };
+          board.appendChild(cell);
+        });
+      }
+    }
+
+    function PokerRead(root, game, done) {
+      const rounds = [
+        { cards: ["A♠","A♥","A♦","7♣","2♠"], answer: "Three of a kind", opts: ["One pair", "Two pair", "Three of a kind", "Flush"] },
+        { cards: ["9♥","T♥","J♥","Q♥","K♥"], answer: "Straight flush", opts: ["Straight", "Flush", "Full house", "Straight flush"] },
+        { cards: ["4♣","4♦","K♠","K♥","K♣"], answer: "Full house", opts: ["Two pair", "Full house", "Four of a kind", "Flush"] }
+      ];
+      const round = choice(rounds);
+      root.innerHTML = `<div class="poker-shell"><div class="poker-hand">${round.cards.map(c => `<div class="card-face ${/[♥♦]/.test(c) ? "red" : ""}">${c}</div>`).join("")}</div><div class="poker-options"></div></div>`;
+      round.opts.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.textContent = opt;
+        btn.onclick = () => done(opt === round.answer ? 950 : 120, opt === round.answer ? "Best hand." : `Answer: ${round.answer}`);
+        $(".poker-options", root).appendChild(btn);
+      });
+    }
+
+    function TetrisMini(root, game, done) {
+      const rows = 18, cols = 10;
+      const board = Array.from({ length: rows }, () => Array(cols).fill(""));
+      [["cyan",0],["yellow",2],["lime",5],["cyan",7],["purple",8],["red",0],["red",1],["purple",2],["red",3],["red",4],["orange",5],["white",6],["purple",8],["blue",9]].forEach(([color, c], i) => {
+        const r = rows - 3 + Math.floor(i / 5);
+        board[Math.min(rows - 1, r)][c] = color;
+      });
+      let piece = { cells: [[4,5],[5,5],[5,6],[6,6]], color: "lime" };
+      let moves = 0;
+      root.innerHTML = `<div class="tetris-shell"><div class="game-stats" style="width:100%;"><span>Score: <b class="tet-score">200</b></span><span>Target: <b>500</b></span></div><div class="tetris-board"></div><div class="tetris-controls"><button class="left">←</button><button class="rotate">↻</button><button class="right">→</button><button class="drop">↓</button></div></div>`;
+      const draw = () => {
+        const active = new Map(piece.cells.map(([c, r]) => [`${c},${r}`, piece.color]));
+        $(".tetris-board", root).innerHTML = "";
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const color = active.get(`${c},${r}`) || board[r][c];
+            const div = document.createElement("div");
+            div.className = "tet-cell" + (color ? " filled" : "");
+            if (color) div.style.setProperty("--c", color);
+            $(".tetris-board", root).appendChild(div);
+          }
+        }
+      };
+      const move = (dx, dy = 0) => {
+        piece.cells = piece.cells.map(([c, r]) => [Math.max(0, Math.min(cols - 1, c + dx)), Math.max(0, Math.min(rows - 1, r + dy))]);
+        moves++;
+        $(".tet-score", root).textContent = String(200 + moves * 50);
+        draw();
+      };
+      $(".left", root).onclick = () => move(-1);
+      $(".right", root).onclick = () => move(1);
+      $(".rotate", root).onclick = () => { piece.cells = [[4,5],[4,6],[5,6],[5,7]]; moves++; draw(); };
+      $(".drop", root).onclick = () => {
+        move(0, 10);
+        done(moves <= 5 ? 980 : 720, "Piece placed.");
+      };
+      draw();
     }
 
     function MemoryGrid(root, game, done) {
