@@ -291,11 +291,22 @@
           <div class="brand"><div class="logo">M</div><div><h1>Profile</h1><p class="tagline">Your stats, history, strengths, and created games.</p></div></div>
           <span class="pill">Brain Level 12</span>
         </div>
+        <div id="adminEntry" class="panel" style="display:none; margin-bottom:14px;">
+          <div class="metric"><span><b>Admin</b><p class="muted">Review games, versions, answers, categories, and difficulty ranks.</p></span><button class="btn primary" onclick="showView('adminView')">Open Admin</button></div>
+        </div>
         <div class="grid three">
           <div class="panel"><h3>Brain Stats</h3><div id="brainStats"></div></div>
           <div class="panel"><h3>History</h3><div id="historyList"></div></div>
           <div class="panel"><h3>Created</h3><div id="createdList"></div></div>
         </div>
+      </section>
+
+      <section id="adminView" class="view">
+        <div class="topbar">
+          <div class="brand"><div class="logo">A</div><div><h1>Admin</h1><p class="tagline">Private game catalog, versions, answers, categories, and difficulty ranks.</p></div></div>
+          <button class="btn ghost" onclick="showView('profileView')">Back</button>
+        </div>
+        <div id="adminPanel" class="library"></div>
       </section>
     </main>
 
@@ -350,6 +361,9 @@
     });
     let currentUser = null;
     let currentProfile = null;
+    let feedCursor = 0;
+    let feedPool = [];
+    const adminEmail = "mitchell@blastoff.org";
     const rendererByType = {};
     const save = () => localStorage.setItem(storeKey, JSON.stringify(state));
     const esc = (value) => String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
@@ -366,22 +380,25 @@
     };
     const functionErrorText = (error, data) =>
       data?.details || data?.error || error?.context?.details || error?.message || "AI generation failed";
+    const difficultyRanks = { Easy: 1, Medium: 2, Hard: 3, Expert: 4 };
+    const getDifficultyRank = (game) => Number(game.difficultyRank || game.difficulty_rank || difficultyRanks[game.difficulty] || 2);
+    const isAdmin = () => (currentUser?.email || "").toLowerCase() === adminEmail;
 
     const games = [
-      { id: "chess", title: "Chess Mate in One", category: "Strategy", difficulty: "Medium", time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], renderer: ChessMate },
-      { id: "wordle", title: "Wordle", category: "Language", difficulty: "Medium", time: "60s", source: "Official", traits: ["Verbal Reasoning", "Pattern Recognition"], renderer: WordGrid },
-      { id: "connections", title: "Connections", category: "Language", difficulty: "Medium", time: "60s", source: "Community", traits: ["Mental Flexibility", "Verbal Reasoning"], renderer: Connections },
-      { id: "crossword", title: "Mini Crossword", category: "Language", difficulty: "Medium", time: "60s", source: "Community", traits: ["Verbal Reasoning", "Focus"], renderer: MiniCrossword },
-      { id: "sudoku", title: "Mini Sudoku", category: "Logic", difficulty: "Medium", time: "60s", source: "Official", traits: ["Logical Reasoning", "Focus"], renderer: MiniSudoku },
-      { id: "memory", title: "Memory Grid", category: "Memory", difficulty: "Medium", time: "20s", source: "Official", traits: ["Working Memory"], renderer: MemoryGrid },
-      { id: "number", title: "Number Tap", category: "Speed", difficulty: "Medium", time: "30s", source: "Community", traits: ["Processing Speed", "Focus"], renderer: NumberTap },
-      { id: "math", title: "Quick Math", category: "Math", difficulty: "Medium", time: "45s", source: "AI", traits: ["Quantitative Reasoning"], renderer: QuickMath },
-      { id: "scramble", title: "Word Scramble", category: "Language", difficulty: "Easy", time: "20s", source: "Community", traits: ["Verbal Reasoning"], renderer: WordScramble },
-      { id: "country", title: "Country Bigger", category: "Geography", difficulty: "Easy", time: "20s", source: "Official", traits: ["Knowledge", "Comparison Reasoning"], renderer: CountryBigger },
-      { id: "timeline", title: "Timeline Sort", category: "History", difficulty: "Medium", time: "45s", source: "Community", traits: ["Sequencing", "Knowledge"], renderer: TimelineSort },
-      { id: "shape", title: "Shape Match", category: "Visual Reasoning", difficulty: "Medium", time: "15s", source: "AI", traits: ["Spatial Reasoning"], renderer: ShapeMatch },
-      { id: "pattern", title: "Pattern Next", category: "Logic", difficulty: "Easy", time: "15s", source: "Official", traits: ["Pattern Recognition"], renderer: PatternNext },
-      { id: "logic", title: "Mini Logic", category: "Logic", difficulty: "Medium", time: "25s", source: "AI", traits: ["Logical Reasoning"], renderer: MiniLogic }
+      { id: "chess", title: "Chess Mate in One", category: "Strategy", difficulty: "Medium", difficultyRank: 2, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], adminAnswer: "Qg8#", renderer: ChessMate },
+      { id: "wordle", title: "Wordle", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Verbal Reasoning", "Pattern Recognition"], adminAnswer: "BRAIN / LOGIC / FOCUS / MATCH", renderer: WordGrid },
+      { id: "connections", title: "Connections", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Mental Flexibility", "Verbal Reasoning"], adminAnswer: "Four category groups", renderer: Connections },
+      { id: "crossword", title: "Mini Crossword", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Verbal Reasoning", "Focus"], adminAnswer: "BEGIN / BOARD / GAMES / NODES", renderer: MiniCrossword },
+      { id: "sudoku", title: "Mini Sudoku", category: "Logic", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Logical Reasoning", "Focus"], adminAnswer: "1234 / 3412 / 2143 / 4321", renderer: MiniSudoku },
+      { id: "memory", title: "Memory Grid", category: "Memory", difficulty: "Medium", difficultyRank: 2, version: 1, time: "20s", source: "Official", traits: ["Working Memory"], adminAnswer: "Memorize highlighted tiles", renderer: MemoryGrid },
+      { id: "number", title: "Number Tap", category: "Speed", difficulty: "Medium", difficultyRank: 2, version: 1, time: "30s", source: "Community", traits: ["Processing Speed", "Focus"], adminAnswer: "Tap 1-20 ascending", renderer: NumberTap },
+      { id: "math", title: "Quick Math", category: "Math", difficulty: "Medium", difficultyRank: 2, version: 1, time: "45s", source: "AI", traits: ["Quantitative Reasoning"], adminAnswer: "Generated arithmetic answer", renderer: QuickMath },
+      { id: "scramble", title: "Word Scramble", category: "Language", difficulty: "Easy", difficultyRank: 1, version: 1, time: "20s", source: "Community", traits: ["Verbal Reasoning"], adminAnswer: "Unscramble target word", renderer: WordScramble },
+      { id: "country", title: "Country Bigger", category: "Geography", difficulty: "Easy", difficultyRank: 1, version: 1, time: "20s", source: "Official", traits: ["Knowledge", "Comparison Reasoning"], adminAnswer: "Larger country by prompt", renderer: CountryBigger },
+      { id: "timeline", title: "Timeline Sort", category: "History", difficulty: "Medium", difficultyRank: 2, version: 1, time: "45s", source: "Community", traits: ["Sequencing", "Knowledge"], adminAnswer: "1450, 1776, 1903, 1969", renderer: TimelineSort },
+      { id: "shape", title: "Shape Match", category: "Visual Reasoning", difficulty: "Medium", difficultyRank: 2, version: 1, time: "15s", source: "AI", traits: ["Spatial Reasoning"], adminAnswer: "Matching rotation", renderer: ShapeMatch },
+      { id: "pattern", title: "Pattern Next", category: "Logic", difficulty: "Easy", difficultyRank: 1, version: 1, time: "15s", source: "Official", traits: ["Pattern Recognition"], adminAnswer: "Next sequence item", renderer: PatternNext },
+      { id: "logic", title: "Mini Logic", category: "Logic", difficulty: "Medium", difficultyRank: 2, version: 1, time: "25s", source: "AI", traits: ["Logical Reasoning"], adminAnswer: "Yes / No / Can't Tell", renderer: MiniLogic }
     ];
     Object.assign(rendererByType, {
       chess_mate: ChessMate,
@@ -402,6 +419,40 @@
       visual_board: GeneratedVisualGame
     });
 
+    function makeSeedGame(seed, index) {
+      const difficulty = ["Easy", "Medium", "Hard", "Expert"][index % 4];
+      const base = { difficulty, difficultyRank: difficultyRanks[difficulty], version: 1 + (index % 3), source: index % 5 === 0 ? "Official" : index % 3 === 0 ? "Community" : "AI" };
+      const type = index % 13;
+      if (type === 0) return { ...base, id: `word-${index}`, title: `${seed} Word Grid`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: ["BRAIN", "LOGIC", "FOCUS", "MATCH", "GRASP"] }, adminAnswer: "BRAIN / LOGIC / FOCUS / MATCH / GRASP", renderer: WordGrid };
+      if (type === 1) return { ...base, id: `conn-${index}`, title: `${seed} Connections`, category: "Language", time: "75s", traits: ["Mental Flexibility", "Verbal Reasoning"], gameSpec: { groups: [
+        { name: "Board games", words: ["CHESS", "CHECKERS", "GO", "SORRY"] },
+        { name: "Brain skills", words: ["FOCUS", "MEMORY", "LOGIC", "SPEED"] },
+        { name: "Shapes", words: ["CIRCLE", "SQUARE", "TRIANGLE", "OVAL"] },
+        { name: "Numbers", words: ["PRIME", "SUM", "ODD", "EVEN"] }
+      ] }, adminAnswer: "Board games / Brain skills / Shapes / Numbers", renderer: Connections };
+      if (type === 2) return { ...base, id: `sudoku-${index}`, title: `${seed} Sudoku`, category: "Logic", time: "70s", traits: ["Logical Reasoning", "Focus"], gameSpec: { solution: [1,2,3,4,3,4,1,2,2,1,4,3,4,3,2,1], givens: index % 2 ? [1,0,3,0,0,4,0,2,2,0,0,3,0,3,0,1] : [0,2,0,4,3,0,0,0,0,1,4,0,4,0,2,0] }, adminAnswer: "1234 / 3412 / 2143 / 4321", renderer: MiniSudoku };
+      if (type === 3) return { ...base, id: `pattern-${index}`, title: `${seed} Pattern`, category: "Logic", time: "25s", traits: ["Pattern Recognition"], gameSpec: { patterns: [
+        { seq: ["2", "5", "8", "11"], ans: "14", opts: ["12", "13", "14", "15"] },
+        { seq: ["A", "C", "F", "J"], ans: "O", opts: ["L", "M", "O", "P"] }
+      ] }, adminAnswer: "14 or O", renderer: PatternNext };
+      if (type === 4) return { ...base, id: `logic-${index}`, title: `${seed} Logic`, category: "Logic", time: "35s", traits: ["Logical Reasoning"], gameSpec: { puzzles: [
+        { q: "All naves are blue. Rilo is a nave. Is Rilo blue?", a: "Yes" },
+        { q: "No terns are moons. Kavi is a tern. Is Kavi a moon?", a: "No" },
+        { q: "Some zeds are bright. Are all zeds bright?", a: "Can't Tell" }
+      ] }, adminAnswer: "Yes / No / Can't Tell", renderer: MiniLogic };
+      if (type === 5) return { ...base, id: `math-${index}`, title: `${seed} Quick Math`, category: "Math", time: "45s", traits: ["Quantitative Reasoning"], adminAnswer: "Generated arithmetic answer", renderer: QuickMath };
+      if (type === 6) return { ...base, id: `scramble-${index}`, title: `${seed} Scramble`, category: "Language", time: "25s", traits: ["Verbal Reasoning"], adminAnswer: "GRAPPLE / FOCUS / PUZZLE / MEMORY / VECTOR / LOGIC", renderer: WordScramble };
+      if (type === 7) return { ...base, id: `country-${index}`, title: `${seed} Country Bigger`, category: "Geography", time: "25s", traits: ["Knowledge", "Comparison Reasoning"], adminAnswer: "Larger country by selected metric", renderer: CountryBigger };
+      if (type === 8) return { ...base, id: `timeline-${index}`, title: `${seed} Timeline`, category: "History", time: "50s", traits: ["Sequencing", "Knowledge"], adminAnswer: "1450, 1776, 1903, 1969", renderer: TimelineSort };
+      if (type === 9) return { ...base, id: `shape-${index}`, title: `${seed} Shape Match`, category: "Visual Reasoning", time: "20s", traits: ["Spatial Reasoning"], adminAnswer: "Matching rotation", renderer: ShapeMatch };
+      if (type === 10) return { ...base, id: `memory-${index}`, title: `${seed} Memory Grid`, category: "Memory", time: "25s", traits: ["Working Memory"], adminAnswer: "Repeat highlighted tile pattern", renderer: MemoryGrid };
+      if (type === 11) return { ...base, id: `number-${index}`, title: `${seed} Number Tap`, category: "Speed", time: "30s", traits: ["Processing Speed", "Focus"], adminAnswer: "Tap 1-20 ascending", renderer: NumberTap };
+      return { ...base, id: `tic-${index}`, title: `${seed} Tic-Tac-Toe`, category: "Strategy", time: "30s", traits: ["Strategy", "Pattern Recognition"], gameSpec: { kind: "tic_tac_toe", player: "X", opponent: "O", instructions: "Get three Xs in a row before the board blocks you." }, adminAnswer: "Three Xs in a row", renderer: GeneratedVisualGame };
+    }
+
+    const seedNames = ["Arcade", "Neon", "Cipher", "Campus", "Orbit", "Pixel", "Summit", "Metro", "Vault", "Nova", "Echo", "Signal", "Vector", "Puzzle", "Focus", "Logic", "Tempo", "Grid", "Brain", "Flash", "Quest", "Riddle", "Zen", "Turbo", "Lunar", "Solar", "Prime", "Retro", "Jigsaw", "Matrix", "Beacon", "Sprint", "Clever", "Omega", "Atlas", "Delta", "Vertex", "Spark", "Radar", "Cosmic", "Marble", "Indigo", "Quartz", "Rocket", "Static", "Circuit", "Galaxy", "Nimble", "Anchor", "Crown", "Drift", "Ember", "Frost", "Harbor", "Ion", "Jolt", "Kite", "Legend", "Muse", "North", "Opal", "Pulse", "Relay", "Stone", "Trace", "Unity", "Vista", "Wave", "Yield", "Zenith", "Apex", "Bloom", "Cobalt", "Dynamo", "Everest", "Flare", "Glide", "Halo", "Ivory", "Jade", "Keystone", "Lagoon", "Mirage", "Nimbus", "Onyx", "Pioneer", "Quiver", "Ranger", "Sage", "Titan", "Umber", "Vivid", "Warden", "Xeno", "Yonder", "Zephyr", "Bolt", "Cinder", "Dune", "Elm", "Forge", "Grove", "Horizon", "Ink", "Juniper", "Knack", "Lotus", "Mosaic", "Nectar", "Oracle", "Pluto"];
+    games.push(...seedNames.map(makeSeedGame));
+
     function normalizeGame(row) {
       return {
         id: row.slug || row.id,
@@ -409,10 +460,13 @@
         title: row.title,
         category: row.category,
         difficulty: row.difficulty || "Medium",
+        difficultyRank: row.difficultyRank || row.difficulty_rank || difficultyRanks[row.difficulty] || 2,
+        version: row.version || row.game_version || 1,
         time: `${row.estimated_seconds || 60}s`,
         source: row.source || (row.is_official ? "Official" : "Community"),
         traits: row.traits || [],
         gameSpec: row.game_spec || {},
+        adminAnswer: row.adminAnswer || row.answer || "Generated answer",
         renderer: rendererByType[row.game_type] || MiniLogic
       };
     }
@@ -425,7 +479,10 @@
         .eq("is_public", true)
         .order("created_at", { ascending: false });
       if (error || !data?.length) return;
-      games.splice(0, games.length, ...data.map(normalizeGame));
+      const remote = data.map(normalizeGame);
+      remote.forEach(game => {
+        if (!games.some(existing => existing.id === game.id)) games.unshift(game);
+      });
       renderFeed();
       renderDaily();
       renderChallenges();
@@ -518,6 +575,7 @@
       await loadProfile();
       await loadRemoteGames();
       await renderRankings();
+      renderProfile();
       if (currentUser && $("#authView").classList.contains("active")) showView("feedView");
       supabaseClient.auth.onAuthStateChange(async (_event, session) => {
         currentUser = session?.user || null;
@@ -526,6 +584,7 @@
         await loadProfile();
         await loadRemoteGames();
         await renderRankings();
+        renderProfile();
         if (currentUser) showView("feedView");
       });
     }
@@ -618,8 +677,23 @@
 
     function renderFeed() {
       const feed = $("#feed");
+      feedPool = rankedGames();
+      feedCursor = 0;
       feed.innerHTML = "";
-      rankedGames().concat(rankedGames().slice(0, 4)).forEach(g => feed.appendChild(buildGameCard(g)));
+      appendFeedBatch(24);
+      feed.onscroll = () => {
+        if (feed.scrollTop + feed.clientHeight > feed.scrollHeight - 900) appendFeedBatch(18);
+      };
+    }
+
+    function appendFeedBatch(count = 18) {
+      const feed = $("#feed");
+      if (!feedPool.length) feedPool = rankedGames();
+      for (let i = 0; i < count; i++) {
+        const game = feedPool[feedCursor % feedPool.length];
+        feed.appendChild(buildGameCard(game));
+        feedCursor++;
+      }
     }
 
     function ChessMate(root, game, done) {
@@ -1367,6 +1441,7 @@
     }
 
     function renderProfile() {
+      $("#adminEntry").style.display = isAdmin() ? "block" : "none";
       const traits = ["Working Memory", "Pattern Recognition", "Processing Speed", "Verbal Reasoning", "Spatial Reasoning", "Focus", "Strategy", "Logic"];
       $("#brainStats").innerHTML = traits.map((t, i) => {
         const val = 58 + ((state.plays.filter(p => games.find(g => g.title === p.title)?.traits.join(" ").includes(t.split(" ")[0])).length * 9 + i * 5) % 38);
@@ -1383,9 +1458,59 @@
       `).join("") : `<p class="muted">Created games and drafts appear here.</p>`;
     }
 
+    function adminAnswer(game) {
+      if (game.adminAnswer) return game.adminAnswer;
+      const spec = game.gameSpec || {};
+      if (Array.isArray(spec.answers)) return spec.answers.join(" / ");
+      if (Array.isArray(spec.groups)) return spec.groups.map(g => `${g.name}: ${g.words?.join(", ")}`).join(" | ");
+      if (Array.isArray(spec.solution)) return spec.solution.join("");
+      if (Array.isArray(spec.patterns)) return spec.patterns.map(p => `${p.seq?.join(",")} -> ${p.ans}`).join(" | ");
+      if (Array.isArray(spec.puzzles)) return spec.puzzles.map(p => `${p.q} = ${p.a}`).join(" | ");
+      if (spec.kind === "tic_tac_toe") return "Three in a row";
+      return "Generated at play time";
+    }
+
+    function adminGameRows() {
+      const created = createdItems()
+        .filter(item => item.game)
+        .map(item => {
+          const game = normalizeGame(item.game);
+          return { ...game, title: item.title || game.title, category: item.category || game.category, version: item.version || game.version || 1, status: item.status || "draft", caption: item.caption || "", source: "Created", adminAnswer: adminAnswer(game) };
+        });
+      return [...games, ...created]
+        .map(game => ({ ...game, difficultyRank: getDifficultyRank(game), version: game.version || 1, status: game.status || "seeded" }))
+        .sort((a, b) => a.category.localeCompare(b.category) || getDifficultyRank(a) - getDifficultyRank(b) || a.title.localeCompare(b.title));
+    }
+
+    function renderAdmin() {
+      if (!isAdmin()) {
+        $("#adminPanel").innerHTML = `<div class="panel"><h3>Admin access required</h3><p class="muted">This view is only available to ${adminEmail}.</p></div>`;
+        return;
+      }
+      const rows = adminGameRows();
+      $("#adminPanel").innerHTML = rows.map(game => `
+        <div class="mini-card">
+          <div>
+            <span class="pill">${esc(game.category)}</span>
+            <span class="pill">Rank ${getDifficultyRank(game)}</span>
+            <span class="pill">v${esc(game.version || 1)}</span>
+            <span class="pill">${esc(game.status || "seeded")}</span>
+            <h3 style="margin-top:10px;">${esc(game.title)}</h3>
+            <p class="muted">${esc(game.difficulty)} | ${esc(game.source || "Seeded")} | ${esc((game.traits || []).join(", "))}</p>
+            <p class="muted"><b>Answer:</b> ${esc(adminAnswer(game))}</p>
+          </div>
+        </div>
+      `).join("");
+    }
+
     function showView(id) {
+      if (id === "adminView" && !isAdmin()) {
+        toast("Admin access required");
+        id = "profileView";
+      }
       $$(".view").forEach(v => v.classList.toggle("active", v.id === id));
       $$("#nav button").forEach(b => b.classList.toggle("active", b.dataset.view === id));
+      if (id === "adminView") renderAdmin();
     }
     $("#nav").onclick = (e) => {
       const btn = e.target.closest("button[data-view]");
