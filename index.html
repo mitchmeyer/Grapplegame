@@ -37,6 +37,11 @@
     .game-card { width: min(100%, 580px); min-height: min(760px, calc(100vh - 120px)); display: flex; flex-direction: column; gap: 15px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: var(--shadow); }
     .game-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .difficulty-meter { display: inline-flex; align-items: center; gap: 7px; min-height: 28px; padding: 6px 10px; border-radius: 8px; background: white; color: var(--dark-purple); border: 1px solid var(--line); font-size: 11px; font-weight: 850; text-transform: uppercase; white-space: nowrap; }
+    .difficulty-dots { display: inline-flex; gap: 3px; }
+    .difficulty-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+    .difficulty-dots span.on { background: var(--primary); }
+    .feed-end { width: min(100%, 580px); display: grid; gap: 10px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: var(--shadow); text-align: center; }
     h1, h2, h3, p { margin: 0; }
     h1 { font-size: clamp(26px, 4vw, 44px); line-height: 1; text-transform: uppercase; }
     h2 { font-size: 24px; line-height: 1.1; text-transform: uppercase; }
@@ -395,6 +400,7 @@
     let currentProfile = null;
     let feedCursor = 0;
     let feedPool = [];
+    let feedShownIds = new Set();
     let adminRows = [];
     const adminEmail = "mitchell@blastoff.org";
     const rendererByType = {};
@@ -415,6 +421,8 @@
       data?.details || data?.error || error?.context?.details || error?.message || "AI generation failed";
     const difficultyRanks = { Easy: 1, Medium: 2, Hard: 3, Expert: 4 };
     const getDifficultyRank = (game) => Number(game.difficultyRank || game.difficulty_rank || difficultyRanks[game.difficulty] || 2);
+    const gameUniqueKey = (game) => String(game.id || `${game.title}-${game.category}-${game.version || 1}`).toLowerCase().trim();
+    const gameTitleKey = (game) => String(game.title || game.id || "").toLowerCase().trim();
     const isAdmin = () => (currentUser?.email || "").toLowerCase() === adminEmail;
 
     const games = [
@@ -452,31 +460,109 @@
       visual_board: GeneratedVisualGame
     });
 
-    function makeSeedGame(seed, index) {
-      const difficulty = ["Easy", "Medium", "Hard", "Expert"][index % 4];
-      const base = { difficulty, difficultyRank: difficultyRanks[difficulty], version: 1 + (index % 3), source: index % 5 === 0 ? "Official" : index % 3 === 0 ? "Community" : "AI" };
-      const type = index % 13;
-      if (type === 0) return { ...base, id: `word-${index}`, title: `${seed} Word Grid`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: ["BRAIN", "LOGIC", "FOCUS", "MATCH", "GRASP"] }, renderer: WordGrid };
-      if (type === 1) return { ...base, id: `conn-${index}`, title: `${seed} Connections`, category: "Language", time: "75s", traits: ["Mental Flexibility", "Verbal Reasoning"], gameSpec: { groups: [
+    const wordGridSets = [
+      ["BRAIN", "LOGIC", "FOCUS", "MATCH", "GRASP"],
+      ["PLANT", "SHARE", "CRANE", "MOUSE", "RIVER"],
+      ["LIGHT", "FRAME", "TRACK", "POINT", "STACK"],
+      ["WATER", "CLOUD", "STONE", "FIELD", "BRICK"],
+      ["SHIFT", "VALUE", "ROUND", "PLANE", "TRACE"],
+      ["QUEST", "ALERT", "MODEL", "INPUT", "SOLVE"],
+      ["NORTH", "SOUTH", "EASTS", "WESTS", "ROUTE"],
+      ["SCALE", "ANGLE", "PRISM", "GRAPH", "AXIOM"]
+    ];
+    const connectionSets = [
+      [
         { name: "Board games", words: ["CHESS", "CHECKERS", "GO", "SORRY"] },
         { name: "Brain skills", words: ["FOCUS", "MEMORY", "LOGIC", "SPEED"] },
         { name: "Shapes", words: ["CIRCLE", "SQUARE", "TRIANGLE", "OVAL"] },
         { name: "Numbers", words: ["PRIME", "SUM", "ODD", "EVEN"] }
-      ] }, renderer: Connections };
-      if (type === 2) return { ...base, id: `sudoku-${index}`, title: `${seed} Sudoku`, category: "Logic", time: "70s", traits: ["Logical Reasoning", "Focus"], gameSpec: { solution: [1,2,3,4,3,4,1,2,2,1,4,3,4,3,2,1], givens: index % 2 ? [1,0,3,0,0,4,0,2,2,0,0,3,0,3,0,1] : [0,2,0,4,3,0,0,0,0,1,4,0,4,0,2,0] }, renderer: MiniSudoku };
-      if (type === 3) return { ...base, id: `pattern-${index}`, title: `${seed} Pattern`, category: "Logic", time: "25s", traits: ["Pattern Recognition"], gameSpec: { patterns: [
-        { seq: ["2", "5", "8", "11"], ans: "14", opts: ["12", "13", "14", "15"] },
-        { seq: ["A", "C", "F", "J"], ans: "O", opts: ["L", "M", "O", "P"] }
-      ] }, renderer: PatternNext };
-      if (type === 4) return { ...base, id: `logic-${index}`, title: `${seed} Logic`, category: "Logic", time: "35s", traits: ["Logical Reasoning"], gameSpec: { puzzles: [
-        { q: "All naves are blue. Rilo is a nave. Is Rilo blue?", a: "Yes" },
-        { q: "No terns are moons. Kavi is a tern. Is Kavi a moon?", a: "No" },
-        { q: "Some zeds are bright. Are all zeds bright?", a: "Can't Tell" }
-      ] }, renderer: MiniLogic };
-      if (type === 5) return { ...base, id: `math-${index}`, title: `${seed} Quick Math`, category: "Math", time: "45s", traits: ["Quantitative Reasoning"], renderer: QuickMath };
-      if (type === 6) return { ...base, id: `scramble-${index}`, title: `${seed} Scramble`, category: "Language", time: "25s", traits: ["Verbal Reasoning"], renderer: WordScramble };
-      if (type === 7) return { ...base, id: `country-${index}`, title: `${seed} Country Bigger`, category: "Geography", time: "25s", traits: ["Knowledge", "Comparison Reasoning"], renderer: CountryBigger };
-      if (type === 8) return { ...base, id: `timeline-${index}`, title: `${seed} Timeline`, category: "History", time: "50s", traits: ["Sequencing", "Knowledge"], renderer: TimelineSort };
+      ],
+      [
+        { name: "Keyboard keys", words: ["SHIFT", "SPACE", "ENTER", "TAB"] },
+        { name: "Card suits", words: ["HEART", "CLUB", "SPADE", "DIAMOND"] },
+        { name: "Weather", words: ["RAIN", "SNOW", "FOG", "HAIL"] },
+        { name: "Geometry", words: ["RADIUS", "ANGLE", "LINE", "ARC"] }
+      ],
+      [
+        { name: "Coffee orders", words: ["LATTE", "MOCHA", "DRIP", "COLD BREW"] },
+        { name: "Chess pieces", words: ["ROOK", "BISHOP", "KNIGHT", "QUEEN"] },
+        { name: "App actions", words: ["SAVE", "SHARE", "POST", "EDIT"] },
+        { name: "Music terms", words: ["BEAT", "TEMPO", "CHORD", "SCALE"] }
+      ],
+      [
+        { name: "Planets", words: ["MARS", "VENUS", "EARTH", "SATURN"] },
+        { name: "Fonts", words: ["SERIF", "ITALIC", "BOLD", "MONO"] },
+        { name: "Road words", words: ["LANE", "MERGE", "EXIT", "YIELD"] },
+        { name: "Kitchen tools", words: ["WHISK", "TONGS", "LADLE", "GRATER"] }
+      ]
+    ];
+    const sudokuVariants = [
+      { solution: [1,2,3,4,3,4,1,2,2,1,4,3,4,3,2,1], givens: [1,0,3,0,0,4,0,2,2,0,0,3,0,3,0,1] },
+      { solution: [2,1,4,3,4,3,2,1,1,2,3,4,3,4,1,2], givens: [0,1,0,3,4,0,0,0,0,2,3,0,3,0,0,2] },
+      { solution: [4,3,2,1,1,2,3,4,3,4,1,2,2,1,4,3], givens: [4,0,0,1,0,2,0,0,0,0,1,2,2,0,0,3] },
+      { solution: [3,4,1,2,1,2,3,4,4,3,2,1,2,1,4,3], givens: [0,4,1,0,1,0,0,4,0,3,0,0,0,1,4,0] }
+    ];
+    const patternVariants = [
+      { seq: ["2", "5", "8", "11"], ans: "14", opts: ["12", "13", "14", "15"] },
+      { seq: ["A", "C", "F", "J"], ans: "O", opts: ["L", "M", "O", "P"] },
+      { seq: ["3", "6", "12", "24"], ans: "48", opts: ["36", "42", "48", "54"] },
+      { seq: ["1", "4", "9", "16"], ans: "25", opts: ["20", "24", "25", "32"] },
+      { seq: ["Z", "W", "T", "Q"], ans: "N", opts: ["M", "N", "O", "P"] },
+      { seq: ["RED", "ORANGE", "YELLOW"], ans: "GREEN", opts: ["BLUE", "GREEN", "VIOLET", "BLACK"] }
+    ];
+    const logicVariants = [
+      { q: "All naves are blue. Rilo is a nave. Is Rilo blue?", a: "Yes" },
+      { q: "No terns are moons. Kavi is a tern. Is Kavi a moon?", a: "No" },
+      { q: "Some zeds are bright. Are all zeds bright?", a: "Can't Tell" },
+      { q: "Every glint is sharp. Mira found a glint. Is it sharp?", a: "Yes" },
+      { q: "No amber cards are wild. This card is amber. Is it wild?", a: "No" },
+      { q: "Some pilots like grids. Does every pilot like grids?", a: "Can't Tell" }
+    ];
+    const scrambleSets = [
+      ["GRAPPLE", "FOCUS", "PUZZLE", "MEMORY", "VECTOR", "LOGIC"],
+      ["ORBIT", "SIGNAL", "CIPHER", "MATRIX", "BEACON", "RADAR"],
+      ["ROCKET", "STATIC", "ANCHOR", "HARBOR", "LEGEND", "MARBLE"],
+      ["SUMMIT", "CAMPUS", "PIXEL", "RETRO", "JIGSAW", "SPRINT"]
+    ];
+    const countrySets = [
+      [["India", 1428, 3287], ["Brazil", 216, 8516], ["Japan", 125, 378], ["Nigeria", 224, 924], ["Canada", 40, 9985], ["France", 68, 644]],
+      [["Mexico", 129, 1964], ["Germany", 84, 357], ["Egypt", 112, 1001], ["Australia", 26, 7692], ["Spain", 48, 506], ["Kenya", 55, 580]],
+      [["Argentina", 46, 2780], ["Italy", 59, 301], ["Thailand", 72, 513], ["Norway", 5, 385], ["Colombia", 52, 1142], ["Poland", 38, 313]]
+    ];
+    const timelineSets = [
+      [
+        { t: "Printing press popularized", y: 1450 },
+        { t: "US Declaration of Independence", y: 1776 },
+        { t: "First powered airplane flight", y: 1903 },
+        { t: "First moon landing", y: 1969 }
+      ],
+      [
+        { t: "Magna Carta signed", y: 1215 },
+        { t: "Shakespeare's First Folio published", y: 1623 },
+        { t: "Telephone patented", y: 1876 },
+        { t: "World Wide Web proposed", y: 1989 }
+      ],
+      [
+        { t: "Telescope used for astronomy", y: 1609 },
+        { t: "Periodic table published", y: 1869 },
+        { t: "DNA double helix described", y: 1953 },
+        { t: "Human genome draft announced", y: 2000 }
+      ]
+    ];
+
+    function makeSeedGame(seed, index) {
+      const difficulty = ["Easy", "Medium", "Hard", "Expert"][index % 4];
+      const base = { difficulty, difficultyRank: difficultyRanks[difficulty], version: 1 + (index % 3), source: index % 5 === 0 ? "Official" : index % 3 === 0 ? "Community" : "AI" };
+      const type = index % 13;
+      if (type === 0) return { ...base, id: `word-${index}`, title: `${seed} Word Grid`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: wordGridSets[index % wordGridSets.length] }, renderer: WordGrid };
+      if (type === 1) return { ...base, id: `conn-${index}`, title: `${seed} Connections`, category: "Language", time: "75s", traits: ["Mental Flexibility", "Verbal Reasoning"], gameSpec: { groups: connectionSets[index % connectionSets.length] }, renderer: Connections };
+      if (type === 2) return { ...base, id: `sudoku-${index}`, title: `${seed} Sudoku`, category: "Logic", time: "70s", traits: ["Logical Reasoning", "Focus"], gameSpec: sudokuVariants[index % sudokuVariants.length], renderer: MiniSudoku };
+      if (type === 3) return { ...base, id: `pattern-${index}`, title: `${seed} Pattern`, category: "Logic", time: "25s", traits: ["Pattern Recognition"], gameSpec: { patterns: [patternVariants[index % patternVariants.length], patternVariants[(index + 2) % patternVariants.length]] }, renderer: PatternNext };
+      if (type === 4) return { ...base, id: `logic-${index}`, title: `${seed} Logic`, category: "Logic", time: "35s", traits: ["Logical Reasoning"], gameSpec: { puzzles: [logicVariants[index % logicVariants.length], logicVariants[(index + 2) % logicVariants.length], logicVariants[(index + 4) % logicVariants.length]] }, renderer: MiniLogic };
+      if (type === 5) return { ...base, id: `math-${index}`, title: `${seed} Quick Math`, category: "Math", time: "45s", traits: ["Quantitative Reasoning"], gameSpec: { min: 2 + (index % 7), max: 14 + (index % 9), ops: index % 2 ? ["+", "x"] : ["+", "-", "x"] }, renderer: QuickMath };
+      if (type === 6) return { ...base, id: `scramble-${index}`, title: `${seed} Scramble`, category: "Language", time: "25s", traits: ["Verbal Reasoning"], gameSpec: { words: scrambleSets[index % scrambleSets.length] }, renderer: WordScramble };
+      if (type === 7) return { ...base, id: `country-${index}`, title: `${seed} Country Bigger`, category: "Geography", time: "25s", traits: ["Knowledge", "Comparison Reasoning"], gameSpec: { countries: countrySets[index % countrySets.length] }, renderer: CountryBigger };
+      if (type === 8) return { ...base, id: `timeline-${index}`, title: `${seed} Timeline`, category: "History", time: "50s", traits: ["Sequencing", "Knowledge"], gameSpec: { events: timelineSets[index % timelineSets.length] }, renderer: TimelineSort };
       if (type === 9) return { ...base, id: `shape-${index}`, title: `${seed} Shape Match`, category: "Visual Reasoning", time: "20s", traits: ["Spatial Reasoning"], renderer: ShapeMatch };
       if (type === 10) return { ...base, id: `memory-${index}`, title: `${seed} Memory Grid`, category: "Memory", time: "25s", traits: ["Working Memory"], renderer: MemoryGrid };
       if (type === 11) return { ...base, id: `number-${index}`, title: `${seed} Number Tap`, category: "Speed", time: "30s", traits: ["Processing Speed", "Focus"], renderer: NumberTap };
@@ -485,6 +571,22 @@
 
     const seedNames = ["Arcade", "Neon", "Cipher", "Campus", "Orbit", "Pixel", "Summit", "Metro", "Vault", "Nova", "Echo", "Signal", "Vector", "Puzzle", "Focus", "Logic", "Tempo", "Grid", "Brain", "Flash", "Quest", "Riddle", "Zen", "Turbo", "Lunar", "Solar", "Prime", "Retro", "Jigsaw", "Matrix", "Beacon", "Sprint", "Clever", "Omega", "Atlas", "Delta", "Vertex", "Spark", "Radar", "Cosmic", "Marble", "Indigo", "Quartz", "Rocket", "Static", "Circuit", "Galaxy", "Nimble", "Anchor", "Crown", "Drift", "Ember", "Frost", "Harbor", "Ion", "Jolt", "Kite", "Legend", "Muse", "North", "Opal", "Pulse", "Relay", "Stone", "Trace", "Unity", "Vista", "Wave", "Yield", "Zenith", "Apex", "Bloom", "Cobalt", "Dynamo", "Everest", "Flare", "Glide", "Halo", "Ivory", "Jade", "Keystone", "Lagoon", "Mirage", "Nimbus", "Onyx", "Pioneer", "Quiver", "Ranger", "Sage", "Titan", "Umber", "Vivid", "Warden", "Xeno", "Yonder", "Zephyr", "Bolt", "Cinder", "Dune", "Elm", "Forge", "Grove", "Horizon", "Ink", "Juniper", "Knack", "Lotus", "Mosaic", "Nectar", "Oracle", "Pluto"];
     games.push(...seedNames.map(makeSeedGame));
+    dedupeGameCatalog();
+
+    function dedupeGameCatalog() {
+      const seenIds = new Set();
+      const seenTitles = new Set();
+      const unique = [];
+      games.forEach(game => {
+        const idKey = gameUniqueKey(game);
+        const titleKey = gameTitleKey(game);
+        if (seenIds.has(idKey) || seenTitles.has(titleKey)) return;
+        seenIds.add(idKey);
+        seenTitles.add(titleKey);
+        unique.push(game);
+      });
+      games.splice(0, games.length, ...unique);
+    }
 
     function normalizeGame(row) {
       return {
@@ -513,8 +615,9 @@
       if (error || !data?.length) return;
       const remote = data.map(normalizeGame);
       remote.forEach(game => {
-        if (!games.some(existing => existing.id === game.id)) games.unshift(game);
+        if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(game) || gameTitleKey(existing) === gameTitleKey(game))) games.unshift(game);
       });
+      dedupeGameCatalog();
       renderFeed();
       renderDaily();
       renderChallenges();
@@ -528,7 +631,16 @@
       const fatigue = state.plays.slice(0, 4).some(p => p.title === game.title) ? -10 : 0;
       return affinity * 3 + saved + liked + puzzleBoost + fatigue + Math.random() * 3;
     }
-    const rankedGames = () => [...games].sort((a, b) => recommendationScore(b) - recommendationScore(a));
+    const rankedGames = () => {
+      dedupeGameCatalog();
+      return [...games].sort((a, b) => recommendationScore(b) - recommendationScore(a));
+    };
+
+    function difficultyBadge(game) {
+      const rank = Math.max(1, Math.min(4, getDifficultyRank(game)));
+      const dots = [1, 2, 3, 4].map(i => `<span class="${i <= rank ? "on" : ""}"></span>`).join("");
+      return `<span class="difficulty-meter" title="Difficulty: ${esc(game.difficulty || "Medium")}"><span>${esc(game.difficulty || "Medium")}</span><span class="difficulty-dots">${dots}</span></span>`;
+    }
 
     function renderPoints() {
       $("#pointsValue").textContent = currentProfile?.total_points ?? state.points;
@@ -674,7 +786,7 @@
             <h2>${game.title}</h2>
             <div class="meta">
               <span class="pill">${game.category}</span>
-              <span class="pill">${game.difficulty}</span>
+              ${difficultyBadge(game)}
               <span class="pill">${game.time}</span>
               <span class="pill">${game.source}</span>
             </div>
@@ -711,6 +823,7 @@
       const feed = $("#feed");
       feedPool = rankedGames();
       feedCursor = 0;
+      feedShownIds = new Set();
       feed.innerHTML = "";
       appendFeedBatch(24);
       feed.onscroll = () => {
@@ -721,10 +834,22 @@
     function appendFeedBatch(count = 18) {
       const feed = $("#feed");
       if (!feedPool.length) feedPool = rankedGames();
-      for (let i = 0; i < count; i++) {
-        const game = feedPool[feedCursor % feedPool.length];
-        feed.appendChild(buildGameCard(game));
+      let added = 0;
+      while (added < count && feedCursor < feedPool.length) {
+        const game = feedPool[feedCursor];
+        const key = gameUniqueKey(game);
         feedCursor++;
+        if (feedShownIds.has(key)) continue;
+        feedShownIds.add(key);
+        feed.appendChild(buildGameCard(game));
+        added++;
+      }
+      if (feedCursor >= feedPool.length && !$("#feedEnd")) {
+        const wrap = document.createElement("article");
+        wrap.className = "feed-card-wrap";
+        wrap.id = "feedEnd";
+        wrap.innerHTML = `<div class="feed-end"><h3>You cleared today's feed</h3><p class="muted">No repeats added. New published games will appear here automatically.</p><button class="btn primary" onclick="renderFeed()">Shuffle fresh order</button></div>`;
+        feed.appendChild(wrap);
       }
     }
 
@@ -1052,8 +1177,12 @@
 
     function QuickMath(root, game, done) {
       let q = 0, hits = 0, start = now();
+      const spec = game.gameSpec || {};
+      const min = Number(spec.min || 3);
+      const max = Number(spec.max || 17);
+      const ops = Array.isArray(spec.ops) && spec.ops.length ? spec.ops : ["+", "-", "x"];
       const ask = () => {
-        const a = 3 + Math.floor(Math.random() * 17), b = 2 + Math.floor(Math.random() * 12), op = choice(["+", "-", "x"]);
+        const a = min + Math.floor(Math.random() * Math.max(2, max)), b = 2 + Math.floor(Math.random() * Math.max(2, Math.floor(max * .75))), op = choice(ops);
         const answer = op === "+" ? a + b : op === "-" ? a - b : a * b;
         const opts = shuffle([answer, answer + 1, answer - 2, answer + 4 + Math.floor(Math.random() * 5)]);
         root.innerHTML = `<p class="muted">Question ${q + 1} of 10</p><div class="math-card"><div class="big-text">${a} ${op} ${b}</div><p class="muted">Choose the correct answer</p></div><div class="choices"></div>`;
@@ -1069,7 +1198,10 @@
     }
 
     function WordScramble(root, game, done) {
-      const words = ["GRAPPLE", "FOCUS", "PUZZLE", "MEMORY", "VECTOR", "LOGIC"];
+      const generatedWords = Array.isArray(game.gameSpec?.words) && game.gameSpec.words.length
+        ? game.gameSpec.words.map(String).map(w => w.toUpperCase()).filter(w => w.length >= 4)
+        : [];
+      const words = generatedWords.length >= 2 ? generatedWords : ["GRAPPLE", "FOCUS", "PUZZLE", "MEMORY", "VECTOR", "LOGIC"];
       const word = choice(words);
       const scrambled = shuffle(word.split("")).join("");
       const opts = shuffle([word, choice(words.filter(w => w !== word)), "PATTERN", "BRAIN"]);
@@ -1084,7 +1216,9 @@
     }
 
     function CountryBigger(root, game, done) {
-      const data = [["India", 1428, 3287], ["Brazil", 216, 8516], ["Japan", 125, 378], ["Nigeria", 224, 924], ["Canada", 40, 9985], ["France", 68, 644]];
+      const data = Array.isArray(game.gameSpec?.countries) && game.gameSpec.countries.length >= 2
+        ? game.gameSpec.countries
+        : [["India", 1428, 3287], ["Brazil", 216, 8516], ["Japan", 125, 378], ["Nigeria", 224, 924], ["Canada", 40, 9985], ["France", 68, 644]];
       const [a, b] = shuffle(data).slice(0, 2);
       const mode = choice(["population", "land area"]);
       const idx = mode === "population" ? 1 : 2;
@@ -1099,12 +1233,15 @@
     }
 
     function TimelineSort(root, game, done) {
-      const events = [
-        { t: "Printing press popularized", y: 1450 },
-        { t: "US Declaration of Independence", y: 1776 },
-        { t: "First powered airplane flight", y: 1903 },
-        { t: "First moon landing", y: 1969 }
-      ];
+      const generatedEvents = Array.isArray(game.gameSpec?.events) && game.gameSpec.events.length >= 4
+        ? game.gameSpec.events.map(e => ({ t: String(e.t || e.title || ""), y: Number(e.y || e.year) })).filter(e => e.t && e.y).slice(0, 4).sort((a, b) => a.y - b.y)
+        : [];
+      const events = generatedEvents.length === 4 ? generatedEvents : [
+          { t: "Printing press popularized", y: 1450 },
+          { t: "US Declaration of Independence", y: 1776 },
+          { t: "First powered airplane flight", y: 1903 },
+          { t: "First moon landing", y: 1969 }
+        ];
       const picked = [];
       root.innerHTML = `<p class="muted">Tap events from earliest to latest.</p><div class="timeline-track event-list"></div><button class="btn primary check" disabled>Submit</button>`;
       shuffle(events).forEach(e => {
@@ -1408,7 +1545,9 @@
     function previewCreatedGame(id) {
       const item = findCreatedGame(id);
       if (!item?.game) return toast("Generate the game first, then preview it");
-      games.unshift(normalizeGame(item.game));
+      const normalized = normalizeGame(item.game);
+      if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(normalized) || gameTitleKey(existing) === gameTitleKey(normalized))) games.unshift(normalized);
+      dedupeGameCatalog();
       renderFeed();
       showView("feedView");
       toast("Preview added to feed");
@@ -1420,7 +1559,8 @@
       item.status = "published";
       if (item.game) {
         const normalized = normalizeGame(item.game);
-        games.unshift(normalized);
+        if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(normalized) || gameTitleKey(existing) === gameTitleKey(normalized))) games.unshift(normalized);
+        dedupeGameCatalog();
         renderFeed();
         renderDaily();
         renderChallenges();
