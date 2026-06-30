@@ -309,7 +309,7 @@
     .tetris-board { display: grid; grid-template-columns: repeat(10, 22px); grid-template-rows: repeat(18, 22px); border: 2px solid #CBD5E1; background: #F8FAFC; }
     .tet-cell { width: 22px; height: 22px; border: 1px solid #E5E7EB; background: transparent; }
     .tet-cell.filled { background: var(--c); }
-    .tetris-controls { display: grid; grid-template-columns: repeat(3, 58px); gap: 8px; justify-content: center; }
+    .tetris-controls { display: none; grid-template-columns: repeat(3, 58px); gap: 8px; justify-content: center; }
     .tetris-controls button { min-height: 44px; border-radius: 8px; background: white; border: 1px solid #E5E7EF; font-size: 22px; }
     .tetris-controls .drop { grid-column: 1 / -1; }
     .chess-shell { display: grid; gap: 10px; justify-items: center; }
@@ -401,7 +401,7 @@
       .card-face { width: 36px; height: 50px; border-radius: 7px; font-size: 14px; }
       .tetris-board { grid-template-columns: repeat(10, 13px); grid-template-rows: repeat(18, 13px); }
       .tet-cell { width: 13px; height: 13px; }
-      .tetris-controls { grid-template-columns: repeat(3, 48px); gap: 6px; }
+      .tetris-controls { display: grid; grid-template-columns: repeat(3, 48px); gap: 6px; }
       .tetris-controls button { min-height: 36px; font-size: 18px; }
       .chess-board, .chess-status { width: min(100%, 292px); }
       .sq { font-size: 24px; }
@@ -1808,7 +1808,7 @@
     function isTimedGame(game) {
       const id = String(game.id || "");
       const title = String(game.title || "");
-      return /tetris|memory|number|math|scramble|shape/i.test(`${id} ${title}`);
+      return /memory|number|math|scramble|shape/i.test(`${id} ${title}`);
     }
 
     function gameSeconds(game) {
@@ -2650,18 +2650,41 @@
     function TetrisMini(root, game, done) {
       const rows = 18, cols = 10;
       const spec = game.gameSpec || {};
-      const startScore = Number(spec.startScore || 200);
-      const targetScore = Number(spec.targetScore || 500);
       const board = Array.from({ length: rows }, () => Array(cols).fill(""));
-      [["cyan",0],["yellow",2],["lime",5],["cyan",7],["purple",8],["red",0],["red",1],["purple",2],["red",3],["red",4],["orange",5],["white",6],["purple",8],["blue",9]].forEach(([color, c], i) => {
-        const r = rows - 3 + Math.floor(i / 5);
-        board[Math.min(rows - 1, r)][c] = color;
-      });
-      let piece = { cells: [[4,5],[5,5],[5,6],[6,6]], color: "lime" };
-      let moves = 0;
-      root.innerHTML = `<div class="tetris-shell"><div class="game-stats" style="width:100%;"><span>Score: <b class="tet-score">${startScore}</b></span><span>Target: <b>${targetScore}</b></span></div><div class="tetris-board"></div><div class="tetris-controls"><button class="left">←</button><button class="rotate">↻</button><button class="right">→</button><button class="drop">↓</button></div></div>`;
+      const shapes = [
+        { color: "#00D5FF", cells: [[0,0],[1,0],[2,0],[3,0]] },
+        { color: "#FACC15", cells: [[0,0],[1,0],[0,1],[1,1]] },
+        { color: "#22C55E", cells: [[1,0],[2,0],[0,1],[1,1]] },
+        { color: "#A855F7", cells: [[1,0],[0,1],[1,1],[2,1]] },
+        { color: "#EF4444", cells: [[0,0],[1,0],[1,1],[2,1]] },
+        { color: "#F97316", cells: [[0,0],[0,1],[1,1],[2,1]] },
+        { color: "#2563EB", cells: [[2,0],[0,1],[1,1],[2,1]] }
+      ];
+      const difficulty = clamp(getDifficultyRank(game), 1, 4);
+      const speed = Math.max(360, 760 - difficulty * 90);
+      let piece = null;
+      let score = 0;
+      let lines = 0;
+      let finished = false;
+      let started = false;
+      let startedAt = Date.now();
+      let fallTimer = null;
+      let scoreTimer = null;
+      root.innerHTML = `<div class="tetris-shell"><div class="game-stats" style="width:100%;"><span>Score: <b class="tet-score">0</b></span><span>Lines: <b class="tet-lines">0</b></span></div><div class="tetris-board"></div><div class="tetris-controls"><button class="left" aria-label="Move left">←</button><button class="rotate" aria-label="Rotate">↻</button><button class="right" aria-label="Move right">→</button><button class="drop" aria-label="Soft drop">↓</button></div></div>`;
+      const absoluteCells = (next = piece) => next.shape.cells.map(([x, y]) => [next.x + x, next.y + y]);
+      const valid = (next) => absoluteCells(next).every(([x, y]) => x >= 0 && x < cols && y < rows && (y < 0 || !board[y][x]));
+      const refreshScore = () => {
+        score = Math.floor((Date.now() - startedAt) / 1000) * 10 + lines * 120;
+        $(".tet-score", root).textContent = String(score);
+        $(".tet-lines", root).textContent = String(lines);
+      };
+      const spawn = () => {
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
+        piece = { shape, x: 3, y: -1 };
+        if (!valid(piece)) endGame();
+      };
       const draw = () => {
-        const active = new Map(piece.cells.map(([c, r]) => [`${c},${r}`, piece.color]));
+        const active = new Map(piece ? absoluteCells().filter(([, y]) => y >= 0).map(([c, r]) => [`${c},${r}`, piece.shape.color]) : []);
         $(".tetris-board", root).innerHTML = "";
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
@@ -2673,20 +2696,104 @@
           }
         }
       };
-      const move = (dx, dy = 0) => {
-        piece.cells = piece.cells.map(([c, r]) => [Math.max(0, Math.min(cols - 1, c + dx)), Math.max(0, Math.min(rows - 1, r + dy))]);
-        moves++;
-        $(".tet-score", root).textContent = String(startScore + moves * 50);
+      const clearLines = () => {
+        let cleared = 0;
+        for (let r = rows - 1; r >= 0; r--) {
+          if (board[r].every(Boolean)) {
+            board.splice(r, 1);
+            board.unshift(Array(cols).fill(""));
+            cleared++;
+            r++;
+          }
+        }
+        if (cleared) lines += cleared;
+      };
+      const lockPiece = () => {
+        absoluteCells().forEach(([x, y]) => {
+          if (y >= 0) board[y][x] = piece.shape.color;
+        });
+        clearLines();
+        spawn();
+      };
+      function endGame() {
+        if (finished) return;
+        finished = true;
+        if (fallTimer) clearInterval(fallTimer);
+        if (scoreTimer) clearInterval(scoreTimer);
+        document.removeEventListener("keydown", keyHandler);
+        refreshScore();
         draw();
+        done(Math.max(700, score + 700), `Game over. Survived for ${Math.floor((Date.now() - startedAt) / 1000)} seconds.`);
+      }
+      const stepDown = () => {
+        if (finished || !piece) return;
+        const next = { ...piece, y: piece.y + 1 };
+        if (valid(next)) piece = next;
+        else lockPiece();
+        refreshScore();
+        draw();
+      };
+      const move = (dx) => {
+        if (finished || !piece) return;
+        const next = { ...piece, x: piece.x + dx };
+        if (valid(next)) piece = next;
+        draw();
+      };
+      const rotate = () => {
+        if (finished || !piece) return;
+        const nextShape = {
+          ...piece.shape,
+          cells: piece.shape.cells.map(([x, y]) => [y, -x])
+        };
+        const minX = Math.min(...nextShape.cells.map(([x]) => x));
+        const minY = Math.min(...nextShape.cells.map(([, y]) => y));
+        nextShape.cells = nextShape.cells.map(([x, y]) => [x - minX, y - minY]);
+        const next = { ...piece, shape: nextShape };
+        if (valid(next)) piece = next;
+        draw();
+      };
+      const keyHandler = (event) => {
+        if (!root.isConnected || finished) {
+          document.removeEventListener("keydown", keyHandler);
+          return;
+        }
+        if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(event.key)) return;
+        event.preventDefault();
+        if (event.key === "ArrowLeft") move(-1);
+        if (event.key === "ArrowRight") move(1);
+        if (event.key === "ArrowUp") rotate();
+        if (event.key === "ArrowDown") stepDown();
+        if (event.key === " ") while (!finished && piece && valid({ ...piece, y: piece.y + 1 })) piece.y++;
+        if (event.key === " ") stepDown();
       };
       $(".left", root).onclick = () => move(-1);
       $(".right", root).onclick = () => move(1);
-      $(".rotate", root).onclick = () => { piece.cells = [[4,5],[4,6],[5,6],[5,7]]; moves++; draw(); };
-      $(".drop", root).onclick = () => {
-        move(0, 10);
-        done(moves <= 5 ? 980 : 720, "Piece placed.");
-      };
+      $(".rotate", root).onclick = rotate;
+      $(".drop", root).onclick = stepDown;
+      spawn();
       draw();
+      const startGame = () => {
+        if (started || finished) return;
+        started = true;
+        startedAt = Date.now();
+        document.addEventListener("keydown", keyHandler);
+        fallTimer = setInterval(stepDown, speed);
+        scoreTimer = setInterval(() => {
+          refreshScore();
+          draw();
+        }, 1000);
+      };
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(entries => {
+          if (entries.some(entry => entry.isIntersecting && entry.intersectionRatio > 0.45)) {
+            observer.disconnect();
+            startGame();
+          }
+        }, { threshold: [0.45, 0.65] });
+        observer.observe(root);
+      } else {
+        startGame();
+      }
     }
 
     function MemoryGrid(root, game, done) {
