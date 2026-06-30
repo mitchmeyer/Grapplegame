@@ -308,6 +308,8 @@
     .chess-shell { display: grid; gap: 10px; justify-items: center; }
     .chess-board { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); width: min(100%, 360px); border: 2px solid #4B3621; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
     .sq { position: relative; aspect-ratio: 1; display: grid; place-items: center; font-size: clamp(22px, 7vw, 34px); line-height: 1; color: #111; }
+    .sq.white-piece span:last-child { color: #FFFDF8; text-shadow: 0 1px 0 #111827, 0 0 2px #111827, 0 2px 5px rgba(0,0,0,.45); }
+    .sq.black-piece span:last-child { color: #111827; text-shadow: 0 1px 0 rgba(255,255,255,.35); }
     .sq.light { background: #F0D9B5; }
     .sq.dark { background: #B58863; }
     .sq.has-piece { cursor: pointer; }
@@ -1389,19 +1391,25 @@
       const pieces = { ...p.pieces };
       let selected = null;
       let locked = false;
-      let lineIndex = 0;
       const line = Array.isArray(p.line) && p.line.length ? p.line : [{ from: p.from, to: p.to, san: p.san, result: p.result }];
+      const whiteLine = line.filter(move => (move.side || "white") === "white");
+      const blackLine = line.filter(move => move.side === "black");
+      const maxWhiteMoves = Math.max(1, whiteLine.length);
+      let userMoves = 0;
+      let correctMoves = 0;
       const whitePieces = new Set(["♕", "♔", "♖", "♗", "♘", "♙"]);
       const blackPieces = new Set(["♚", "♛", "♜", "♝", "♞", "♟"]);
       const inBounds = (fileIndex, rank) => fileIndex >= 0 && fileIndex < 8 && rank >= 1 && rank <= 8;
       const squareAt = (fileIndex, rank) => `${files[fileIndex]}${rank}`;
-      const addTarget = (targets, square) => {
+      const isOwnPiece = (piece, side) => side === "white" ? whitePieces.has(piece) : blackPieces.has(piece);
+      const isEnemyPiece = (piece, side) => side === "white" ? blackPieces.has(piece) : whitePieces.has(piece);
+      const addTarget = (targets, square, side = "white") => {
         const occupant = pieces[square];
-        if (whitePieces.has(occupant)) return false;
+        if (isOwnPiece(occupant, side)) return false;
         targets.add(square);
-        return !blackPieces.has(occupant);
+        return !isEnemyPiece(occupant, side);
       };
-      const slideTargets = (from, directions) => {
+      const slideTargets = (from, directions, side = "white") => {
         const fileIndex = files.indexOf(from[0]);
         const rank = Number(from[1]);
         const targets = new Set();
@@ -1409,7 +1417,7 @@
           let f = fileIndex + df;
           let r = rank + dr;
           while (inBounds(f, r)) {
-            if (!addTarget(targets, squareAt(f, r))) break;
+            if (!addTarget(targets, squareAt(f, r), side)) break;
             f += df;
             r += dr;
           }
@@ -1417,33 +1425,34 @@
         return targets;
       };
 
-      const legalTargets = (from) => {
+      const legalTargets = (from, side = "white") => {
         const piece = pieces[from];
         const fileIndex = files.indexOf(from[0]);
         const rank = Number(from[1]);
         const targets = new Set();
-        if (piece === "♕") return slideTargets(from, [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]);
-        if (piece === "♖") return slideTargets(from, [[1,0],[-1,0],[0,1],[0,-1]]);
-        if (piece === "♗") return slideTargets(from, [[1,1],[1,-1],[-1,1],[-1,-1]]);
-        if (piece === "♘") {
+        if (piece === "♕" || piece === "♛") return slideTargets(from, [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]], side);
+        if (piece === "♖" || piece === "♜") return slideTargets(from, [[1,0],[-1,0],[0,1],[0,-1]], side);
+        if (piece === "♗" || piece === "♝") return slideTargets(from, [[1,1],[1,-1],[-1,1],[-1,-1]], side);
+        if (piece === "♘" || piece === "♞") {
           [[1,2],[2,1],[2,-1],[1,-2],[-1,-2],[-2,-1],[-2,1],[-1,2]].forEach(([df, dr]) => {
-            if (inBounds(fileIndex + df, rank + dr)) addTarget(targets, squareAt(fileIndex + df, rank + dr));
+            if (inBounds(fileIndex + df, rank + dr)) addTarget(targets, squareAt(fileIndex + df, rank + dr), side);
           });
           return targets;
         }
-        if (piece === "♔") {
+        if (piece === "♔" || piece === "♚") {
           for (let df = -1; df <= 1; df++) for (let dr = -1; dr <= 1; dr++) {
-            if ((df || dr) && inBounds(fileIndex + df, rank + dr)) addTarget(targets, squareAt(fileIndex + df, rank + dr));
+            if ((df || dr) && inBounds(fileIndex + df, rank + dr)) addTarget(targets, squareAt(fileIndex + df, rank + dr), side);
           }
           return targets;
         }
-        if (piece === "♙") {
-          const one = squareAt(fileIndex, rank + 1);
-          if (inBounds(fileIndex, rank + 1) && !pieces[one]) targets.add(one);
+        if (piece === "♙" || piece === "♟") {
+          const dir = piece === "♙" ? 1 : -1;
+          const one = squareAt(fileIndex, rank + dir);
+          if (inBounds(fileIndex, rank + dir) && !pieces[one]) targets.add(one);
           [-1, 1].forEach(df => {
-            if (!inBounds(fileIndex + df, rank + 1)) return;
-            const capture = squareAt(fileIndex + df, rank + 1);
-            if (blackPieces.has(pieces[capture])) targets.add(capture);
+            if (!inBounds(fileIndex + df, rank + dir)) return;
+            const capture = squareAt(fileIndex + df, rank + dir);
+            if (isEnemyPiece(pieces[capture], side)) targets.add(capture);
           });
           return targets;
         }
@@ -1454,15 +1463,30 @@
         delete pieces[move.from];
         pieces[move.to] = moving;
       };
-      const nextWhiteMove = () => line.slice(lineIndex).find(move => (move.side || "white") === "white");
-      const playBlackReplies = () => {
-        while (line[lineIndex] && line[lineIndex].side === "black") {
-          const reply = line[lineIndex];
-          applyMove(reply);
-          lineIndex++;
-          draw([reply.from, reply.to]);
-          $(".chess-status", root).textContent = `Black replies ${reply.san}. Find the next move.`;
+      const fallbackBlackMove = () => {
+        for (const from of Object.keys(pieces)) {
+          if (!blackPieces.has(pieces[from])) continue;
+          const targets = [...legalTargets(from, "black")].filter(to => !whitePieces.has(pieces[to]));
+          if (targets.length) return { side: "black", from, to: targets[0], san: `...${from}-${targets[0]}` };
         }
+        return null;
+      };
+      const isMovePlayable = (move) => move && pieces[move.from] && legalTargets(move.from, move.side || "white").has(move.to);
+      const playBlackReply = (replyIndex) => {
+        const scripted = blackLine[replyIndex];
+        const reply = isMovePlayable(scripted) ? scripted : fallbackBlackMove();
+        if (!reply) {
+          $(".chess-status", root).textContent = "Black has no useful reply. Make your next move.";
+          return;
+        }
+        locked = true;
+        $(".chess-status", root).textContent = "Black is thinking...";
+        setTimeout(() => {
+          applyMove(reply);
+          locked = false;
+          draw([reply.from, reply.to]);
+          $(".chess-status", root).textContent = `Black replies ${reply.san}. Move ${userMoves + 1} of ${maxWhiteMoves}.`;
+        }, 320);
       };
       const draw = (lastMove = null) => {
         const squares = [];
@@ -1477,6 +1501,8 @@
               "sq",
               dark ? "dark" : "light",
               piece ? "has-piece" : "",
+              whitePieces.has(piece) ? "white-piece" : "",
+              blackPieces.has(piece) ? "black-piece" : "",
               selected === square ? "selected" : "",
               selected && targets.has(square) && !whitePieces.has(piece) ? "targetable" : "",
               lastMove?.includes(square) ? "last-move" : ""
@@ -1514,29 +1540,28 @@
         const moving = pieces[from];
         const legal = legalTargets(from);
         if (!legal.has(square)) return toast("That piece can't move there");
+        const moveNumber = userMoves;
+        const expected = whiteLine[moveNumber];
+        const isCorrect = expected && from === expected.from && square === expected.to;
+        if (isCorrect) correctMoves++;
         applyMove({ from, to: square });
+        userMoves++;
         selected = null;
         draw([from, square]);
-        const expected = line[lineIndex];
-        if (expected && (expected.side || "white") === "white" && from === expected.from && square === expected.to) {
-          lineIndex++;
-          if (lineIndex >= line.length) {
-            locked = true;
-            $(".chess-status", root).textContent = `${expected.san} - ${expected.result || p.result || "checkmate"}.`;
-            done(1200, expected.result || p.result || "Checkmate.");
-            return;
-          }
-          $(".chess-status", root).textContent = `${expected.san}.`;
-          playBlackReplies();
-        } else {
+        if (userMoves >= maxWhiteMoves) {
           locked = true;
-          const best = nextWhiteMove() || line.find(move => (move.side || "white") === "white") || p;
-          $(".chess-status", root).textContent = `Best move: ${best.san}`;
-          done(160, `Best move: ${best.san}`);
+          const perfect = correctMoves === maxWhiteMoves;
+          const score = perfect ? 1200 : Math.max(180, Math.round(1200 * (correctMoves / maxWhiteMoves)));
+          const answer = whiteLine.map(move => move.san).join(" ");
+          $(".chess-status", root).textContent = perfect ? `${p.san} - checkmate.` : `Line: ${answer}`;
+          done(score, perfect ? "Checkmate." : `Best line: ${answer}`);
+          return;
         }
+        $(".chess-status", root).textContent = isCorrect ? `${expected.san}.` : `The ideal move was ${expected?.san || p.san}. Black still responds.`;
+        playBlackReply(moveNumber);
       };
 
-      root.innerHTML = `<div class="chess-shell"><p class="muted">${p.q}</p><div class="chess-board"></div><div class="chess-status">${line.length > 1 ? "Find the full mating line." : "Select a white piece, then its destination."}</div></div>`;
+      root.innerHTML = `<div class="chess-shell"><p class="muted">${p.q}</p><div class="chess-board"></div><div class="chess-status">${maxWhiteMoves > 1 ? `Find the mate in ${maxWhiteMoves}. Move 1 of ${maxWhiteMoves}.` : "Select a white piece, then its destination."}</div></div>`;
       draw();
     }
 
