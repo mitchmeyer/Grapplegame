@@ -621,12 +621,24 @@
       data?.details || data?.error || error?.context?.details || error?.message || "AI generation failed";
     const difficultyRanks = { Easy: 1, Medium: 2, Hard: 3, Expert: 4 };
     const getDifficultyRank = (game) => Number(game.difficultyRank || game.difficulty_rank || difficultyRanks[game.difficulty] || 2);
-    const canonicalGameId = (value) => String(value || "").trim().replace(/^chess(\d+)$/i, "ch$1");
+    const canonicalGameId = (value) => String(value || "")
+      .trim()
+      .replace(/^chess(\d+)$/i, "ch$1")
+      .replace(/^con(?:nections?)?[-_\s]*(\d+)$/i, "Con$1");
     const gameUniqueKey = (game) => canonicalGameId(game.id || `${game.title}-${game.category}-${game.version || 1}`).toLowerCase().trim();
     const gameTitleKey = (game) => String(game.title || game.id || "").toLowerCase().trim();
     const isTicTacToeGame = (game) => /(^|\b)tic[-_\s]*tac[-_\s]*toe\b|tiktaktoe|tictactoe|^tic-\d+|tic_tac_toe/i.test(`${game?.id || ""} ${game?.title || ""} ${game?.gameSpec?.kind || ""}`);
     const isAdminDeletedGame = (gameOrId) => state.adminDeletedGameIds.includes(gameUniqueKey(typeof gameOrId === "object" ? gameOrId : { id: gameOrId }));
     const isAdmin = () => (currentUser?.email || "").toLowerCase() === adminEmail;
+    const isConnectionsLikeGame = (game) => /connections/i.test(`${game?.id || ""} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`) || /^con\d+$/i.test(String(game?.id || "")) || game?.renderer === Connections;
+    const isValidConnectionGame = (game) => {
+      if (!isConnectionsLikeGame(game)) return true;
+      if (!/^Con(?:[1-9]|1\d|20)$/.test(canonicalGameId(game.id))) return false;
+      const groups = game.gameSpec?.groups || game.game_spec?.groups;
+      if (!Array.isArray(groups) || groups.length !== 4) return false;
+      const words = groups.flatMap(group => Array.isArray(group.words) ? group.words.map(word => String(word).toUpperCase()) : []);
+      return groups.every(group => group.name && Array.isArray(group.words) && group.words.length === 4) && words.length === 16 && new Set(words).size === 16;
+    };
     state.playedGameIds = [...new Set((state.playedGameIds || []).map(canonicalGameId))];
     state.adminDeletedGameIds = [...new Set((state.adminDeletedGameIds || []).map(id => gameUniqueKey({ id })))];
     state.challenges = (state.challenges || []).map(challenge => ({ ...challenge, gameId: canonicalGameId(challenge.gameId) }));
@@ -635,7 +647,6 @@
     const games = [
       { id: "ch1", title: "Chess Tactic 1", category: "Strategy", difficulty: "Easy", difficultyRank: 1, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: 0 }, renderer: ChessMate },
       { id: "wordle1", title: "Wordle 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: ["BRAIN", "LOGIC", "FOCUS", "MATCH", "GRASP"] }, renderer: WordGrid },
-      { id: "con1", title: "Connections 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Mental Flexibility", "Verbal Reasoning"], renderer: Connections },
       { id: "cw1", title: "Mini Crossword 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Verbal Reasoning", "Focus"], gameSpec: { crosswordIndex: 0 }, renderer: MiniCrossword },
       { id: "sd1", title: "Mini Sudoku 1", category: "Logic", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Logical Reasoning", "Focus"], renderer: MiniSudoku },
       { id: "sdh1", title: "Hard Sudoku 1", category: "Math", difficulty: "Hard", difficultyRank: 3, version: 1, time: "120s", source: "Official", traits: ["Logical Reasoning", "Focus"], renderer: HardSudoku },
@@ -692,32 +703,143 @@
       ["NORTH", "SOUTH", "EASTS", "WESTS", "ROUTE"],
       ["SCALE", "ANGLE", "PRISM", "GRAPH", "AXIOM"]
     ];
-    const connectionSets = [
-      [
+    const connectionCatalog = [
+      { difficulty: "Easy", groups: [
         { name: "Board games", words: ["CHESS", "CHECKERS", "GO", "SORRY"] },
-        { name: "Brain skills", words: ["FOCUS", "MEMORY", "LOGIC", "SPEED"] },
         { name: "Shapes", words: ["CIRCLE", "SQUARE", "TRIANGLE", "OVAL"] },
-        { name: "Numbers", words: ["PRIME", "SUM", "ODD", "EVEN"] }
-      ],
-      [
+        { name: "Colors", words: ["RED", "BLUE", "GREEN", "YELLOW"] },
+        { name: "School subjects", words: ["MATH", "SCIENCE", "HISTORY", "ART"] }
+      ] },
+      { difficulty: "Easy", groups: [
         { name: "Keyboard keys", words: ["SHIFT", "SPACE", "ENTER", "TAB"] },
         { name: "Card suits", words: ["HEART", "CLUB", "SPADE", "DIAMOND"] },
         { name: "Weather", words: ["RAIN", "SNOW", "FOG", "HAIL"] },
-        { name: "Geometry", words: ["RADIUS", "ANGLE", "LINE", "ARC"] }
-      ],
-      [
-        { name: "Coffee orders", words: ["LATTE", "MOCHA", "DRIP", "COLD BREW"] },
+        { name: "Geometry terms", words: ["RADIUS", "ANGLE", "LINE", "ARC"] }
+      ] },
+      { difficulty: "Easy", groups: [
         { name: "Chess pieces", words: ["ROOK", "BISHOP", "KNIGHT", "QUEEN"] },
         { name: "App actions", words: ["SAVE", "SHARE", "POST", "EDIT"] },
-        { name: "Music terms", words: ["BEAT", "TEMPO", "CHORD", "SCALE"] }
-      ],
-      [
+        { name: "Music terms", words: ["BEAT", "TEMPO", "CHORD", "SCALE"] },
+        { name: "Coffee drinks", words: ["LATTE", "MOCHA", "DRIP", "ESPRESSO"] }
+      ] },
+      { difficulty: "Easy", groups: [
         { name: "Planets", words: ["MARS", "VENUS", "EARTH", "SATURN"] },
-        { name: "Fonts", words: ["SERIF", "ITALIC", "BOLD", "MONO"] },
-        { name: "Road words", words: ["LANE", "MERGE", "EXIT", "YIELD"] },
-        { name: "Kitchen tools", words: ["WHISK", "TONGS", "LADLE", "GRATER"] }
-      ]
+        { name: "Road signs/actions", words: ["LANE", "MERGE", "EXIT", "YIELD"] },
+        { name: "Kitchen tools", words: ["WHISK", "TONGS", "LADLE", "GRATER"] },
+        { name: "Font styles", words: ["SERIF", "ITALIC", "BOLD", "MONO"] }
+      ] },
+      { difficulty: "Medium", groups: [
+        { name: "Things with keys", words: ["PIANO", "LOCK", "MAP", "KEYBOARD"] },
+        { name: "Can be cracked", words: ["CODE", "EGG", "KNUCKLE", "JOKE"] },
+        { name: "Kinds of chips", words: ["POKER", "TORTILLA", "POTATO", "MICRO"] },
+        { name: "Words before board", words: ["SCORE", "DASH", "SURF", "BULLETIN"] }
+      ] },
+      { difficulty: "Medium", groups: [
+        { name: "Tabletop roles", words: ["DEALER", "BANKER", "PLAYER", "JUDGE"] },
+        { name: "Things in a deck", words: ["ACE", "JOKER", "KING", "QUEEN"] },
+        { name: "Computer storage", words: ["CACHE", "DRIVE", "CLOUD", "DISK"] },
+        { name: "Can be shuffled", words: ["CARDS", "FEET", "PLAYLIST", "TILES"] }
+      ] },
+      { difficulty: "Medium", groups: [
+        { name: "Words after light", words: ["BULB", "HOUSE", "YEAR", "SABER"] },
+        { name: "Ocean words", words: ["TIDE", "REEF", "CURRENT", "WAVE"] },
+        { name: "Things with rings", words: ["TREE", "SATURN", "BINDER", "PHONE"] },
+        { name: "Online actions", words: ["FOLLOW", "LIKE", "COMMENT", "SUBSCRIBE"] }
+      ] },
+      { difficulty: "Medium", groups: [
+        { name: "Parts of a book", words: ["COVER", "SPINE", "PAGE", "CHAPTER"] },
+        { name: "Can be charged", words: ["PHONE", "FEE", "BATTERY", "CARD"] },
+        { name: "Animal homes", words: ["NEST", "DEN", "HIVE", "BURROW"] },
+        { name: "Baseball terms", words: ["BASE", "PITCH", "BAT", "INNING"] }
+      ] },
+      { difficulty: "Medium", groups: [
+        { name: "Things with needles", words: ["COMPASS", "SEWING", "PINE", "SYRINGE"] },
+        { name: "Kinds of rolls", words: ["SUSHI", "HONOR", "DRUM", "CINNAMON"] },
+        { name: "Navigation words", words: ["NORTH", "ROUTE", "MAP", "BEARING"] },
+        { name: "Can be folded", words: ["PAPER", "LAUNDRY", "CHAIR", "TENT"] }
+      ] },
+      { difficulty: "Hard", groups: [
+        { name: "Words before storm", words: ["BRAIN", "DUST", "FIRE", "THUNDER"] },
+        { name: "Things with faces", words: ["CLOCK", "DIE", "MOON", "WATCH"] },
+        { name: "Can be drawn", words: ["CARD", "BATH", "CURTAIN", "MAP"] },
+        { name: "Programming words", words: ["CLASS", "LOOP", "STRING", "OBJECT"] }
+      ] },
+      { difficulty: "Hard", groups: [
+        { name: "Things with scales", words: ["FISH", "PIANO", "MAP", "JUSTICE"] },
+        { name: "Words before line", words: ["PUNCH", "FAULT", "PICKUP", "BORDER"] },
+        { name: "Can be cast", words: ["VOTE", "SPELL", "SHADOW", "ACTOR"] },
+        { name: "Greek letters", words: ["ALPHA", "BETA", "GAMMA", "DELTA"] }
+      ] },
+      { difficulty: "Hard", groups: [
+        { name: "Words after blue", words: ["BERRY", "PRINT", "TOOTH", "JAY"] },
+        { name: "Can be passed", words: ["LAW", "NOTE", "BALL", "TORCH"] },
+        { name: "Kinds of bars", words: ["GOLD", "CANDY", "SOAP", "SEARCH"] },
+        { name: "Things with trunks", words: ["TREE", "CAR", "ELEPHANT", "CHEST"] }
+      ] },
+      { difficulty: "Hard", groups: [
+        { name: "Words before table", words: ["PERIODIC", "DINING", "COFFEE", "TIMES"] },
+        { name: "Can be broken", words: ["PROMISE", "RECORD", "GLASS", "CODE"] },
+        { name: "Parts of a camera", words: ["LENS", "SHUTTER", "FLASH", "SENSOR"] },
+        { name: "Things with caps", words: ["BOTTLE", "MUSHROOM", "PEN", "KNEE"] }
+      ] },
+      { difficulty: "Hard", groups: [
+        { name: "Can be served", words: ["DINNER", "TENNIS", "NOTICE", "TIME"] },
+        { name: "Words before paper", words: ["NEWS", "WALL", "SCRAP", "TERM"] },
+        { name: "Things with pitches", words: ["BASEBALL", "TENT", "SONG", "SALES"] },
+        { name: "Palindromes", words: ["LEVEL", "RADAR", "CIVIC", "REFER"] }
+      ] },
+      { difficulty: "Expert", groups: [
+        { name: "Can be raised", words: ["HAND", "FLAG", "CHILD", "PRICE"] },
+        { name: "Words after black", words: ["BIRD", "BOARD", "MAIL", "HOLE"] },
+        { name: "Things with roots", words: ["TREE", "WORD", "TOOTH", "EQUATION"] },
+        { name: "Silent first letters", words: ["KNIFE", "WRIST", "GNOME", "PSALM"] }
+      ] },
+      { difficulty: "Expert", groups: [
+        { name: "Words before box", words: ["BENTO", "SHADOW", "JUKE", "IN"] },
+        { name: "Can be rolled", words: ["DICE", "DOUGH", "EYES", "CREDITS"] },
+        { name: "Things with terminals", words: ["AIRPORT", "BATTERY", "COMPUTER", "NERVE"] },
+        { name: "Units of measure", words: ["MILE", "LITER", "OUNCE", "GRAM"] }
+      ] },
+      { difficulty: "Expert", groups: [
+        { name: "Can be struck", words: ["MATCH", "POSE", "DEAL", "CHORD"] },
+        { name: "Words after green", words: ["HOUSE", "ROOM", "LIGHT", "SCREEN"] },
+        { name: "Things with cells", words: ["HONEYCOMB", "SPREADSHEET", "PRISON", "BATTERY"] },
+        { name: "Words before card", words: ["REPORT", "CREDIT", "BUSINESS", "INDEX"] }
+      ] },
+      { difficulty: "Expert", groups: [
+        { name: "Can be found in a court", words: ["JUDGE", "NET", "SERVICE", "APPEAL"] },
+        { name: "Words before market", words: ["FLEA", "STOCK", "FARMERS", "SUPER"] },
+        { name: "Things with bridges", words: ["GUITAR", "NOSE", "SHIP", "SONG"] },
+        { name: "Words after snow", words: ["BALL", "MAN", "DAY", "FLAKE"] }
+      ] },
+      { difficulty: "Expert", groups: [
+        { name: "Can be cut", words: ["DECK", "CORNER", "CLASS", "DIAMOND"] },
+        { name: "Words after silver", words: ["SCREEN", "LINING", "WARE", "BULLET"] },
+        { name: "Things with keys but no locks", words: ["PIANO", "LEGEND", "ISLAND", "CIPHER"] },
+        { name: "Keyboard shortcuts", words: ["COPY", "PASTE", "UNDO", "SAVE"] }
+      ] },
+      { difficulty: "Expert", groups: [
+        { name: "Can be split", words: ["CHECK", "ATOM", "SECOND", "BILL"] },
+        { name: "Words before proof", words: ["WATER", "FIRE", "SOUND", "BULLET"] },
+        { name: "Things with cases", words: ["PHONE", "COURT", "GRAMMAR", "STAIRS"] },
+        { name: "Words after air", words: ["PLANE", "PORT", "MAIL", "BAG"] }
+      ] }
     ];
+    games.push(...connectionCatalog.map((spec, index) => {
+      const number = index + 1;
+      return {
+        id: `Con${number}`,
+        title: `Connections ${number}`,
+        category: "Language",
+        difficulty: spec.difficulty,
+        difficultyRank: difficultyRanks[spec.difficulty],
+        version: 1,
+        source: "Official",
+        traits: ["Mental Flexibility", "Verbal Reasoning"],
+        gameSpec: { groups: spec.groups },
+        renderer: Connections
+      };
+    }));
     const crosswordVariants = [
       {
         cells: ["B","E","G","I","N","O",null,"A",null,"O","A",null,"M",null,"D","R",null,"E",null,"E","D",null,"S",null,"S"],
@@ -892,7 +1014,7 @@
       const n = index + 2;
       const type = index % 15;
       if (type === 0) return { ...base, id: `wordle${n}`, title: `${seed} Wordle`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: wordGridSets[index % wordGridSets.length] }, renderer: WordGrid };
-      if (type === 1) return { ...base, id: `con${n}`, title: `${seed} Connections`, category: "Language", time: "75s", traits: ["Mental Flexibility", "Verbal Reasoning"], gameSpec: { groups: connectionSets[index % connectionSets.length] }, renderer: Connections };
+      if (type === 1) return { ...base, id: `wordle${n}`, title: `${seed} Word Grid`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: wordGridSets[(index + 3) % wordGridSets.length] }, renderer: WordGrid };
       if (type === 2) return { ...base, id: `cw${n}`, title: `${seed} Crossword`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Focus"], gameSpec: { crosswordIndex: index % crosswordVariants.length }, renderer: MiniCrossword };
       if (type === 3) return { ...base, id: `sd${n}`, title: `${seed} Sudoku`, category: "Logic", time: "70s", traits: ["Logical Reasoning", "Focus"], gameSpec: sudokuVariants[index % sudokuVariants.length], renderer: MiniSudoku };
       if (type === 4) return { ...base, id: `strategy${n}`, title: `${seed} Strategy`, category: "Strategy", time: "35s", traits: ["Strategy", "Pattern Recognition"], gameSpec: { patterns: [patternVariants[(index + 1) % patternVariants.length], patternVariants[(index + 4) % patternVariants.length]] }, renderer: PatternNext };
@@ -918,6 +1040,7 @@
       const unique = [];
       games.forEach(game => {
         if (isTicTacToeGame(game)) return;
+        if (!isValidConnectionGame(game)) return;
         if (isAdminDeletedGame(game)) return;
         const idKey = gameUniqueKey(game);
         const titleKey = gameTitleKey(game);
@@ -954,7 +1077,7 @@
         .eq("is_public", true)
         .order("created_at", { ascending: false });
       if (error || !data?.length) return;
-      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game));
+      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game));
       remote.forEach(game => {
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(game) || gameTitleKey(existing) === gameTitleKey(game))) games.unshift(game);
       });
@@ -2751,7 +2874,7 @@
           status: game.status || "seeded",
           version: game.version || 1,
           traits: Array.isArray(game.traits) ? game.traits : []
-        })).filter(game => !isAdminDeletedGame(game));
+        })).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game));
         const seen = new Set(remoteRows.map(row => gameUniqueKey(row)));
         adminRows = [...remoteRows, ...localAdminRows().filter(row => !seen.has(gameUniqueKey(row)))];
         hydrateAdminControls();
