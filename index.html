@@ -625,7 +625,21 @@
       .replace(/^chess(\d+)$/i, "ch$1")
       .replace(/^con(?:nections?)?[-_\s]*(\d+)$/i, "Con$1")
       .replace(/^crossword[-_\s]*(\d+)$/i, "cw$1")
-      .replace(/^(?:country|country[-_\s]*bigger|cb)[-_\s]*(\d+)$/i, "cb$1");
+      .replace(/^(?:country|country[-_\s]*bigger|cb)[-_\s]*(\d+)$/i, "cb$1")
+      .replace(/^(?:wordle|word[-_\s]*grid|wd)[-_\s]*(\d+)$/i, "wordle$1")
+      .replace(/^(?:mini[-_\s]*sudoku|sudoku|sd)[-_\s]*(\d+)$/i, "sd$1")
+      .replace(/^(?:hard[-_\s]*sudoku|sdh)[-_\s]*(\d+)$/i, "sdh$1")
+      .replace(/^(?:timeline|tl)[-_\s]*(\d+)$/i, "tl$1")
+      .replace(/^(?:go[-_\s]*capture|go)[-_\s]*(\d+)$/i, "go$1")
+      .replace(/^(?:poker[-_\s]*read|poker)[-_\s]*(\d+)$/i, "poker$1")
+      .replace(/^(?:tetris[-_\s]*mini|tetris)[-_\s]*(\d+)$/i, "tetris$1")
+      .replace(/^(?:memory[-_\s]*grid|mem)[-_\s]*(\d+)$/i, "mem$1")
+      .replace(/^(?:number[-_\s]*tap|num)[-_\s]*(\d+)$/i, "num$1")
+      .replace(/^(?:quick[-_\s]*math|math)[-_\s]*(\d+)$/i, "math$1")
+      .replace(/^(?:word[-_\s]*scramble|scramble|scr)[-_\s]*(\d+)$/i, "scr$1")
+      .replace(/^(?:shape[-_\s]*match|shape)[-_\s]*(\d+)$/i, "shape$1")
+      .replace(/^(?:pattern[-_\s]*next|pattern|pat)[-_\s]*(\d+)$/i, "pat$1")
+      .replace(/^(?:mini[-_\s]*logic|logic)[-_\s]*(\d+)$/i, "logic$1");
     const gameUniqueKey = (game) => canonicalGameId(game.id || `${game.title}-${game.category}-${game.version || 1}`).toLowerCase().trim();
     const gameTitleKey = (game) => String(game.title || game.id || "").toLowerCase().trim();
     const isTicTacToeGame = (game) => /(^|\b)tic[-_\s]*tac[-_\s]*toe\b|tiktaktoe|tictactoe|^tic-\d+|tic_tac_toe/i.test(`${game?.id || ""} ${game?.title || ""} ${game?.gameSpec?.kind || ""}`);
@@ -668,33 +682,48 @@
         Array.isArray(spec.down) &&
         spec.down.length > 0;
     };
+    const curatedCatalogPatterns = [
+      /^wordle(?:[1-9]|1\d|20)$/i,
+      /^sd(?:[1-9]|1\d|20)$/i,
+      /^sdh(?:[1-9]|1\d|20)$/i,
+      /^tl(?:[1-9]|1\d|20)$/i,
+      /^go(?:[1-9]|10)$/i,
+      /^poker(?:[1-9]|10)$/i,
+      /^tetris(?:[1-5])$/i,
+      /^mem(?:[1-9]|1\d|20)$/i,
+      /^num(?:[1-9]|1\d|20)$/i,
+      /^math(?:[1-9]|1\d|20)$/i,
+      /^scr(?:[1-9]|1\d|20)$/i,
+      /^shape(?:[1-9]|1\d|20)$/i,
+      /^pat(?:[1-9]|1\d|20)$/i,
+      /^logic(?:[1-9]|1\d|20)$/i
+    ];
+    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|poker read|tetris mini|memory grid|number tap|quick math|scramble|shape match|pattern|logic/i;
+    const isCuratedCatalogGame = (game) => {
+      const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
+      const text = `${id} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`;
+      return curatedCatalogPatterns.some(pattern => pattern.test(id)) || curatedCatalogTypes.test(text);
+    };
+    const hasCuratedCatalogId = (game) => {
+      const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
+      return curatedCatalogPatterns.some(pattern => pattern.test(id));
+    };
+    const isLegacyGeneratedGame = (game) => {
+      const rawId = String(game?.id || game?.game_key || game?.slug || "");
+      const id = canonicalGameId(rawId);
+      const text = `${rawId} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`;
+      if (/^seed-/i.test(rawId) || /^strategy\d+$/i.test(id)) return true;
+      if (/^(wordle|sudoku|mini-sudoku)$/i.test(rawId)) return true;
+      if (curatedCatalogTypes.test(text) && !curatedCatalogPatterns.some(pattern => pattern.test(id))) return true;
+      return false;
+    };
     state.playedGameIds = [...new Set((state.playedGameIds || []).map(canonicalGameId))];
     state.adminDeletedGameIds = [...new Set((state.adminDeletedGameIds || []).map(id => gameUniqueKey({ id })))];
     state.challenges = (state.challenges || []).map(challenge => ({ ...challenge, gameId: canonicalGameId(challenge.gameId) }));
     save();
 
     const games = [
-      { id: "ch1", title: "Chess Tactic 1", category: "Strategy", difficulty: "Easy", difficultyRank: 1, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: 0 }, renderer: ChessMate },
-      { id: "wordle1", title: "Wordle 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: ["BRAIN", "LOGIC", "FOCUS", "MATCH", "GRASP"] }, renderer: WordGrid },
-      { id: "sd1", title: "Mini Sudoku 1", category: "Logic", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Logical Reasoning", "Focus"], renderer: MiniSudoku },
-      { id: "sdh1", title: "Hard Sudoku 1", category: "Math", difficulty: "Hard", difficultyRank: 3, version: 1, time: "120s", source: "Official", traits: ["Logical Reasoning", "Focus"], renderer: HardSudoku },
-      { id: "timeline1", title: "Timeline Challenge 1", category: "Trivia", difficulty: "Hard", difficultyRank: 3, version: 1, time: "90s", source: "Official", traits: ["Sequencing", "Knowledge"], gameSpec: { events: [
-        { t: "First modern zipper patented", y: 1917 },
-        { t: "Rubik's Cube invented", y: 1974 },
-        { t: "The Eiffel Tower opens", y: 1889 },
-        { t: "Bluetooth standard announced", y: 1998 }
-      ] }, renderer: TimelineSort },
-      { id: "go1", title: "Go Capture 1", category: "Strategy", difficulty: "Hard", difficultyRank: 3, version: 1, time: "90s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], renderer: GoCapture },
-      { id: "poker1", title: "Poker Read 1", category: "Strategy", difficulty: "Medium", difficultyRank: 2, version: 1, time: "45s", source: "Official", traits: ["Probability", "Pattern Recognition"], renderer: PokerRead },
-      { id: "tetris1", title: "Tetris Mini 1", category: "Arcade", difficulty: "Medium", difficultyRank: 2, version: 1, time: "120s", source: "Official", traits: ["Spatial Reasoning", "Processing Speed"], renderer: TetrisMini },
-      { id: "mem1", title: "Memory Grid 1", category: "Memory", difficulty: "Medium", difficultyRank: 2, version: 1, time: "20s", source: "Official", traits: ["Working Memory"], renderer: MemoryGrid },
-      { id: "num1", title: "Number Tap 1", category: "Speed", difficulty: "Medium", difficultyRank: 2, version: 1, time: "30s", source: "Community", traits: ["Processing Speed", "Focus"], renderer: NumberTap },
-      { id: "math1", title: "Quick Math 1", category: "Math", difficulty: "Medium", difficultyRank: 2, version: 1, time: "45s", source: "AI", traits: ["Quantitative Reasoning"], renderer: QuickMath },
-      { id: "scr1", title: "Word Scramble 1", category: "Language", difficulty: "Easy", difficultyRank: 1, version: 1, time: "20s", source: "Community", traits: ["Verbal Reasoning"], renderer: WordScramble },
-      { id: "timeline2", title: "Timeline Sort 2", category: "History", difficulty: "Medium", difficultyRank: 2, version: 1, time: "45s", source: "Community", traits: ["Sequencing", "Knowledge"], renderer: TimelineSort },
-      { id: "shape1", title: "Shape Match 1", category: "Visual Reasoning", difficulty: "Medium", difficultyRank: 2, version: 1, time: "15s", source: "AI", traits: ["Spatial Reasoning"], renderer: ShapeMatch },
-      { id: "pat1", title: "Pattern Next 1", category: "Logic", difficulty: "Easy", difficultyRank: 1, version: 1, time: "15s", source: "Official", traits: ["Pattern Recognition"], renderer: PatternNext },
-      { id: "logic1", title: "Mini Logic 1", category: "Logic", difficulty: "Medium", difficultyRank: 2, version: 1, time: "25s", source: "AI", traits: ["Logical Reasoning"], renderer: MiniLogic }
+      { id: "ch1", title: "Chess Tactic 1", category: "Strategy", difficulty: "Easy", difficultyRank: 1, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: 0 }, renderer: ChessMate }
     ];
     Object.assign(rendererByType, {
       chess_mate: ChessMate,
@@ -728,7 +757,19 @@
       ["SHIFT", "VALUE", "ROUND", "PLANE", "TRACE"],
       ["QUEST", "ALERT", "MODEL", "INPUT", "SOLVE"],
       ["NORTH", "SOUTH", "EASTS", "WESTS", "ROUTE"],
-      ["SCALE", "ANGLE", "PRISM", "GRAPH", "AXIOM"]
+      ["SCALE", "ANGLE", "PRISM", "GRAPH", "AXIOM"],
+      ["CHAIR", "BREAD", "TRAIN", "SMILE", "GLASS"],
+      ["WORLD", "MUSIC", "DREAM", "POWER", "HOUSE"],
+      ["CROWN", "FLAME", "SWORD", "BRAVE", "RHYME"],
+      ["OCEAN", "CORAL", "SHELL", "BEACH", "TIDAL"],
+      ["PIXEL", "ROBOT", "LASER", "DRONE", "CABLE"],
+      ["PILOT", "CABIN", "RADIO", "WINGS", "CARGO"],
+      ["MANGO", "BERRY", "LEMON", "OLIVE", "BASIL"],
+      ["TRUST", "UNITY", "PRIDE", "HONOR", "BRISK"],
+      ["CRYPT", "GLYPH", "NYMPH", "LYRIC", "VOWEL"],
+      ["QUART", "ZEBRA", "JAZZY", "VIXEN", "WALTZ"],
+      ["KNOLL", "WRIST", "GNOME", "PSALM", "KNEAD"],
+      ["QUEUE", "FUZZY", "JUMBO", "XYLEM", "ZESTY"]
     ];
     const connectionCatalog = [
       { difficulty: "Easy", groups: [
@@ -1120,7 +1161,21 @@
       { seq: ["3", "6", "12", "24"], ans: "48", opts: ["36", "42", "48", "54"] },
       { seq: ["1", "4", "9", "16"], ans: "25", opts: ["20", "24", "25", "32"] },
       { seq: ["Z", "W", "T", "Q"], ans: "N", opts: ["M", "N", "O", "P"] },
-      { seq: ["RED", "ORANGE", "YELLOW"], ans: "GREEN", opts: ["BLUE", "GREEN", "VIOLET", "BLACK"] }
+      { seq: ["RED", "ORANGE", "YELLOW"], ans: "GREEN", opts: ["BLUE", "GREEN", "VIOLET", "BLACK"] },
+      { seq: ["1", "1", "2", "3"], ans: "5", opts: ["4", "5", "6", "8"] },
+      { seq: ["10", "7", "4", "1"], ans: "-2", opts: ["-1", "-2", "0", "2"] },
+      { seq: ["B", "D", "G", "K"], ans: "P", opts: ["N", "O", "P", "Q"] },
+      { seq: ["2", "3", "5", "8"], ans: "12", opts: ["11", "12", "13", "15"] },
+      { seq: ["BLUE", "GREEN", "YELLOW"], ans: "ORANGE", opts: ["RED", "ORANGE", "PURPLE", "BLACK"] },
+      { seq: ["5", "10", "20", "40"], ans: "80", opts: ["60", "70", "80", "100"] },
+      { seq: ["Q", "N", "K", "H"], ans: "E", opts: ["D", "E", "F", "G"] },
+      { seq: ["4", "9", "19", "39"], ans: "79", opts: ["69", "78", "79", "80"] },
+      { seq: ["A", "B", "D", "G"], ans: "K", opts: ["J", "K", "L", "M"] },
+      { seq: ["WHITE", "BLACK", "WHITE", "BLACK"], ans: "WHITE", opts: ["WHITE", "BLACK", "RED", "BLUE"] },
+      { seq: ["100", "50", "25", "12.5"], ans: "6.25", opts: ["5", "6", "6.25", "7.5"] },
+      { seq: ["M", "O", "R", "V"], ans: "A", opts: ["A", "Z", "Y", "X"] },
+      { seq: ["7", "14", "13", "26"], ans: "25", opts: ["24", "25", "27", "28"] },
+      { seq: ["GREEN", "BLUE", "PURPLE"], ans: "RED", opts: ["RED", "ORANGE", "YELLOW", "WHITE"] }
     ];
     const logicVariants = [
       { q: "All naves are blue. Rilo is a nave. Is Rilo blue?", a: "Yes" },
@@ -1128,13 +1183,43 @@
       { q: "Some zeds are bright. Are all zeds bright?", a: "Can't Tell" },
       { q: "Every glint is sharp. Mira found a glint. Is it sharp?", a: "Yes" },
       { q: "No amber cards are wild. This card is amber. Is it wild?", a: "No" },
-      { q: "Some pilots like grids. Does every pilot like grids?", a: "Can't Tell" }
+      { q: "Some pilots like grids. Does every pilot like grids?", a: "Can't Tell" },
+      { q: "Every orbit has a center. This path is an orbit. Does it have a center?", a: "Yes" },
+      { q: "No silent cards are red. This card is silent. Is it red?", a: "No" },
+      { q: "Some locked boxes are heavy. Is every locked box heavy?", a: "Can't Tell" },
+      { q: "All bright tiles glow. Tile K glows. Is Tile K definitely bright?", a: "Can't Tell" },
+      { q: "No square buttons are round. This button is square. Is it round?", a: "No" },
+      { q: "Every alpha badge is gold. Mina has an alpha badge. Is Mina's badge gold?", a: "Yes" },
+      { q: "Some rivers are wide. This is a river. Is it definitely wide?", a: "Can't Tell" },
+      { q: "All coded doors need keys. Door 7 is coded. Does Door 7 need a key?", a: "Yes" },
+      { q: "No winter maps are tropical. This map is winter. Is it tropical?", a: "No" },
+      { q: "Some fast trains are blue. Train 4 is fast. Is Train 4 definitely blue?", a: "Can't Tell" },
+      { q: "Every sealed envelope is private. This envelope is sealed. Is it private?", a: "Yes" },
+      { q: "No prime tokens are even. This token is prime. Is it even?", a: "No" },
+      { q: "Some logic puzzles are timed. Is every logic puzzle timed?", a: "Can't Tell" },
+      { q: "All verified answers are accepted. This answer is verified. Is it accepted?", a: "Yes" }
     ];
     const scrambleSets = [
       ["GRAPPLE", "FOCUS", "PUZZLE", "MEMORY", "VECTOR", "LOGIC"],
       ["ORBIT", "SIGNAL", "CIPHER", "MATRIX", "BEACON", "RADAR"],
       ["ROCKET", "STATIC", "ANCHOR", "HARBOR", "LEGEND", "MARBLE"],
-      ["SUMMIT", "CAMPUS", "PIXEL", "RETRO", "JIGSAW", "SPRINT"]
+      ["SUMMIT", "CAMPUS", "PIXEL", "RETRO", "JIGSAW", "SPRINT"],
+      ["PLANET", "BRIDGE", "CASTLE", "FOREST", "MARKET", "GARDEN"],
+      ["BUTTON", "SCREEN", "CAMERA", "FILTER", "STREAM", "BUFFER"],
+      ["RHYTHM", "LYRICS", "MELODY", "CHORUS", "GUITAR", "VIOLIN"],
+      ["ANCHOR", "HARBOR", "VESSEL", "CURRENT", "ISLAND", "COMPASS"],
+      ["GALAXY", "COMET", "NEBULA", "ORBIT", "METEOR", "SATURN"],
+      ["PYTHON", "OBJECT", "BINARY", "SCRIPT", "SERVER", "METHOD"],
+      ["QUARTZ", "ZENITH", "JUMBLE", "VORTEX", "ZEPHYR", "GLYPHS"],
+      ["KNIGHT", "BISHOP", "CASTLE", "CHECK", "GAMBIT", "ATTACK"],
+      ["COBALT", "INDIGO", "VIOLET", "AMBER", "SCARLET", "SILVER"],
+      ["PILLOW", "BLANKET", "WINDOW", "MIRROR", "CANDLE", "BOTTLE"],
+      ["SUMMER", "WINTER", "SPRING", "AUTUMN", "SEASON", "BREEZE"],
+      ["PUZZLE", "RIDDLE", "ANSWER", "SECRET", "MYSTIC", "CLUE"],
+      ["PLANAR", "VECTOR", "ANGLE", "RADIUS", "MATRIX", "TENSOR"],
+      ["CREDIT", "MARKET", "BUDGET", "PROFIT", "LEDGER", "ASSET"],
+      ["VOYAGE", "ROUTE", "TICKET", "BORDER", "PASSPORT", "ARRIVE"],
+      ["CRYSTAL", "PHOENIX", "JASMINE", "ORCHID", "LANTERN", "CANYON"]
     ];
     const countryBiggerCatalog = [
       { difficulty: "Easy", countries: [["India", 1428, 3287], ["Brazil", 216, 8516], ["Japan", 125, 378], ["Nigeria", 224, 924], ["Canada", 40, 9985], ["France", 68, 644]] },
@@ -1174,50 +1259,156 @@
       };
     }));
     const timelineSets = [
-      [
-        { t: "Printing press popularized", y: 1450 },
-        { t: "US Declaration of Independence", y: 1776 },
-        { t: "First powered airplane flight", y: 1903 },
-        { t: "First moon landing", y: 1969 }
-      ],
-      [
-        { t: "Magna Carta signed", y: 1215 },
-        { t: "Shakespeare's First Folio published", y: 1623 },
-        { t: "Telephone patented", y: 1876 },
-        { t: "World Wide Web proposed", y: 1989 }
-      ],
-      [
-        { t: "Telescope used for astronomy", y: 1609 },
-        { t: "Periodic table published", y: 1869 },
-        { t: "DNA double helix described", y: 1953 },
-        { t: "Human genome draft announced", y: 2000 }
-      ]
+      [{ t: "Printing press popularized", y: 1450 }, { t: "US Declaration of Independence", y: 1776 }, { t: "First powered airplane flight", y: 1903 }, { t: "First moon landing", y: 1969 }],
+      [{ t: "Magna Carta signed", y: 1215 }, { t: "Shakespeare's First Folio published", y: 1623 }, { t: "Telephone patented", y: 1876 }, { t: "World Wide Web proposed", y: 1989 }],
+      [{ t: "Telescope used for astronomy", y: 1609 }, { t: "Periodic table published", y: 1869 }, { t: "DNA double helix described", y: 1953 }, { t: "Human genome draft announced", y: 2000 }],
+      [{ t: "Paper money appears in China", y: 1024 }, { t: "Gutenberg Bible printed", y: 1455 }, { t: "Steam locomotive patented", y: 1804 }, { t: "Barcode scanned in a store", y: 1974 }],
+      [{ t: "First Olympic Games in Athens", y: 1896 }, { t: "First crossword published", y: 1913 }, { t: "First email sent", y: 1971 }, { t: "Nintendo Game Boy released", y: 1989 }],
+      [{ t: "Aztec capital Tenochtitlan founded", y: 1325 }, { t: "Galileo observes Jupiter's moons", y: 1610 }, { t: "First public railway opens", y: 1825 }, { t: "GPS becomes fully operational", y: 1995 }],
+      [{ t: "Black Death reaches Europe", y: 1347 }, { t: "First successful vaccine test", y: 1796 }, { t: "Penicillin discovered", y: 1928 }, { t: "First CRISPR gene edit in cells", y: 2012 }],
+      [{ t: "Machu Picchu built", y: 1450 }, { t: "Brooklyn Bridge opens", y: 1883 }, { t: "Golden Gate Bridge opens", y: 1937 }, { t: "Channel Tunnel opens", y: 1994 }],
+      [{ t: "First photograph made permanent", y: 1826 }, { t: "First motion picture camera patented", y: 1891 }, { t: "First color TV broadcast in the US", y: 1954 }, { t: "YouTube launches", y: 2005 }],
+      [{ t: "Newton publishes Principia", y: 1687 }, { t: "Darwin publishes On the Origin of Species", y: 1859 }, { t: "Einstein publishes special relativity", y: 1905 }, { t: "Higgs boson announced", y: 2012 }],
+      [{ t: "Oxford University teaching begins", y: 1096 }, { t: "Harvard founded", y: 1636 }, { t: "First Nobel Prizes awarded", y: 1901 }, { t: "Khan Academy founded", y: 2008 }],
+      [{ t: "Morse code demonstrated", y: 1844 }, { t: "First transatlantic telephone call", y: 1927 }, { t: "First mobile phone call", y: 1973 }, { t: "First iPhone released", y: 2007 }],
+      [{ t: "Sliced bread sold commercially", y: 1928 }, { t: "Microwave oven introduced", y: 1947 }, { t: "Instant ramen invented", y: 1958 }, { t: "Air fryer patent filed", y: 2005 }],
+      [{ t: "Chess rules close to modern form", y: 1475 }, { t: "Basketball invented", y: 1891 }, { t: "Frisbee trademarked", y: 1957 }, { t: "Wordle released publicly", y: 2021 }],
+      [{ t: "Library of Alexandria founded", y: -283 }, { t: "First encyclopedia of Diderot published", y: 1751 }, { t: "Wikipedia launches", y: 2001 }, { t: "OpenStreetMap founded", y: 2004 }],
+      [{ t: "Vikings reach North America", y: 1000 }, { t: "Columbus reaches the Caribbean", y: 1492 }, { t: "Amundsen reaches South Pole", y: 1911 }, { t: "Voyager 1 enters interstellar space", y: 2012 }],
+      [{ t: "First mechanical clock towers appear", y: 1283 }, { t: "Quartz clock built", y: 1927 }, { t: "Atomic clock demonstrated", y: 1949 }, { t: "Apple Watch released", y: 2015 }],
+      [{ t: "First known printed book", y: 868 }, { t: "First daily newspaper", y: 1650 }, { t: "First Kindle released", y: 2007 }, { t: "TikTok launched internationally", y: 2017 }],
+      [{ t: "First hot air balloon flight", y: 1783 }, { t: "First helicopter free flight", y: 1907 }, { t: "Concorde enters service", y: 1976 }, { t: "SpaceX Falcon Heavy first launch", y: 2018 }],
+      [{ t: "Abacus widely used in China", y: 1200 }, { t: "Pascal builds calculating machine", y: 1642 }, { t: "ENIAC announced", y: 1946 }, { t: "ChatGPT released", y: 2022 }]
     ];
 
-    function makeSeedGame(seed, index) {
-      const difficulty = ["Easy", "Medium", "Hard", "Expert"][index % 4];
-      const base = { difficulty, difficultyRank: difficultyRanks[difficulty], version: 1 + (index % 3), source: index % 5 === 0 ? "Official" : index % 3 === 0 ? "Community" : "AI" };
-      const n = index + 2;
-      const type = index % 15;
-      if (type === 0) return { ...base, id: `wordle${n}`, title: `${seed} Wordle`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: wordGridSets[index % wordGridSets.length] }, renderer: WordGrid };
-      if (type === 1) return { ...base, id: `wordle${n}`, title: `${seed} Word Grid`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: wordGridSets[(index + 3) % wordGridSets.length] }, renderer: WordGrid };
-      if (type === 2) return { ...base, id: `wordle${n}`, title: `${seed} Word Puzzle`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: wordGridSets[(index + 5) % wordGridSets.length] }, renderer: WordGrid };
-      if (type === 3) return { ...base, id: `sd${n}`, title: `${seed} Sudoku`, category: "Logic", time: "70s", traits: ["Logical Reasoning", "Focus"], gameSpec: sudokuVariants[index % sudokuVariants.length], renderer: MiniSudoku };
-      if (type === 4) return { ...base, id: `strategy${n}`, title: `${seed} Strategy`, category: "Strategy", time: "35s", traits: ["Strategy", "Pattern Recognition"], gameSpec: { patterns: [patternVariants[(index + 1) % patternVariants.length], patternVariants[(index + 4) % patternVariants.length]] }, renderer: PatternNext };
-      if (type === 5) return { ...base, id: `pat${n}`, title: `${seed} Pattern`, category: "Logic", time: "25s", traits: ["Pattern Recognition"], gameSpec: { patterns: [patternVariants[index % patternVariants.length], patternVariants[(index + 2) % patternVariants.length]] }, renderer: PatternNext };
-      if (type === 6) return { ...base, id: `logic${n}`, title: `${seed} Logic`, category: "Logic", time: "35s", traits: ["Logical Reasoning"], gameSpec: { puzzles: [logicVariants[index % logicVariants.length], logicVariants[(index + 2) % logicVariants.length], logicVariants[(index + 4) % logicVariants.length]] }, renderer: MiniLogic };
-      if (type === 7) return { ...base, id: `math${n}`, title: `${seed} Quick Math`, category: "Math", time: "45s", traits: ["Quantitative Reasoning"], gameSpec: { min: 2 + (index % 7), max: 14 + (index % 9), ops: index % 2 ? ["+", "x"] : ["+", "-", "x"] }, renderer: QuickMath };
-      if (type === 8) return { ...base, id: `scr${n}`, title: `${seed} Scramble`, category: "Language", time: "25s", traits: ["Verbal Reasoning"], gameSpec: { words: scrambleSets[index % scrambleSets.length] }, renderer: WordScramble };
-      if (type === 9) return { ...base, id: `timeline${n}`, title: `${seed} Event Order`, category: "History", time: "50s", traits: ["Sequencing", "Knowledge"], gameSpec: { events: timelineSets[(index + 1) % timelineSets.length] }, renderer: TimelineSort };
-      if (type === 10) return { ...base, id: `timeline${n}`, title: `${seed} Timeline`, category: "History", time: "50s", traits: ["Sequencing", "Knowledge"], gameSpec: { events: timelineSets[index % timelineSets.length] }, renderer: TimelineSort };
-      if (type === 11) return { ...base, id: `shape${n}`, title: `${seed} Shape Match`, category: "Visual Reasoning", time: "20s", traits: ["Spatial Reasoning"], renderer: ShapeMatch };
-      if (type === 12) return { ...base, id: `mem${n}`, title: `${seed} Memory Grid`, category: "Memory", time: "25s", traits: ["Working Memory"], renderer: MemoryGrid };
-      if (type === 13) return { ...base, id: `num${n}`, title: `${seed} Number Tap`, category: "Speed", time: "30s", traits: ["Processing Speed", "Focus"], renderer: NumberTap };
-      return { ...base, id: `strategy${n}`, title: `${seed} Strategy Pattern`, category: "Strategy", time: "30s", traits: ["Strategy", "Pattern Recognition"], gameSpec: { patterns: [patternVariants[(index + 1) % patternVariants.length], patternVariants[(index + 3) % patternVariants.length]] }, renderer: PatternNext };
-    }
+    const catalogDifficulty = (index) => index < 5 ? "Easy" : index < 10 ? "Medium" : index < 15 ? "Hard" : "Expert";
+    const catalogBase = (id, title, category, difficulty, traits, renderer, gameSpec = {}, time = "") => ({
+      id,
+      title,
+      category,
+      difficulty,
+      difficultyRank: difficultyRanks[difficulty],
+      version: 1,
+      time,
+      source: "Official",
+      traits,
+      gameSpec,
+      renderer
+    });
 
-    const seedNames = ["Arcade", "Neon", "Cipher", "Campus", "Orbit", "Pixel", "Summit", "Metro", "Vault", "Nova", "Echo", "Signal", "Vector", "Puzzle", "Focus", "Logic", "Tempo", "Grid", "Brain", "Flash", "Quest", "Riddle", "Zen", "Turbo", "Lunar", "Solar", "Prime", "Retro", "Jigsaw", "Matrix", "Beacon", "Sprint", "Clever", "Omega", "Atlas", "Delta", "Vertex", "Spark", "Radar", "Cosmic", "Marble", "Indigo", "Quartz", "Rocket", "Static", "Circuit", "Galaxy", "Nimble", "Anchor", "Crown", "Drift", "Ember", "Frost", "Harbor", "Ion", "Jolt", "Kite", "Legend", "Muse", "North", "Opal", "Pulse", "Relay", "Stone", "Trace", "Unity", "Vista", "Wave", "Yield", "Zenith", "Apex", "Bloom", "Cobalt", "Dynamo", "Everest", "Flare", "Glide", "Halo", "Ivory", "Jade", "Keystone", "Lagoon", "Mirage", "Nimbus", "Onyx", "Pioneer", "Quiver", "Ranger", "Sage", "Titan", "Umber", "Vivid", "Warden", "Xeno", "Yonder", "Zephyr", "Bolt", "Cinder", "Dune", "Elm", "Forge", "Grove", "Horizon", "Ink", "Juniper", "Knack", "Lotus", "Mosaic", "Nectar", "Oracle", "Pluto"];
-    games.push(...seedNames.map(makeSeedGame));
+    games.push(...wordGridSets.map((answers, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`wordle${index + 1}`, `Wordle ${index + 1}`, "Language", difficulty, ["Verbal Reasoning", "Pattern Recognition"], WordGrid, { answers }, "60s");
+    }));
+
+    const sudokuRevealOrders = [
+      [0,2,5,7,8,11,13,15,1,14],
+      [1,3,4,9,10,12,15,6,0,11],
+      [0,3,5,10,11,12,15,1,6,14],
+      [1,2,4,7,9,13,14,0,5,15]
+    ];
+    games.push(...Array.from({ length: 20 }, (_, index) => {
+      const difficulty = catalogDifficulty(index);
+      const base = sudokuVariants[index % sudokuVariants.length];
+      const revealCount = difficulty === "Easy" ? 9 : difficulty === "Medium" ? 8 : difficulty === "Hard" ? 7 : 6;
+      const reveal = new Set(sudokuRevealOrders[index % sudokuRevealOrders.length].slice(0, revealCount));
+      const givens = base.solution.map((n, cellIndex) => reveal.has(cellIndex) ? n : 0);
+      return catalogBase(`sd${index + 1}`, `Mini Sudoku ${index + 1}`, "Logic", difficulty, ["Logical Reasoning", "Focus"], MiniSudoku, { solution: base.solution, givens }, "");
+    }));
+
+    const hardSudokuSolution = [
+      1,2,3,4,5,6,
+      4,5,6,1,2,3,
+      2,3,4,5,6,1,
+      5,6,1,2,3,4,
+      3,4,5,6,1,2,
+      6,1,2,3,4,5
+    ];
+    const hardSudokuOrders = [
+      [0,3,5,7,10,14,17,18,21,25,28,30,32,35],
+      [1,4,6,8,11,13,16,19,22,24,27,29,33,34],
+      [2,5,9,12,15,17,20,23,26,28,31,33,0,35],
+      [0,6,11,13,18,20,25,29,32,34,3,9,15,27]
+    ];
+    const remapSudoku = (solution, offset) => solution.map(n => ((n + offset - 1) % 6) + 1);
+    games.push(...Array.from({ length: 20 }, (_, index) => {
+      const difficulty = catalogDifficulty(index);
+      const solution = remapSudoku(hardSudokuSolution, index % 6);
+      const revealCount = difficulty === "Easy" ? 14 : difficulty === "Medium" ? 12 : difficulty === "Hard" ? 10 : 8;
+      const reveal = new Set(hardSudokuOrders[index % hardSudokuOrders.length].slice(0, revealCount));
+      const givens = solution.map((n, cellIndex) => reveal.has(cellIndex) ? n : 0);
+      return catalogBase(`sdh${index + 1}`, `Hard Sudoku ${index + 1}`, "Math", difficulty, ["Logical Reasoning", "Focus"], HardSudoku, { solution, givens }, "");
+    }));
+
+    games.push(...timelineSets.map((events, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`tl${index + 1}`, `Timeline ${index + 1}`, "History", difficulty, ["Sequencing", "Knowledge"], TimelineSort, { events }, "50s");
+    }));
+
+    const goCatalog = [
+      { black: ["c4","d3","e4"], white: ["d4"], correct: "d5", choices: ["d5","c5","e5"] },
+      { black: ["b3","c2","d3"], white: ["c3"], correct: "c4", choices: ["c4","b4","d4"] },
+      { black: ["e5","f4","g5"], white: ["f5"], correct: "f6", choices: ["f6","e6","g6"] },
+      { black: ["c5","d4","e5"], white: ["d5"], correct: "d6", choices: ["d6","c6","e6"] },
+      { black: ["b5","c4","d5"], white: ["c5"], correct: "c6", choices: ["c6","b6","d6"] },
+      { black: ["e3","f2","g3"], white: ["f3"], correct: "f4", choices: ["f4","e4","g4"] },
+      { black: ["a4","b3","c4"], white: ["b4"], correct: "b5", choices: ["b5","a5","c5"] },
+      { black: ["d2","e1","f2"], white: ["e2"], correct: "e3", choices: ["e3","d3","f3"] },
+      { black: ["d6","e5","f6"], white: ["e6"], correct: "e7", choices: ["e7","d7","f7"] },
+      { black: ["c2","d1","e2"], white: ["d2"], correct: "d3", choices: ["d3","c3","e3"] }
+    ];
+    games.push(...goCatalog.map((gameSpec, index) => {
+      const difficulty = index < 3 ? "Medium" : index < 7 ? "Hard" : "Expert";
+      return catalogBase(`go${index + 1}`, `Go Capture ${index + 1}`, "Strategy", difficulty, ["Strategy", "Spatial Reasoning"], GoCapture, gameSpec, "");
+    }));
+
+    const pokerCatalog = [
+      { cards: ["A♠","A♥","A♦","7♣","2♠"], answer: "Three of a kind", opts: ["One pair", "Two pair", "Three of a kind", "Flush"] },
+      { cards: ["9♥","T♥","J♥","Q♥","K♥"], answer: "Straight flush", opts: ["Straight", "Flush", "Full house", "Straight flush"] },
+      { cards: ["4♣","4♦","K♠","K♥","K♣"], answer: "Full house", opts: ["Two pair", "Full house", "Four of a kind", "Flush"] },
+      { cards: ["2♣","5♣","8♣","J♣","K♣"], answer: "Flush", opts: ["Straight", "Flush", "High card", "Two pair"] },
+      { cards: ["6♠","7♦","8♣","9♥","T♠"], answer: "Straight", opts: ["Straight", "Flush", "Pair", "Full house"] },
+      { cards: ["Q♠","Q♦","Q♣","Q♥","3♦"], answer: "Four of a kind", opts: ["Full house", "Four of a kind", "Flush", "Straight"] },
+      { cards: ["A♣","K♦","9♥","6♠","3♣"], answer: "High card", opts: ["One pair", "High card", "Straight", "Flush"] },
+      { cards: ["J♠","J♦","8♣","8♥","2♦"], answer: "Two pair", opts: ["One pair", "Two pair", "Full house", "Straight"] },
+      { cards: ["5♠","5♦","5♣","9♥","9♠"], answer: "Full house", opts: ["Three of a kind", "Two pair", "Full house", "Four of a kind"] },
+      { cards: ["A♦","2♦","3♦","4♦","5♦"], answer: "Straight flush", opts: ["Straight", "Flush", "Straight flush", "High card"] }
+    ];
+    games.push(...pokerCatalog.map((round, index) => {
+      const difficulty = index < 3 ? "Easy" : index < 7 ? "Medium" : "Hard";
+      return catalogBase(`poker${index + 1}`, `Poker Read ${index + 1}`, "Strategy", difficulty, ["Probability", "Pattern Recognition"], PokerRead, { rounds: [round] }, "");
+    }));
+
+    games.push(...Array.from({ length: 5 }, (_, index) => catalogBase(`tetris${index + 1}`, `Tetris Mini ${index + 1}`, "Arcade", index < 2 ? "Medium" : "Hard", ["Spatial Reasoning", "Processing Speed"], TetrisMini, { startScore: 100 + index * 50, targetScore: 400 + index * 100 }, "60s")));
+    games.push(...Array.from({ length: 20 }, (_, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`mem${index + 1}`, `Memory Grid ${index + 1}`, "Memory", difficulty, ["Working Memory"], MemoryGrid, { count: difficulty === "Easy" ? 4 : difficulty === "Medium" ? 5 : difficulty === "Hard" ? 6 : 7 }, "12s");
+    }));
+    games.push(...Array.from({ length: 20 }, (_, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`num${index + 1}`, `Number Tap ${index + 1}`, "Speed", difficulty, ["Processing Speed", "Focus"], NumberTap, { count: 10 + index }, "30s");
+    }));
+    games.push(...Array.from({ length: 20 }, (_, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`math${index + 1}`, `Quick Math ${index + 1}`, "Math", difficulty, ["Quantitative Reasoning"], QuickMath, { min: 2 + Math.floor(index / 3), max: 10 + index, ops: index < 6 ? ["+"] : index < 12 ? ["+", "-"] : ["+", "-", "x"] }, "45s");
+    }));
+    games.push(...scrambleSets.slice(0, 20).map((words, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`scr${index + 1}`, `Word Scramble ${index + 1}`, "Language", difficulty, ["Verbal Reasoning"], WordScramble, { words }, "");
+    }));
+    games.push(...Array.from({ length: 20 }, (_, index) => {
+      const difficulty = catalogDifficulty(index);
+      const shapes = ["triangle", "arrow", "l"];
+      return catalogBase(`shape${index + 1}`, `Shape Match ${index + 1}`, "Visual Reasoning", difficulty, ["Spatial Reasoning"], ShapeMatch, { shape: shapes[index % shapes.length], rotation: [0, 90, 180, 270][index % 4] }, "");
+    }));
+    games.push(...patternVariants.slice(0, 20).map((pattern, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`pat${index + 1}`, `Pattern ${index + 1}`, "Logic", difficulty, ["Pattern Recognition"], PatternNext, { patterns: [pattern] }, "");
+    }));
+    games.push(...logicVariants.slice(0, 20).map((puzzle, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`logic${index + 1}`, `Mini Logic ${index + 1}`, "Logic", difficulty, ["Logical Reasoning"], MiniLogic, { puzzles: [puzzle] }, "");
+    }));
     dedupeGameCatalog();
 
     function dedupeGameCatalog() {
@@ -1226,6 +1417,7 @@
       const unique = [];
       games.forEach(game => {
         if (isTicTacToeGame(game)) return;
+        if (isLegacyGeneratedGame(game)) return;
         if (!isValidConnectionGame(game)) return;
         if (!isValidCountryBiggerGame(game)) return;
         if (!isValidCrosswordGame(game)) return;
@@ -1265,7 +1457,7 @@
         .eq("is_public", true)
         .order("created_at", { ascending: false });
       if (error || !data?.length) return;
-      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
+      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
       remote.forEach(game => {
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(game) || gameTitleKey(existing) === gameTitleKey(game))) games.unshift(game);
       });
@@ -2186,7 +2378,8 @@
     }
 
     function HardSudoku(root, game, done) {
-      const solution = [
+      const spec = game.gameSpec || {};
+      const solution = Array.isArray(spec.solution) && spec.solution.length === 36 ? spec.solution : [
         1,2,3,4,5,6,
         4,5,6,1,2,3,
         2,3,4,5,6,1,
@@ -2194,7 +2387,7 @@
         3,4,5,6,1,2,
         6,1,2,3,4,5
       ];
-      const givens = [
+      const givens = Array.isArray(spec.givens) && spec.givens.length === 36 ? spec.givens : [
         1,0,0,4,0,6,
         0,5,0,0,2,0,
         0,0,4,0,0,1,
@@ -2228,9 +2421,11 @@
     }
 
     function GoCapture(root, game, done) {
-      const black = new Set(["c3", "d2", "e3", "d4"]);
-      const white = new Set(["d3"]);
-      const correct = "c4";
+      const spec = game.gameSpec || {};
+      const black = new Set(Array.isArray(spec.black) ? spec.black : ["c3", "d2", "e3", "d4"]);
+      const white = new Set(Array.isArray(spec.white) ? spec.white : ["d3"]);
+      const correct = spec.correct || "c4";
+      const choices = Array.isArray(spec.choices) && spec.choices.length ? spec.choices : ["c4", "d5", "e4"];
       const files = ["a","b","c","d","e","f","g"];
       root.innerHTML = `<div class="go-shell"><p class="muted">Black to play. Capture the white stone.</p><div class="go-board"></div></div>`;
       const board = $(".go-board", root);
@@ -2238,13 +2433,13 @@
         files.forEach(f => {
           const p = `${f}${r}`;
           const cell = document.createElement("button");
-          cell.className = "go-point" + (["c4", "d5", "e4"].includes(p) ? " choice" : "");
+          cell.className = "go-point" + (choices.includes(p) ? " choice" : "");
           if (black.has(p)) cell.innerHTML = `<div class="stone black"></div>`;
           if (white.has(p)) cell.innerHTML = `<div class="stone white"></div>`;
           cell.onclick = () => {
             if (black.has(p) || white.has(p)) return;
             cell.innerHTML = `<div class="stone black"></div>`;
-            done(p === correct ? 1000 : 180, p === correct ? "Captured." : "The capture is at c4.");
+            done(p === correct ? 1000 : 180, p === correct ? "Captured." : `The capture is at ${correct}.`);
           };
           board.appendChild(cell);
         });
@@ -2252,7 +2447,8 @@
     }
 
     function PokerRead(root, game, done) {
-      const rounds = [
+      const generatedRounds = Array.isArray(game.gameSpec?.rounds) ? game.gameSpec.rounds : [];
+      const rounds = generatedRounds.length ? generatedRounds : [
         { cards: ["A♠","A♥","A♦","7♣","2♠"], answer: "Three of a kind", opts: ["One pair", "Two pair", "Three of a kind", "Flush"] },
         { cards: ["9♥","T♥","J♥","Q♥","K♥"], answer: "Straight flush", opts: ["Straight", "Flush", "Full house", "Straight flush"] },
         { cards: ["4♣","4♦","K♠","K♥","K♣"], answer: "Full house", opts: ["Two pair", "Full house", "Four of a kind", "Flush"] }
@@ -2270,6 +2466,9 @@
 
     function TetrisMini(root, game, done) {
       const rows = 18, cols = 10;
+      const spec = game.gameSpec || {};
+      const startScore = Number(spec.startScore || 200);
+      const targetScore = Number(spec.targetScore || 500);
       const board = Array.from({ length: rows }, () => Array(cols).fill(""));
       [["cyan",0],["yellow",2],["lime",5],["cyan",7],["purple",8],["red",0],["red",1],["purple",2],["red",3],["red",4],["orange",5],["white",6],["purple",8],["blue",9]].forEach(([color, c], i) => {
         const r = rows - 3 + Math.floor(i / 5);
@@ -2277,7 +2476,7 @@
       });
       let piece = { cells: [[4,5],[5,5],[5,6],[6,6]], color: "lime" };
       let moves = 0;
-      root.innerHTML = `<div class="tetris-shell"><div class="game-stats" style="width:100%;"><span>Score: <b class="tet-score">200</b></span><span>Target: <b>500</b></span></div><div class="tetris-board"></div><div class="tetris-controls"><button class="left">←</button><button class="rotate">↻</button><button class="right">→</button><button class="drop">↓</button></div></div>`;
+      root.innerHTML = `<div class="tetris-shell"><div class="game-stats" style="width:100%;"><span>Score: <b class="tet-score">${startScore}</b></span><span>Target: <b>${targetScore}</b></span></div><div class="tetris-board"></div><div class="tetris-controls"><button class="left">←</button><button class="rotate">↻</button><button class="right">→</button><button class="drop">↓</button></div></div>`;
       const draw = () => {
         const active = new Map(piece.cells.map(([c, r]) => [`${c},${r}`, piece.color]));
         $(".tetris-board", root).innerHTML = "";
@@ -2294,7 +2493,7 @@
       const move = (dx, dy = 0) => {
         piece.cells = piece.cells.map(([c, r]) => [Math.max(0, Math.min(cols - 1, c + dx)), Math.max(0, Math.min(rows - 1, r + dy))]);
         moves++;
-        $(".tet-score", root).textContent = String(200 + moves * 50);
+        $(".tet-score", root).textContent = String(startScore + moves * 50);
         draw();
       };
       $(".left", root).onclick = () => move(-1);
@@ -2308,8 +2507,11 @@
     }
 
     function MemoryGrid(root, game, done) {
-      const count = 5;
-      const targets = shuffle([...Array(16).keys()]).slice(0, count);
+      const spec = game.gameSpec || {};
+      const count = Math.max(3, Math.min(8, Number(spec.count || 5)));
+      const targets = Array.isArray(spec.targets) && spec.targets.length === count
+        ? spec.targets.map(Number)
+        : shuffle([...Array(16).keys()]).slice(0, count);
       const selected = new Set();
       root.innerHTML = `<p class="muted">Memorize the lit squares, then repeat the pattern.</p><div class="memory-board"></div><button class="btn primary check" disabled>Check</button>`;
       const grid = $(".memory-board", root);
@@ -2332,7 +2534,8 @@
     }
 
     function NumberTap(root, game, done) {
-      const nums = shuffle([...Array(20).keys()].map(i => i + 1));
+      const count = Math.max(8, Math.min(25, Number(game.gameSpec?.count || 20)));
+      const nums = shuffle([...Array(count).keys()].map(i => i + 1));
       let next = 1, mistakes = 0;
       const start = now();
       root.innerHTML = `<p class="muted">Tap the numbered targets in ascending order.</p><div class="number-field"></div><span class="pill">Target <b class="next">1</b></span>`;
@@ -2348,7 +2551,7 @@
             b.classList.add("done");
             next++;
             $(".next", root).textContent = next;
-            if (next === 21) {
+            if (next === count + 1) {
               const elapsed = (now() - start) / 1000;
               done(Math.max(100, Math.round(1600 - elapsed * 35 - mistakes * 80)), `${elapsed.toFixed(1)}s with ${mistakes} mistakes.`);
             }
@@ -2440,13 +2643,14 @@
       });
       $(".check", root).onclick = () => {
         const correct = picked.every((e, i) => e.y === events[i].y);
-        done(correct ? 1000 : 300, correct ? "Chronology locked." : "Correct order: 1450, 1776, 1903, 1969.");
+        done(correct ? 1000 : 300, correct ? "Chronology locked." : `Correct order: ${events.map(e => e.y).join(", ")}.`);
       };
     }
 
     function ShapeMatch(root, game, done) {
-      const type = choice(["triangle", "arrow", "l"]);
-      const targetRot = choice([0, 90, 180, 270]);
+      const spec = game.gameSpec || {};
+      const type = spec.shape || choice(["triangle", "arrow", "l"]);
+      const targetRot = Number.isFinite(Number(spec.rotation)) ? Number(spec.rotation) : choice([0, 90, 180, 270]);
       const opts = shuffle([targetRot, (targetRot + 90) % 360, (targetRot + 180) % 360, (targetRot + 270) % 360]);
       root.innerHTML = `<p class="muted">Pick the exact matching rotation.</p><div class="shape-display"><div class="shape ${type}" style="transform:rotate(${targetRot}deg)"></div></div><div class="choices"></div>`;
       opts.forEach(rot => {
@@ -3067,7 +3271,7 @@
           status: game.status || "seeded",
           version: game.version || 1,
           traits: Array.isArray(game.traits) ? game.traits : []
-        })).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
+        })).filter(game => !isAdminDeletedGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
         const seen = new Set(remoteRows.map(row => gameUniqueKey(row)));
         adminRows = [...remoteRows, ...localAdminRows().filter(row => !seen.has(gameUniqueKey(row)))];
         hydrateAdminControls();
@@ -3078,6 +3282,30 @@
         $("#adminSummary").innerHTML = "";
         $("#adminPanel").innerHTML = `<div class="panel"><h3>Admin access required</h3><p class="muted">${esc(error.message || "This view is only available to " + adminEmail)}.</p></div>`;
       }
+    }
+
+    function adminAnswerForGame(game) {
+      const spec = game.gameSpec || {};
+      if (spec.san) return spec.san;
+      if (spec.answer) return spec.answer;
+      if (Array.isArray(spec.answers)) return spec.answers.join(", ");
+      if (Array.isArray(spec.solution)) {
+        const rowSize = spec.solution.length === 36 ? 6 : spec.solution.length === 16 ? 4 : 0;
+        return rowSize ? spec.solution.reduce((rows, n, index) => {
+          if (index % rowSize === 0) rows.push([]);
+          rows[rows.length - 1].push(n);
+          return rows;
+        }, []).map(row => row.join(" ")).join(" / ") : spec.solution.join(", ");
+      }
+      if (Array.isArray(spec.events)) return spec.events.slice().sort((a, b) => Number(a.y) - Number(b.y)).map(e => `${e.y}: ${e.t}`).join(" / ");
+      if (spec.correct) return spec.correct;
+      if (Array.isArray(spec.rounds)) return spec.rounds.map(round => `${(round.cards || []).join(" ")} -> ${round.answer}`).join(" / ");
+      if (Array.isArray(spec.patterns)) return spec.patterns.map(pattern => `${(pattern.seq || []).join(", ")} -> ${pattern.ans}`).join(" / ");
+      if (Array.isArray(spec.puzzles)) return spec.puzzles.map(puzzle => `${puzzle.q} -> ${puzzle.a}`).join(" / ");
+      if (Array.isArray(spec.words)) return spec.words.join(", ");
+      if (Array.isArray(spec.groups)) return spec.groups.map(group => `${group.name}: ${(group.words || []).join(", ")}`).join(" / ");
+      if (Array.isArray(spec.countries)) return spec.countries.map(country => `${country[0]} pop ${country[1]}m area ${country[2]}k`).join(" / ");
+      return "See renderer";
     }
 
     function localAdminRows() {
@@ -3091,7 +3319,7 @@
         status: "seeded",
         version: game.version || 1,
         traits: Array.isArray(game.traits) ? game.traits : [],
-        answer: game.gameSpec?.san || game.gameSpec?.answer || game.gameSpec?.a || game.gameSpec?.target || "See renderer",
+        answer: adminAnswerForGame(game),
         gameSpec: game.gameSpec || {},
         renderer: game.renderer,
         game_type: game.game_type || game.type || ""
@@ -3164,12 +3392,12 @@
     function adminFamilyName(game) {
       const text = `${game.id || ""} ${game.title || ""} ${game.game_type || ""}`.toLowerCase();
       if (text.includes("chess") || /^ch\d+/.test(text)) return "Chess";
-      if (text.includes("wordle")) return "Wordle";
+      if (text.includes("wordle") || /^wordle\d+/.test(text)) return "Wordle";
       if (text.includes("connections") || /^con\d+/.test(text)) return "Connections";
       if (text.includes("crossword") || /^cw\d+/.test(text)) return "Crossword";
       if (text.includes("hard sudoku") || /^sdh\d+/.test(text)) return "Hard Sudoku";
       if (text.includes("sudoku") || /^sd\d+/.test(text)) return "Mini Sudoku";
-      if (text.includes("timeline")) return "Timeline";
+      if (text.includes("timeline") || /^tl\d+/.test(text)) return "Timeline";
       if (text.includes("go capture") || /^go\d+/.test(text)) return "Go Capture";
       if (text.includes("poker")) return "Poker Read";
       if (text.includes("tetris")) return "Tetris Mini";
