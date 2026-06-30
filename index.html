@@ -107,6 +107,7 @@
     .btn:active, .tab:active, .icon-btn:active, .cell-btn:active { transform: translateY(1px); }
     .primary { color: white; background: var(--primary); border-color: var(--primary); }
     .ghost { color: var(--dark-purple); background: white; }
+    .danger { color: white; background: var(--error); border-color: var(--error); }
     .icon-btn { width: 42px; display: grid; place-items: center; color: var(--dark-purple); background: var(--lavender); font-size: 20px; }
     .nav { min-height: 76px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 8px max(8px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right)); background: white; border-top: 1px solid var(--line); }
     .nav button { display: grid; place-items: center; gap: 1px; color: var(--muted); background: transparent; border-radius: 10px; font-size: 10px; font-weight: 850; text-transform: uppercase; }
@@ -147,6 +148,7 @@
     .admin-preview-stage { min-height: 360px; padding: 14px; overflow: auto; background: var(--bg); }
     .admin-solution { padding: 14px; border-radius: 12px; background: #F3EEFF; border: 1px solid #DCD1FF; font-weight: 850; overflow-wrap: anywhere; }
     .admin-preview-feedback { min-height: 44px; display: grid; place-items: center; margin-top: 10px; border-radius: 10px; color: var(--dark-purple); background: var(--lavender); font-weight: 900; }
+    .admin-delete-note { padding: 12px; border-radius: 10px; background: #FFF1F2; border: 1px solid #FECDD3; color: #9F1239; font-size: 13px; font-weight: 750; }
     .admin-table { display: grid; min-width: 880px; }
     .admin-table-wrap { overflow-x: auto; }
     .admin-row { display: grid; grid-template-columns: minmax(260px, 1.7fr) 110px 90px 120px 130px minmax(220px, 1.2fr); gap: 12px; align-items: start; padding: 12px 16px; border-bottom: 1px solid var(--lavender); }
@@ -583,6 +585,7 @@
     state.comments ||= {};
     state.challenges ||= [];
     state.playedGameIds ||= [];
+    state.adminDeletedGameIds ||= [];
     state.usernamePrompted ||= false;
     state.drafts.forEach((draft, index) => {
       draft.id ||= `local-draft-${index}-${today}`;
@@ -620,8 +623,10 @@
     const gameUniqueKey = (game) => canonicalGameId(game.id || `${game.title}-${game.category}-${game.version || 1}`).toLowerCase().trim();
     const gameTitleKey = (game) => String(game.title || game.id || "").toLowerCase().trim();
     const isTicTacToeGame = (game) => /(^|\b)tic[-_\s]*tac[-_\s]*toe\b|tiktaktoe|tictactoe|^tic-\d+|tic_tac_toe/i.test(`${game?.id || ""} ${game?.title || ""} ${game?.gameSpec?.kind || ""}`);
+    const isAdminDeletedGame = (gameOrId) => state.adminDeletedGameIds.includes(gameUniqueKey(typeof gameOrId === "object" ? gameOrId : { id: gameOrId }));
     const isAdmin = () => (currentUser?.email || "").toLowerCase() === adminEmail;
     state.playedGameIds = [...new Set((state.playedGameIds || []).map(canonicalGameId))];
+    state.adminDeletedGameIds = [...new Set((state.adminDeletedGameIds || []).map(id => gameUniqueKey({ id })))];
     state.challenges = (state.challenges || []).map(challenge => ({ ...challenge, gameId: canonicalGameId(challenge.gameId) }));
     save();
 
@@ -901,6 +906,7 @@
       const unique = [];
       games.forEach(game => {
         if (isTicTacToeGame(game)) return;
+        if (isAdminDeletedGame(game)) return;
         const idKey = gameUniqueKey(game);
         const titleKey = gameTitleKey(game);
         if (seenIds.has(idKey) || seenTitles.has(titleKey)) return;
@@ -936,7 +942,7 @@
         .eq("is_public", true)
         .order("created_at", { ascending: false });
       if (error || !data?.length) return;
-      const remote = data.map(normalizeGame);
+      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game));
       remote.forEach(game => {
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(game) || gameTitleKey(existing) === gameTitleKey(game))) games.unshift(game);
       });
@@ -2550,7 +2556,7 @@
           status: game.status || "seeded",
           version: game.version || 1,
           traits: Array.isArray(game.traits) ? game.traits : []
-        }));
+        })).filter(game => !isAdminDeletedGame(game));
         const seen = new Set(remoteRows.map(row => gameUniqueKey(row)));
         adminRows = [...remoteRows, ...localAdminRows().filter(row => !seen.has(gameUniqueKey(row)))];
         hydrateAdminControls();
@@ -2564,7 +2570,7 @@
     }
 
     function localAdminRows() {
-      return games.map(game => ({
+      return games.filter(game => !isAdminDeletedGame(game)).map(game => ({
         id: canonicalGameId(game.id),
         title: game.title,
         category: game.category || "Uncategorized",
@@ -2796,6 +2802,8 @@
                 <p class="muted">Solution</p>
                 <div class="admin-solution">${esc(adminSolutionForGame(game))}</div>
               </div>
+              <div class="admin-delete-note">Deleting removes this game from the admin catalog and feed. Database-backed games will also be deleted from Supabase when permissions allow.</div>
+              <button class="btn danger" onclick="deleteAdminGame('${escAttr(game.id || "")}')">Delete game</button>
             </div>
             <div>
               <div id="adminPreviewStage" class="admin-preview-stage"></div>
@@ -2816,6 +2824,40 @@
       game.renderer(stage, game, (score, label) => {
         feedback.textContent = `${label || "Result"} · ${score || 0} pts`;
       });
+    }
+
+    async function deleteAdminGame(id) {
+      if (!isAdmin()) {
+        toast("Admin access required");
+        return;
+      }
+      const game = adminGameById(id);
+      if (!game) return;
+      const label = `${game.title || "this game"} (${game.id || "no-id"})`;
+      if (!confirm(`Delete ${label}? This removes it from admin and the feed.`)) return;
+      let remoteDeleteFailed = false;
+      if (supabaseClient && game.dbId) {
+        const { error } = await supabaseClient.from("games").delete().eq("id", game.dbId);
+        remoteDeleteFailed = Boolean(error);
+      }
+      const key = gameUniqueKey(game);
+      if (!state.adminDeletedGameIds.includes(key)) state.adminDeletedGameIds.push(key);
+      state.playedGameIds = (state.playedGameIds || []).filter(item => gameUniqueKey({ id: item }) !== key);
+      state.createdGames = (state.createdGames || []).filter(item => gameUniqueKey(item) !== key);
+      state.drafts = (state.drafts || []).filter(item => gameUniqueKey(item) !== key);
+      state.challenges = (state.challenges || []).filter(challenge => gameUniqueKey({ id: challenge.gameId }) !== key);
+      save();
+      for (let i = games.length - 1; i >= 0; i--) {
+        if (gameUniqueKey(games[i]) === key) games.splice(i, 1);
+      }
+      adminRows = adminRows.filter(row => gameUniqueKey(row) !== key);
+      feedPool = feedPool.filter(item => gameUniqueKey(item) !== key);
+      feedShownIds.delete(key);
+      adminSelectedGameId = "";
+      toast(remoteDeleteFailed ? "Hidden locally. Supabase delete failed." : "Game deleted");
+      renderAdminCatalog();
+      renderFeed();
+      renderProfile();
     }
 
     function adminGameRow(game) {
