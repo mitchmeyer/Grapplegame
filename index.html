@@ -286,6 +286,12 @@
     .hard-sudoku-pad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; width: 100%; }
     .hard-sudoku-pad button { min-height: 36px; border-radius: 8px; background: #C9B8FF; color: white; font-weight: 950; }
     .go-shell, .poker-shell, .tetris-shell { width: min(100%, 420px); margin: 0 auto; display: grid; gap: 12px; justify-items: center; }
+    .go-shell { position: relative; padding-top: 2px; }
+    .go-rules-btn { position: absolute; top: 0; right: 0; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; color: #6B7280; background: white; border: 1px solid #E5E7EF; font-size: 13px; font-weight: 900; line-height: 1; }
+    .go-rules-btn.active { color: white; background: var(--primary); border-color: var(--primary); }
+    .go-rules-popover { position: absolute; top: 28px; right: 0; z-index: 2; width: min(260px, 82vw); display: none; padding: 10px 11px; border: 1px solid #E5E7EF; border-radius: 10px; background: white; box-shadow: 0 8px 20px rgba(15, 23, 42, .12); color: #4B5563; font-size: 12px; line-height: 1.35; text-align: left; }
+    .go-rules-popover.show { display: block; }
+    .go-rules-popover b { display: block; margin-bottom: 4px; color: var(--text); }
     .go-board { display: grid; grid-template-columns: repeat(7, 42px); grid-template-rows: repeat(7, 42px); padding: 8px; border: 2px solid #A16207; background: #D6A85A; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
     .go-point { position: relative; width: 42px; height: 42px; background: transparent; }
     .go-point::before, .go-point::after { content: ""; position: absolute; background: rgba(0,0,0,.35); }
@@ -2427,8 +2433,20 @@
       const correct = spec.correct || "c4";
       const choices = Array.isArray(spec.choices) && spec.choices.length ? spec.choices : ["c4", "d5", "e4"];
       const files = ["a","b","c","d","e","f","g"];
-      root.innerHTML = `<div class="go-shell"><p class="muted">Black to play. Capture the white stone.</p><div class="go-board"></div></div>`;
+      root.innerHTML = `
+        <div class="go-shell">
+          <button class="go-rules-btn" type="button" aria-label="Go rules">?</button>
+          <div class="go-rules-popover"><b>Go basics</b>Stones live by open adjacent points called liberties. Surround an opponent stone or group so it has no liberties to capture it. Here, black moves once to take the white stone.</div>
+          <p class="muted">Black to play. Capture the white stone.</p>
+          <div class="go-board"></div>
+        </div>`;
       const board = $(".go-board", root);
+      const rulesBtn = $(".go-rules-btn", root);
+      const rulesPopover = $(".go-rules-popover", root);
+      rulesBtn.onclick = () => {
+        rulesBtn.classList.toggle("active");
+        rulesPopover.classList.toggle("show");
+      };
       for (let r = 7; r >= 1; r--) {
         files.forEach(f => {
           const p = `${f}${r}`;
