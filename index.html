@@ -624,7 +624,8 @@
     const canonicalGameId = (value) => String(value || "")
       .trim()
       .replace(/^chess(\d+)$/i, "ch$1")
-      .replace(/^con(?:nections?)?[-_\s]*(\d+)$/i, "Con$1");
+      .replace(/^con(?:nections?)?[-_\s]*(\d+)$/i, "Con$1")
+      .replace(/^(?:country|country[-_\s]*bigger|cb)[-_\s]*(\d+)$/i, "cb$1");
     const gameUniqueKey = (game) => canonicalGameId(game.id || `${game.title}-${game.category}-${game.version || 1}`).toLowerCase().trim();
     const gameTitleKey = (game) => String(game.title || game.id || "").toLowerCase().trim();
     const isTicTacToeGame = (game) => /(^|\b)tic[-_\s]*tac[-_\s]*toe\b|tiktaktoe|tictactoe|^tic-\d+|tic_tac_toe/i.test(`${game?.id || ""} ${game?.title || ""} ${game?.gameSpec?.kind || ""}`);
@@ -638,6 +639,18 @@
       if (!Array.isArray(groups) || groups.length !== 4) return false;
       const words = groups.flatMap(group => Array.isArray(group.words) ? group.words.map(word => String(word).toUpperCase()) : []);
       return groups.every(group => group.name && Array.isArray(group.words) && group.words.length === 4) && words.length === 16 && new Set(words).size === 16;
+    };
+    const isCountryBiggerLikeGame = (game) => /country[-_\s]*bigger/i.test(`${game?.id || ""} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`) || /^(?:country|cb)\d+$/i.test(String(game?.id || "")) || game?.renderer === CountryBigger;
+    const isValidCountryBiggerGame = (game) => {
+      if (!isCountryBiggerLikeGame(game)) return true;
+      if (!/^cb(?:[1-9]|1\d|20)$/.test(canonicalGameId(game.id))) return false;
+      const countries = game.gameSpec?.countries || game.game_spec?.countries;
+      return Array.isArray(countries) && countries.length >= 4 && countries.every(country =>
+        Array.isArray(country) &&
+        typeof country[0] === "string" &&
+        Number(country[1]) > 0 &&
+        Number(country[2]) > 0
+      );
     };
     state.playedGameIds = [...new Set((state.playedGameIds || []).map(canonicalGameId))];
     state.adminDeletedGameIds = [...new Set((state.adminDeletedGameIds || []).map(id => gameUniqueKey({ id })))];
@@ -663,7 +676,6 @@
       { id: "num1", title: "Number Tap 1", category: "Speed", difficulty: "Medium", difficultyRank: 2, version: 1, time: "30s", source: "Community", traits: ["Processing Speed", "Focus"], renderer: NumberTap },
       { id: "math1", title: "Quick Math 1", category: "Math", difficulty: "Medium", difficultyRank: 2, version: 1, time: "45s", source: "AI", traits: ["Quantitative Reasoning"], renderer: QuickMath },
       { id: "scr1", title: "Word Scramble 1", category: "Language", difficulty: "Easy", difficultyRank: 1, version: 1, time: "20s", source: "Community", traits: ["Verbal Reasoning"], renderer: WordScramble },
-      { id: "country1", title: "Country Bigger 1", category: "Geography", difficulty: "Easy", difficultyRank: 1, version: 1, time: "20s", source: "Official", traits: ["Knowledge", "Comparison Reasoning"], renderer: CountryBigger },
       { id: "timeline2", title: "Timeline Sort 2", category: "History", difficulty: "Medium", difficultyRank: 2, version: 1, time: "45s", source: "Community", traits: ["Sequencing", "Knowledge"], renderer: TimelineSort },
       { id: "shape1", title: "Shape Match 1", category: "Visual Reasoning", difficulty: "Medium", difficultyRank: 2, version: 1, time: "15s", source: "AI", traits: ["Spatial Reasoning"], renderer: ShapeMatch },
       { id: "pat1", title: "Pattern Next 1", category: "Logic", difficulty: "Easy", difficultyRank: 1, version: 1, time: "15s", source: "Official", traits: ["Pattern Recognition"], renderer: PatternNext },
@@ -982,11 +994,43 @@
       ["ROCKET", "STATIC", "ANCHOR", "HARBOR", "LEGEND", "MARBLE"],
       ["SUMMIT", "CAMPUS", "PIXEL", "RETRO", "JIGSAW", "SPRINT"]
     ];
-    const countrySets = [
-      [["India", 1428, 3287], ["Brazil", 216, 8516], ["Japan", 125, 378], ["Nigeria", 224, 924], ["Canada", 40, 9985], ["France", 68, 644]],
-      [["Mexico", 129, 1964], ["Germany", 84, 357], ["Egypt", 112, 1001], ["Australia", 26, 7692], ["Spain", 48, 506], ["Kenya", 55, 580]],
-      [["Argentina", 46, 2780], ["Italy", 59, 301], ["Thailand", 72, 513], ["Norway", 5, 385], ["Colombia", 52, 1142], ["Poland", 38, 313]]
+    const countryBiggerCatalog = [
+      { difficulty: "Easy", countries: [["India", 1428, 3287], ["Brazil", 216, 8516], ["Japan", 125, 378], ["Nigeria", 224, 924], ["Canada", 40, 9985], ["France", 68, 644]] },
+      { difficulty: "Easy", countries: [["China", 1410, 9597], ["Mexico", 129, 1964], ["Germany", 84, 357], ["Egypt", 112, 1001], ["Australia", 26, 7692], ["Kenya", 55, 580]] },
+      { difficulty: "Easy", countries: [["Russia", 144, 17098], ["Bangladesh", 173, 148], ["Spain", 48, 506], ["Argentina", 46, 2780], ["Italy", 59, 301], ["Thailand", 72, 513]] },
+      { difficulty: "Easy", countries: [["United States", 335, 9834], ["Indonesia", 278, 1905], ["Pakistan", 241, 881], ["Vietnam", 100, 331], ["South Africa", 60, 1221], ["Norway", 5, 385]] },
+      { difficulty: "Medium", countries: [["Turkey", 85, 783], ["Iran", 89, 1648], ["United Kingdom", 68, 244], ["Colombia", 52, 1142], ["Poland", 38, 313], ["Saudi Arabia", 37, 2150]] },
+      { difficulty: "Medium", countries: [["Peru", 34, 1285], ["Malaysia", 34, 330], ["Morocco", 37, 447], ["Iraq", 44, 438], ["Uzbekistan", 36, 449], ["Ghana", 34, 239]] },
+      { difficulty: "Medium", countries: [["Algeria", 46, 2382], ["Sudan", 48, 1862], ["Ukraine", 37, 604], ["Afghanistan", 41, 652], ["Yemen", 34, 528], ["Nepal", 31, 147]] },
+      { difficulty: "Medium", countries: [["Venezuela", 29, 912], ["Chile", 20, 756], ["Ecuador", 18, 284], ["Guatemala", 18, 109], ["Cambodia", 17, 181], ["Tunisia", 12, 164]] },
+      { difficulty: "Medium", countries: [["Netherlands", 18, 42], ["Belgium", 12, 31], ["Sweden", 11, 450], ["Greece", 10, 132], ["Portugal", 10, 92], ["Hungary", 10, 93]] },
+      { difficulty: "Hard", countries: [["Cuba", 11, 110], ["Dominican Republic", 11, 49], ["Haiti", 12, 28], ["Bolivia", 12, 1099], ["Paraguay", 7, 407], ["Uruguay", 3, 176]] },
+      { difficulty: "Hard", countries: [["Kazakhstan", 20, 2725], ["Mongolia", 3, 1564], ["Kyrgyzstan", 7, 200], ["Tajikistan", 10, 143], ["Turkmenistan", 6, 488], ["Georgia", 4, 70]] },
+      { difficulty: "Hard", countries: [["Romania", 19, 238], ["Czechia", 11, 79], ["Austria", 9, 84], ["Switzerland", 9, 41], ["Serbia", 7, 88], ["Bulgaria", 7, 111]] },
+      { difficulty: "Hard", countries: [["Senegal", 18, 197], ["Mali", 23, 1240], ["Niger", 27, 1267], ["Chad", 18, 1284], ["Somalia", 18, 638], ["Rwanda", 14, 26]] },
+      { difficulty: "Hard", countries: [["Laos", 8, 237], ["Myanmar", 55, 677], ["Sri Lanka", 22, 66], ["Jordan", 11, 89], ["Lebanon", 5, 10], ["Armenia", 3, 30]] },
+      { difficulty: "Expert", countries: [["Ireland", 5, 70], ["Costa Rica", 5, 51], ["Panama", 4, 75], ["Croatia", 4, 57], ["Slovakia", 5, 49], ["Lithuania", 3, 65]] },
+      { difficulty: "Expert", countries: [["Albania", 3, 29], ["Slovenia", 2, 20], ["Latvia", 2, 65], ["Estonia", 1, 45], ["North Macedonia", 2, 26], ["Moldova", 3, 34]] },
+      { difficulty: "Expert", countries: [["Qatar", 3, 12], ["Kuwait", 4, 18], ["Bahrain", 2, 1], ["Oman", 5, 310], ["United Arab Emirates", 10, 84], ["Israel", 10, 22]] },
+      { difficulty: "Expert", countries: [["New Zealand", 5, 268], ["Fiji", 1, 18], ["Papua New Guinea", 10, 463], ["Solomon Islands", 1, 29], ["Samoa", 0.2, 3], ["Vanuatu", 0.3, 12]] },
+      { difficulty: "Expert", countries: [["Denmark", 6, 43], ["Finland", 6, 338], ["Iceland", 0.4, 103], ["Luxembourg", 0.7, 3], ["Malta", 0.5, 0.3], ["Cyprus", 1, 9]] },
+      { difficulty: "Expert", countries: [["Botswana", 3, 582], ["Namibia", 3, 824], ["Lesotho", 2, 30], ["Eswatini", 1, 17], ["Mauritius", 1, 2], ["Madagascar", 30, 587]] }
     ];
+    games.push(...countryBiggerCatalog.map((spec, index) => {
+      const number = index + 1;
+      return {
+        id: `cb${number}`,
+        title: `Country Bigger ${number}`,
+        category: "Geography",
+        difficulty: spec.difficulty,
+        difficultyRank: difficultyRanks[spec.difficulty],
+        version: 1,
+        source: "Official",
+        traits: ["Knowledge", "Comparison Reasoning"],
+        gameSpec: { countries: spec.countries },
+        renderer: CountryBigger
+      };
+    }));
     const timelineSets = [
       [
         { t: "Printing press popularized", y: 1450 },
@@ -1022,7 +1066,7 @@
       if (type === 6) return { ...base, id: `logic${n}`, title: `${seed} Logic`, category: "Logic", time: "35s", traits: ["Logical Reasoning"], gameSpec: { puzzles: [logicVariants[index % logicVariants.length], logicVariants[(index + 2) % logicVariants.length], logicVariants[(index + 4) % logicVariants.length]] }, renderer: MiniLogic };
       if (type === 7) return { ...base, id: `math${n}`, title: `${seed} Quick Math`, category: "Math", time: "45s", traits: ["Quantitative Reasoning"], gameSpec: { min: 2 + (index % 7), max: 14 + (index % 9), ops: index % 2 ? ["+", "x"] : ["+", "-", "x"] }, renderer: QuickMath };
       if (type === 8) return { ...base, id: `scr${n}`, title: `${seed} Scramble`, category: "Language", time: "25s", traits: ["Verbal Reasoning"], gameSpec: { words: scrambleSets[index % scrambleSets.length] }, renderer: WordScramble };
-      if (type === 9) return { ...base, id: `country${n}`, title: `${seed} Country Bigger`, category: "Geography", time: "25s", traits: ["Knowledge", "Comparison Reasoning"], gameSpec: { countries: countrySets[index % countrySets.length] }, renderer: CountryBigger };
+      if (type === 9) return { ...base, id: `timeline${n}`, title: `${seed} Event Order`, category: "History", time: "50s", traits: ["Sequencing", "Knowledge"], gameSpec: { events: timelineSets[(index + 1) % timelineSets.length] }, renderer: TimelineSort };
       if (type === 10) return { ...base, id: `timeline${n}`, title: `${seed} Timeline`, category: "History", time: "50s", traits: ["Sequencing", "Knowledge"], gameSpec: { events: timelineSets[index % timelineSets.length] }, renderer: TimelineSort };
       if (type === 11) return { ...base, id: `shape${n}`, title: `${seed} Shape Match`, category: "Visual Reasoning", time: "20s", traits: ["Spatial Reasoning"], renderer: ShapeMatch };
       if (type === 12) return { ...base, id: `mem${n}`, title: `${seed} Memory Grid`, category: "Memory", time: "25s", traits: ["Working Memory"], renderer: MemoryGrid };
@@ -1041,6 +1085,7 @@
       games.forEach(game => {
         if (isTicTacToeGame(game)) return;
         if (!isValidConnectionGame(game)) return;
+        if (!isValidCountryBiggerGame(game)) return;
         if (isAdminDeletedGame(game)) return;
         const idKey = gameUniqueKey(game);
         const titleKey = gameTitleKey(game);
@@ -1077,7 +1122,7 @@
         .eq("is_public", true)
         .order("created_at", { ascending: false });
       if (error || !data?.length) return;
-      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game));
+      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game));
       remote.forEach(game => {
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(game) || gameTitleKey(existing) === gameTitleKey(game))) games.unshift(game);
       });
@@ -2874,7 +2919,7 @@
           status: game.status || "seeded",
           version: game.version || 1,
           traits: Array.isArray(game.traits) ? game.traits : []
-        })).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game));
+        })).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game));
         const seen = new Set(remoteRows.map(row => gameUniqueKey(row)));
         adminRows = [...remoteRows, ...localAdminRows().filter(row => !seen.has(gameUniqueKey(row)))];
         hydrateAdminControls();
@@ -2984,7 +3029,7 @@
       if (text.includes("number") || /^num\d+/.test(text)) return "Number Tap";
       if (text.includes("math")) return "Quick Math";
       if (text.includes("scramble") || /^scr\d+/.test(text)) return "Word Scramble";
-      if (text.includes("country")) return "Country Bigger";
+      if (text.includes("country") || /^cb\d+/.test(text)) return "Country Bigger";
       if (text.includes("shape")) return "Shape Match";
       if (text.includes("pattern") || /^pat\d+/.test(text)) return "Pattern";
       if (text.includes("logic")) return "Mini Logic";
