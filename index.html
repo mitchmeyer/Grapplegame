@@ -1832,8 +1832,10 @@
     }
 
     function renderResultSummary() {
+      const resultSummary = $("#resultSummary");
+      if (!resultSummary) return;
       const latest = state.plays[0];
-      $("#resultSummary").innerHTML = latest ? `
+      resultSummary.innerHTML = latest ? `
         <h3>${latest.title}</h3>
         <p class="muted">${latest.label}</p>
         <div class="metric"><span>Points added</span><b>+${latest.points ?? Math.max(5, Math.round((latest.score || 0) / 10))}</b></div>
