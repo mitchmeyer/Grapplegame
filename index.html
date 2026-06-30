@@ -990,6 +990,7 @@
 
     function hintForGame(game) {
       const name = String(game.title || "");
+      if (/chess/i.test(name)) return chessHintForGame(game);
       if (/sudoku/i.test(name)) return "Start with the row or box that has the most filled numbers.";
       if (/wordle|word grid/i.test(name)) return "Try a word with common vowels before repeating letters.";
       if (/crossword/i.test(name)) return "Fill the shortest clue first, then use crossing letters.";
@@ -997,9 +998,45 @@
       if (/go/i.test(name)) return "Capture stones by filling their last liberty.";
       if (/poker/i.test(name)) return "A flush beats a straight; pairs lose to two pair and trips.";
       if (/tetris/i.test(name)) return "Keep the stack low and move the falling piece toward the deepest gap.";
-      if (/chess/i.test(name)) return "Look for checks first, especially queen moves near the king.";
       if (/connections/i.test(name)) return "Say the possible category out loud before submitting four words.";
       return directionsForGame(game);
+    }
+
+    function chessHintForGame(game) {
+      const id = canonicalGameId(game.id || "").toLowerCase();
+      const hints = {
+        ch1: "The black king is boxed in by your king. Use the queen to attack from b6 and cover the whole sixth rank.",
+        ch2: "Think long diagonal. The queen can travel corner-to-corner while your king guards the escape squares.",
+        ch3: "This is the same mating net as ch1 from a different queen square: bring the queen to b6.",
+        ch4: "The queen is already lined up with the mating square. Move it up the b-file to seal the king in.",
+        ch5: "The queen needs to close the b-file. Your king already covers the nearby king moves.",
+        ch6: "First use the king, not the queen. Step toward c4 to force the black king down the a-file.",
+        ch7: "Mirror the idea on the kingside: improve the white king to f4, then the queen drops down the g-file.",
+        ch8: "Use your king to take away a6. After the black king is forced lower, the queen mates from the back rank.",
+        ch9: "The king move to f6 is the key. It steals h6/g7, leaving a long queen diagonal mate.",
+        ch10: "Your king can give a forcing check by stepping to b6. After the black king moves, use the long diagonal.",
+        ch11: "Bring the king to f6 first. The queen on a7 is waiting to slide across the seventh rank.",
+        ch12: "Do not start with a queen check. Move the king to b6 so the black king must run to c8.",
+        ch13: "Centralize the king to f6. Once the black king reaches f8, the queen has a corner mate.",
+        ch14: "The king move to b6 removes the b8 escape square. Then the queen uses the open d-file.",
+        ch15: "Improve the king to d6. The queen on h7 can then cut back to e7 for mate.",
+        ch16: "This is a three-step squeeze: king to c3, queen to b7, then queen to a6 after the black king is driven down.",
+        ch17: "Walk the king up the board first. The queen on g8 waits until the black king reaches h4.",
+        ch18: "Use the king to herd the black king into the corner: a5, then b6, then the queen crosses to h8.",
+        ch19: "The winning plan is king opposition: e5, then f6, then the queen finishes on the g-file.",
+        ch20: "Keep moving the king up the a-file. Once the black king is boxed on a8, the queen mates from a7.",
+        ch21: "Use the king staircase: e5 then f6. The queen on a7 only mates after the king has taken the exits.",
+        ch22: "Drive the black king into b8 with your king first. The queen then lands on b7.",
+        ch23: "King first, queen last. Move the king toward f6 so the queen can finish on e7.",
+        ch24: "The queen already eyes a7, but the king must first force the black king into the corner.",
+        ch25: "Use your king to push from b5 to c6, then shift the queen closer before the final mate.",
+        ch26: "The white king must approach: b5, then c6. Only then does the queen on f7 have b7 mate.",
+        ch27: "First bring the king to b6. Then reposition the queen one square closer before the final c7 mate.",
+        ch28: "This is a corner-herding pattern: king to a5, king to b6, then queen to f8.",
+        ch29: "Opposition matters: king to e6, then f6. The queen on h5 finishes once the black king is forced back.",
+        ch30: "Use the king to take b6. The queen on d5 then has the final b7 mate."
+      };
+      return hints[id] || "Use your king to take escape squares first; the queen should deliver mate only after the black king is boxed in.";
     }
 
     function directionsForGame(game) {
