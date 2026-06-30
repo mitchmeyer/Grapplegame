@@ -261,8 +261,8 @@
     .found-group { padding: 8px; border-radius: 6px; color: #111; background: #F9DF6D; text-align: center; font-size: 12px; font-weight: 900; text-transform: uppercase; }
     .found-group small { display: block; margin-top: 2px; font-size: 10px; font-weight: 750; text-transform: none; }
     .crossword-wrap { display: grid; grid-template-columns: auto minmax(150px, 1fr); gap: 16px; align-items: start; justify-content: center; }
-    .crossword { display: grid; grid-template-columns: repeat(5, 42px); grid-template-rows: repeat(5, 42px); border: 2px solid #111; background: #111; gap: 0; justify-content: center; width: max-content; }
-    .cw-square { position: relative; width: 42px; height: 42px; background: white; border: 1px solid #111; }
+    .crossword { display: grid; grid-template-columns: repeat(var(--cw-size, 5), minmax(0, var(--cw-cell, 42px))); grid-template-rows: repeat(var(--cw-size, 5), var(--cw-cell, 42px)); border: 2px solid #111; background: #111; gap: 0; justify-content: center; width: max-content; max-width: 100%; }
+    .cw-square { position: relative; width: var(--cw-cell, 42px); height: var(--cw-cell, 42px); background: white; border: 1px solid #111; }
     .cw-square.block { background: #111; }
     .cw-num { position: absolute; top: 2px; left: 3px; font-size: 9px; line-height: 1; color: #111; font-weight: 800; }
     .cw-cell { width: 100%; height: 100%; border: 0; background: transparent; text-align: center; font-size: 22px; font-weight: 850; text-transform: uppercase; padding-top: 8px; }
@@ -373,8 +373,7 @@
       .key { min-width: 22px; height: 30px; padding: 0 5px; font-size: 12px; }
       .key.wide { min-width: 45px; font-size: 10px; }
       .crossword-wrap { grid-template-columns: 1fr; }
-      .crossword { grid-template-columns: repeat(5, 32px); grid-template-rows: repeat(5, 32px); }
-      .cw-square { width: 32px; height: 32px; }
+      .crossword { --cw-cell: min(32px, calc((100vw - 52px) / var(--cw-size, 5))); }
       .cw-cell { font-size: 17px; padding-top: 6px; }
       .crossword-clues { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; font-size: 11px; }
       .crossword-clues li { margin: 2px 0; }
@@ -625,6 +624,7 @@
       .trim()
       .replace(/^chess(\d+)$/i, "ch$1")
       .replace(/^con(?:nections?)?[-_\s]*(\d+)$/i, "Con$1")
+      .replace(/^crossword[-_\s]*(\d+)$/i, "cw$1")
       .replace(/^(?:country|country[-_\s]*bigger|cb)[-_\s]*(\d+)$/i, "cb$1");
     const gameUniqueKey = (game) => canonicalGameId(game.id || `${game.title}-${game.category}-${game.version || 1}`).toLowerCase().trim();
     const gameTitleKey = (game) => String(game.title || game.id || "").toLowerCase().trim();
@@ -652,6 +652,22 @@
         Number(country[2]) > 0
       );
     };
+    const isCrosswordLikeGame = (game) => /crossword/i.test(`${game?.id || ""} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`) || /^cw\d+$/i.test(String(game?.id || "")) || game?.renderer === MiniCrossword;
+    const isValidCrosswordGame = (game) => {
+      if (!isCrosswordLikeGame(game)) return true;
+      if (!/^cw(?:[1-9]|1\d|20)$/.test(canonicalGameId(game.id))) return false;
+      const spec = game.gameSpec || game.game_spec || {};
+      const size = Number(spec.size || Math.sqrt((spec.cells || []).length));
+      return Number.isInteger(size) &&
+        size >= 5 &&
+        size <= 8 &&
+        Array.isArray(spec.cells) &&
+        spec.cells.length === size * size &&
+        Array.isArray(spec.across) &&
+        spec.across.length > 0 &&
+        Array.isArray(spec.down) &&
+        spec.down.length > 0;
+    };
     state.playedGameIds = [...new Set((state.playedGameIds || []).map(canonicalGameId))];
     state.adminDeletedGameIds = [...new Set((state.adminDeletedGameIds || []).map(id => gameUniqueKey({ id })))];
     state.challenges = (state.challenges || []).map(challenge => ({ ...challenge, gameId: canonicalGameId(challenge.gameId) }));
@@ -660,7 +676,6 @@
     const games = [
       { id: "ch1", title: "Chess Tactic 1", category: "Strategy", difficulty: "Easy", difficultyRank: 1, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: 0 }, renderer: ChessMate },
       { id: "wordle1", title: "Wordle 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: ["BRAIN", "LOGIC", "FOCUS", "MATCH", "GRASP"] }, renderer: WordGrid },
-      { id: "cw1", title: "Mini Crossword 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Verbal Reasoning", "Focus"], gameSpec: { crosswordIndex: 0 }, renderer: MiniCrossword },
       { id: "sd1", title: "Mini Sudoku 1", category: "Logic", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Logical Reasoning", "Focus"], renderer: MiniSudoku },
       { id: "sdh1", title: "Hard Sudoku 1", category: "Math", difficulty: "Hard", difficultyRank: 3, version: 1, time: "120s", source: "Official", traits: ["Logical Reasoning", "Focus"], renderer: HardSudoku },
       { id: "timeline1", title: "Timeline Challenge 1", category: "Trivia", difficulty: "Hard", difficultyRank: 3, version: 1, time: "90s", source: "Official", traits: ["Sequencing", "Knowledge"], gameSpec: { events: [
@@ -852,71 +867,198 @@
         renderer: Connections
       };
     }));
-    const crosswordVariants = [
-      {
-        cells: ["B","E","G","I","N","O",null,"A",null,"O","A",null,"M",null,"D","R",null,"E",null,"E","D",null,"S",null,"S"],
-        nums: { 0: 1, 2: 2, 4: 3 },
-        across: ["Start"],
-        down: ["Flat game surface", "Play contests", "Graph puzzle points"],
-        answer: "BEGIN / BOARD / GAMES / NODES"
-      },
-      {
-        cells: ["S","H","A","R","E","O",null,"L",null,"A","L",null,"E",null,"C","V",null,"R",null,"T","E",null,"T",null,"S"],
-        nums: { 0: 1, 2: 2, 4: 3 },
-        across: ["Post to friends"],
-        down: ["Figure out", "Warnings", "Scores"],
-        answer: "SHARE / SOLVE / ALERT / ACTS"
-      },
-      {
-        cells: ["T","R","A","C","E","I",null,"O",null,"D","M",null,"D",null,"I","E",null,"E",null,"T","R",null,"S",null,"S"],
-        nums: { 0: 1, 2: 2, 4: 3 },
-        across: ["Follow a path"],
-        down: ["Clock count", "Rules in code", "Changes"],
-        answer: "TRACE / TIMER / CODES / EDITS"
-      },
-      {
-        cells: ["G","R","I","D","S","A",null,"D",null,"O","M",null,"E",null,"R","E",null,"A",null,"T","S",null,"S",null,"S"],
-        nums: { 0: 1, 2: 2, 4: 3 },
-        across: ["Puzzle boards"],
-        down: ["Competition", "Thoughts", "Quick tries"],
-        answer: "GRIDS / GAMES / IDEAS / SORTS"
-      },
-      {
-        cells: ["C","L","U","E","S","H",null,"N",null,"O","A",null,"I",null,"L","T",null,"T",null,"V","S",null,"Y",null,"E"],
-        nums: { 0: 1, 2: 2, 4: 3 },
-        across: ["Crossword hints"],
-        down: ["Talk online", "Together", "Fix"],
-        answer: "CLUES / CHATS / UNITY / SOLVE"
-      },
-      {
-        cells: ["F","O","C","U","S","R",null,"L",null,"C","A",null,"I",null,"O","M",null,"C",null,"R","E",null,"K",null,"E"],
-        nums: { 0: 1, 2: 2, 4: 3 },
-        across: ["Pay attention"],
-        down: ["Picture holder", "Tap target", "Result"],
-        answer: "FOCUS / FRAME / CLICK / SCORE"
-      },
-      {
-        cells: ["P","O","I","N","T","L",null,"D",null,"I","A",null,"E",null,"M","Y",null,"A",null,"E","S",null,"S",null,"R"],
-        nums: { 0: 1, 2: 2, 4: 3 },
-        across: ["Score unit"],
-        down: ["Attempts", "Thought", "Clock"],
-        answer: "POINT / PLAYS / IDEAS / TIMER"
-      },
-      {
-        cells: ["B","R","A","I","N","O",null,"N",null,"O","A",null,"S",null,"T","R",null,"W",null,"E","D",null,"E",null,"S"],
-        nums: { 0: 1, 2: 2, 4: 3 },
-        across: ["Puzzle organ"],
-        down: ["Game surface", "Responses", "Notes"],
-        answer: "BRAIN / BOARD / ANSWERS / NOTES"
-      },
-      {
-        cells: ["M","A","T","C","H","O",null,"I",null,"I","D",null,"L",null,"N","E",null,"E",null,"T","S",null,"S",null,"S"],
-        nums: { 0: 1, 2: 2, 4: 3 },
-        across: ["Pair correctly"],
-        down: ["Settings", "Little square", "Clues"],
-        answer: "MATCH / MODES / TILES / HINTS"
-      }
+    function makeCrosswordSpec(size, entries) {
+      const cells = Array.from({ length: size * size }, () => null);
+      const starts = new Map();
+      const normalized = entries.map(entry => ({
+        ...entry,
+        answer: String(entry.answer || "").toUpperCase().replace(/[^A-Z]/g, "")
+      }));
+      normalized.forEach(entry => {
+        [...entry.answer].forEach((ch, offset) => {
+          const row = entry.row + (entry.dir === "down" ? offset : 0);
+          const col = entry.col + (entry.dir === "across" ? offset : 0);
+          if (row < 0 || row >= size || col < 0 || col >= size) throw new Error(`Crossword entry out of bounds: ${entry.answer}`);
+          const index = row * size + col;
+          if (cells[index] && cells[index] !== ch) throw new Error(`Crossword conflict on ${entry.answer}`);
+          cells[index] = ch;
+        });
+        starts.set(`${entry.row},${entry.col}`, starts.get(`${entry.row},${entry.col}`) || starts.size + 1);
+      });
+      const nums = {};
+      const across = [];
+      const down = [];
+      normalized
+        .sort((a, b) => a.row - b.row || a.col - b.col || a.dir.localeCompare(b.dir))
+        .forEach(entry => {
+          const num = starts.get(`${entry.row},${entry.col}`);
+          nums[entry.row * size + entry.col] = num;
+          const clue = `${num}. ${entry.clue} (${entry.answer.length})`;
+          (entry.dir === "across" ? across : down).push(clue);
+        });
+      return {
+        size,
+        cells,
+        nums,
+        across,
+        down,
+        answer: normalized.map(entry => `${starts.get(`${entry.row},${entry.col}`)} ${entry.dir[0].toUpperCase()}: ${entry.answer}`).join(" / ")
+      };
+    }
+
+    const crosswordCatalog = [
+      { difficulty: "Easy", size: 5, entries: [
+        { dir: "across", row: 0, col: 0, answer: "BOARD", clue: "Game surface" },
+        { dir: "down", row: 0, col: 0, answer: "BRAIN", clue: "Thinking organ" },
+        { dir: "down", row: 0, col: 2, answer: "ARRAY", clue: "Ordered data group" },
+        { dir: "down", row: 0, col: 4, answer: "DEBUG", clue: "Fix code errors" }
+      ] },
+      { difficulty: "Easy", size: 5, entries: [
+        { dir: "across", row: 0, col: 0, answer: "SHARE", clue: "Post to others" },
+        { dir: "down", row: 0, col: 0, answer: "SOLVE", clue: "Find the answer" },
+        { dir: "down", row: 0, col: 1, answer: "HINTS", clue: "Helpful tips" },
+        { dir: "down", row: 0, col: 4, answer: "EDITS", clue: "Text changes" }
+      ] },
+      { difficulty: "Easy", size: 5, entries: [
+        { dir: "across", row: 0, col: 0, answer: "TRACE", clue: "Follow a path" },
+        { dir: "down", row: 0, col: 0, answer: "TIMER", clue: "Clock for a round" },
+        { dir: "down", row: 0, col: 3, answer: "CODES", clue: "Program instructions" },
+        { dir: "down", row: 0, col: 4, answer: "EVENT", clue: "Something that happens" }
+      ] },
+      { difficulty: "Easy", size: 5, entries: [
+        { dir: "across", row: 0, col: 0, answer: "FOCUS", clue: "Concentrate" },
+        { dir: "down", row: 0, col: 0, answer: "FRAME", clue: "Border around a picture" },
+        { dir: "down", row: 0, col: 1, answer: "OASIS", clue: "Desert refuge" },
+        { dir: "down", row: 0, col: 3, answer: "UNITY", clue: "State of togetherness" },
+      ] },
+      { difficulty: "Medium", size: 6, entries: [
+        { dir: "across", row: 0, col: 0, answer: "PUZZLE", clue: "Brain teaser" },
+        { dir: "down", row: 0, col: 0, answer: "PLANET", clue: "World in orbit" },
+        { dir: "down", row: 0, col: 1, answer: "UNIQUE", clue: "One of a kind" },
+        { dir: "down", row: 0, col: 3, answer: "ZODIAC", clue: "Star-sign circle" },
+        { dir: "down", row: 0, col: 5, answer: "EDITOR", clue: "One who revises" }
+      ] },
+      { difficulty: "Medium", size: 6, entries: [
+        { dir: "across", row: 0, col: 0, answer: "SIGNAL", clue: "Transmitted cue" },
+        { dir: "down", row: 0, col: 0, answer: "SYSTEM", clue: "Connected set" },
+        { dir: "down", row: 0, col: 2, answer: "GALAXY", clue: "Star system" },
+        { dir: "down", row: 0, col: 4, answer: "ANCHOR", clue: "Ship holder" },
+        { dir: "down", row: 0, col: 5, answer: "LOGICS", clue: "Reasoning systems" }
+      ] },
+      { difficulty: "Medium", size: 6, entries: [
+        { dir: "across", row: 0, col: 0, answer: "VECTOR", clue: "Quantity with direction" },
+        { dir: "down", row: 0, col: 0, answer: "VISION", clue: "Ability to see" },
+        { dir: "down", row: 0, col: 1, answer: "EDITOR", clue: "Revision worker" },
+        { dir: "down", row: 0, col: 4, answer: "ORANGE", clue: "Citrus fruit" },
+        { dir: "down", row: 0, col: 5, answer: "RIDDLE", clue: "Tricky question" }
+      ] },
+      { difficulty: "Medium", size: 6, entries: [
+        { dir: "across", row: 0, col: 0, answer: "ROCKET", clue: "Space vehicle" },
+        { dir: "down", row: 0, col: 0, answer: "RADIUS", clue: "Circle measure" },
+        { dir: "down", row: 0, col: 2, answer: "CIRCLE", clue: "Round shape" },
+        { dir: "down", row: 0, col: 3, answer: "KERNEL", clue: "Seed core" },
+        { dir: "down", row: 0, col: 5, answer: "TIMBER", clue: "Cut wood" }
+      ] },
+      { difficulty: "Hard", size: 7, entries: [
+        { dir: "across", row: 0, col: 0, answer: "PATTERN", clue: "Repeated design" },
+        { dir: "down", row: 0, col: 0, answer: "PUZZLES", clue: "Brain games" },
+        { dir: "down", row: 0, col: 2, answer: "TACTICS", clue: "Strategic moves" },
+        { dir: "down", row: 0, col: 4, answer: "EXPLAIN", clue: "Make clear" },
+        { dir: "down", row: 0, col: 6, answer: "NETWORK", clue: "Connected system" }
+      ] },
+      { difficulty: "Hard", size: 7, entries: [
+        { dir: "across", row: 0, col: 0, answer: "DIGITAL", clue: "Computer-based" },
+        { dir: "down", row: 0, col: 0, answer: "DISPLAY", clue: "Screen output" },
+        { dir: "down", row: 0, col: 1, answer: "INSIGHT", clue: "Deep understanding" },
+        { dir: "down", row: 0, col: 4, answer: "TESTING", clue: "Checking for bugs" },
+        { dir: "down", row: 0, col: 6, answer: "LETTERS", clue: "Alphabet marks" }
+      ] },
+      { difficulty: "Hard", size: 7, entries: [
+        { dir: "across", row: 0, col: 0, answer: "CIRCUIT", clue: "Closed electric path" },
+        { dir: "down", row: 0, col: 0, answer: "CAPTION", clue: "Text under an image" },
+        { dir: "down", row: 0, col: 1, answer: "IMAGINE", clue: "Picture mentally" },
+        { dir: "down", row: 0, col: 5, answer: "INSIGHT", clue: "Deep understanding" },
+        { dir: "down", row: 0, col: 6, answer: "TACTICS", clue: "Planned moves" }
+      ] },
+      { difficulty: "Hard", size: 7, entries: [
+        { dir: "across", row: 0, col: 0, answer: "MYSTERY", clue: "Unsolved question" },
+        { dir: "down", row: 0, col: 0, answer: "MEASURE", clue: "Find amount" },
+        { dir: "down", row: 0, col: 2, answer: "SYMBOLS", clue: "Meaningful marks" },
+        { dir: "down", row: 0, col: 3, answer: "TACTICS", clue: "Planned moves" },
+        { dir: "down", row: 0, col: 6, answer: "YIELDED", clue: "Gave way" }
+      ] },
+      { difficulty: "Hard", size: 7, entries: [
+        { dir: "across", row: 0, col: 0, answer: "BALANCE", clue: "Evenness or stability" },
+        { dir: "down", row: 0, col: 0, answer: "BRIDGES", clue: "River crossings" },
+        { dir: "down", row: 0, col: 1, answer: "AUTHORS", clue: "Book writers" },
+        { dir: "down", row: 0, col: 3, answer: "ANALYZE", clue: "Study closely" },
+        { dir: "down", row: 0, col: 6, answer: "EXAMPLE", clue: "Illustrative case" }
+      ] },
+      { difficulty: "Hard", size: 7, entries: [
+        { dir: "across", row: 0, col: 0, answer: "HORIZON", clue: "Skyline edge" },
+        { dir: "down", row: 0, col: 0, answer: "HISTORY", clue: "Study of the past" },
+        { dir: "down", row: 0, col: 1, answer: "ORIGAMI", clue: "Paper-folding art" },
+        { dir: "down", row: 0, col: 2, answer: "RIDDLES", clue: "Tricky questions" },
+        { dir: "down", row: 0, col: 6, answer: "NETWORK", clue: "Connected group" }
+      ] },
+      { difficulty: "Expert", size: 8, entries: [
+        { dir: "across", row: 0, col: 0, answer: "LANGUAGE", clue: "System of words" },
+        { dir: "down", row: 0, col: 0, answer: "LEARNING", clue: "Gaining knowledge" },
+        { dir: "down", row: 0, col: 2, answer: "NUMERALS", clue: "Number symbols" },
+        { dir: "down", row: 0, col: 4, answer: "UNLOCKED", clue: "Opened access" },
+        { dir: "down", row: 0, col: 6, answer: "GRAPHICS", clue: "Visual elements" }
+      ] },
+      { difficulty: "Expert", size: 8, entries: [
+        { dir: "across", row: 0, col: 0, answer: "STRATEGY", clue: "Long-term plan" },
+        { dir: "down", row: 0, col: 0, answer: "SEQUENCE", clue: "Ordered series" },
+        { dir: "down", row: 0, col: 1, answer: "TRIANGLE", clue: "Three-sided shape" },
+        { dir: "down", row: 0, col: 2, answer: "REASONED", clue: "Thought through" },
+        { dir: "down", row: 0, col: 6, answer: "GROUPING", clue: "Set arrangement" }
+      ] },
+      { difficulty: "Expert", size: 8, entries: [
+        { dir: "across", row: 0, col: 0, answer: "CROSSING", clue: "Place where paths meet" },
+        { dir: "down", row: 0, col: 0, answer: "CAPTIONS", clue: "Image text labels" },
+        { dir: "down", row: 0, col: 2, answer: "OPPOSITE", clue: "Across from" },
+        { dir: "down", row: 0, col: 3, answer: "SCORINGS", clue: "Ways of earning points" },
+        { dir: "down", row: 0, col: 7, answer: "GRIDLOCK", clue: "Traffic standstill" }
+      ] },
+      { difficulty: "Expert", size: 8, entries: [
+        { dir: "across", row: 0, col: 0, answer: "CLUELESS", clue: "Without hints" },
+        { dir: "down", row: 0, col: 0, answer: "CREATIVE", clue: "Inventive" },
+        { dir: "down", row: 0, col: 2, answer: "UNIVERSE", clue: "Everything in space" },
+        { dir: "down", row: 0, col: 4, answer: "LITERACY", clue: "Reading and writing skill" },
+        { dir: "down", row: 0, col: 7, answer: "SEASHELL", clue: "Beach find" }
+      ] },
+      { difficulty: "Expert", size: 8, entries: [
+        { dir: "across", row: 0, col: 0, answer: "KEYBOARD", clue: "Typing device" },
+        { dir: "down", row: 0, col: 0, answer: "KINDNESS", clue: "Friendly care" },
+        { dir: "down", row: 0, col: 1, answer: "ELEVATED", clue: "Raised up" },
+        { dir: "down", row: 0, col: 4, answer: "ORIGINAL", clue: "First of its kind" },
+        { dir: "down", row: 0, col: 7, answer: "DISTANCE", clue: "Space between" }
+      ] },
+      { difficulty: "Expert", size: 8, entries: [
+        { dir: "across", row: 0, col: 0, answer: "QUESTION", clue: "Prompt seeking an answer" },
+        { dir: "down", row: 0, col: 0, answer: "QUANTIFY", clue: "Express as a number" },
+        { dir: "down", row: 0, col: 1, answer: "UNIVERSE", clue: "Everything in space" },
+        { dir: "down", row: 0, col: 5, answer: "INSIGHTS", clue: "Deep understandings" },
+        { dir: "down", row: 0, col: 7, answer: "NAVIGATE", clue: "Find a route through" }
+      ] }
     ];
+    games.push(...crosswordCatalog.map((spec, index) => {
+      const number = index + 1;
+      return {
+        id: `cw${number}`,
+        title: `Crossword ${number}`,
+        category: "Language",
+        difficulty: spec.difficulty,
+        difficultyRank: difficultyRanks[spec.difficulty],
+        version: 1,
+        source: "Official",
+        traits: ["Verbal Reasoning", "Focus"],
+        gameSpec: makeCrosswordSpec(spec.size, spec.entries),
+        renderer: MiniCrossword
+      };
+    }));
     const chessVariants = [
       { pieces: {a6:"♚",c5:"♔",b1:"♕"}, q: "White to move and mate in 1.", san: "Qb6#", result: "checkmate", line: [{"from":"b1","to":"b6","san":"Qb6#","result":"checkmate"}] },
       { pieces: {h6:"♚",f5:"♔",a1:"♕"}, q: "White to move and mate in 1.", san: "Qh8#", result: "checkmate", line: [{"from":"a1","to":"h8","san":"Qh8#","result":"checkmate"}] },
@@ -1059,7 +1201,7 @@
       const type = index % 15;
       if (type === 0) return { ...base, id: `wordle${n}`, title: `${seed} Wordle`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: wordGridSets[index % wordGridSets.length] }, renderer: WordGrid };
       if (type === 1) return { ...base, id: `wordle${n}`, title: `${seed} Word Grid`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: wordGridSets[(index + 3) % wordGridSets.length] }, renderer: WordGrid };
-      if (type === 2) return { ...base, id: `cw${n}`, title: `${seed} Crossword`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Focus"], gameSpec: { crosswordIndex: index % crosswordVariants.length }, renderer: MiniCrossword };
+      if (type === 2) return { ...base, id: `wordle${n}`, title: `${seed} Word Puzzle`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: wordGridSets[(index + 5) % wordGridSets.length] }, renderer: WordGrid };
       if (type === 3) return { ...base, id: `sd${n}`, title: `${seed} Sudoku`, category: "Logic", time: "70s", traits: ["Logical Reasoning", "Focus"], gameSpec: sudokuVariants[index % sudokuVariants.length], renderer: MiniSudoku };
       if (type === 4) return { ...base, id: `strategy${n}`, title: `${seed} Strategy`, category: "Strategy", time: "35s", traits: ["Strategy", "Pattern Recognition"], gameSpec: { patterns: [patternVariants[(index + 1) % patternVariants.length], patternVariants[(index + 4) % patternVariants.length]] }, renderer: PatternNext };
       if (type === 5) return { ...base, id: `pat${n}`, title: `${seed} Pattern`, category: "Logic", time: "25s", traits: ["Pattern Recognition"], gameSpec: { patterns: [patternVariants[index % patternVariants.length], patternVariants[(index + 2) % patternVariants.length]] }, renderer: PatternNext };
@@ -1086,6 +1228,7 @@
         if (isTicTacToeGame(game)) return;
         if (!isValidConnectionGame(game)) return;
         if (!isValidCountryBiggerGame(game)) return;
+        if (!isValidCrosswordGame(game)) return;
         if (isAdminDeletedGame(game)) return;
         const idKey = gameUniqueKey(game);
         const titleKey = gameTitleKey(game);
@@ -1122,7 +1265,7 @@
         .eq("is_public", true)
         .order("created_at", { ascending: false });
       if (error || !data?.length) return;
-      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game));
+      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
       remote.forEach(game => {
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(game) || gameTitleKey(existing) === gameTitleKey(game))) games.unshift(game);
       });
@@ -1971,14 +2114,19 @@
     }
 
     function MiniCrossword(root, game, done) {
-      const specIndex = Number(game.gameSpec?.crosswordIndex);
       const idMatch = String(game.id || "").match(/\d+/);
       const fallbackIndex = idMatch ? Math.max(0, Number(idMatch[0]) - 1) : 0;
-      const spec = game.gameSpec?.cells ? game.gameSpec : crosswordVariants[Number.isFinite(specIndex) ? specIndex % crosswordVariants.length : fallbackIndex % crosswordVariants.length];
+      const fallbackGame = games.find(g => canonicalGameId(g.id) === `cw${fallbackIndex + 1}`) || games.find(g => canonicalGameId(g.id) === "cw1");
+      const spec = game.gameSpec?.cells
+        ? game.gameSpec
+        : fallbackGame?.gameSpec || makeCrosswordSpec(crosswordCatalog[0].size, crosswordCatalog[0].entries);
+      const size = Number(spec.size || Math.sqrt((spec.cells || []).length) || 5);
       const cells = spec.cells;
       const nums = spec.nums || {};
       root.innerHTML = `<p class="muted">Fill the mini crossword.</p><div class="crossword-wrap"><div class="crossword"></div><div class="crossword-clues"><div><b>Across</b><ol>${(spec.across || []).map(clue => `<li>${esc(clue)}</li>`).join("")}</ol></div><div><b>Down</b><ol>${(spec.down || []).map(clue => `<li>${esc(clue)}</li>`).join("")}</ol></div></div></div><button class="btn primary check">Check</button>`;
       const grid = $(".crossword", root);
+      grid.style.setProperty("--cw-size", size);
+      grid.style.setProperty("--cw-cell", `${size >= 8 ? 30 : size === 7 ? 34 : size === 6 ? 38 : 42}px`);
       cells.forEach((ch, i) => {
         if (ch === null) {
           const block = document.createElement("div");
@@ -2919,7 +3067,7 @@
           status: game.status || "seeded",
           version: game.version || 1,
           traits: Array.isArray(game.traits) ? game.traits : []
-        })).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game));
+        })).filter(game => !isAdminDeletedGame(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
         const seen = new Set(remoteRows.map(row => gameUniqueKey(row)));
         adminRows = [...remoteRows, ...localAdminRows().filter(row => !seen.has(gameUniqueKey(row)))];
         hydrateAdminControls();
