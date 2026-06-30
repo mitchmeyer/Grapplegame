@@ -134,6 +134,19 @@
     .admin-groups { display: grid; gap: 14px; }
     .admin-group { border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: var(--shadow); overflow: hidden; }
     .admin-group-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--bg); }
+    .admin-family-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .admin-family-card { min-height: 124px; display: grid; align-content: start; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: var(--shadow); text-align: left; color: var(--text); }
+    .admin-family-card b { font-size: 18px; }
+    .admin-family-card:hover, .admin-version-card:hover { border-color: #BBA7FF; transform: translateY(-1px); }
+    .admin-breadcrumb { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: var(--shadow); }
+    .admin-version-list { display: grid; gap: 10px; }
+    .admin-version-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: var(--shadow); text-align: left; color: var(--text); transition: .15s ease; }
+    .admin-detail-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 14px; }
+    .admin-detail-card, .admin-preview-stage { border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: var(--shadow); }
+    .admin-detail-card { display: grid; gap: 12px; align-content: start; padding: 16px; }
+    .admin-preview-stage { min-height: 360px; padding: 14px; overflow: auto; background: var(--bg); }
+    .admin-solution { padding: 14px; border-radius: 12px; background: #F3EEFF; border: 1px solid #DCD1FF; font-weight: 850; overflow-wrap: anywhere; }
+    .admin-preview-feedback { min-height: 44px; display: grid; place-items: center; margin-top: 10px; border-radius: 10px; color: var(--dark-purple); background: var(--lavender); font-weight: 900; }
     .admin-table { display: grid; min-width: 880px; }
     .admin-table-wrap { overflow-x: auto; }
     .admin-row { display: grid; grid-template-columns: minmax(260px, 1.7fr) 110px 90px 120px 130px minmax(220px, 1.2fr); gap: 12px; align-items: start; padding: 12px 16px; border-bottom: 1px solid var(--lavender); }
@@ -319,6 +332,9 @@
     .toast.show { transform: translateX(-50%) translateY(0); }
     @media (max-width: 760px) {
       .grid.two, .grid.three { grid-template-columns: 1fr; }
+      .admin-summary, .admin-toolbar, .admin-detail-grid { grid-template-columns: 1fr; }
+      .admin-family-grid { grid-template-columns: 1fr; }
+      .admin-version-card { grid-template-columns: 1fr; }
       .feed { padding: calc(50px + env(safe-area-inset-top)) 6px 0; }
       .feed-card-wrap { min-height: calc(100svh - 126px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding: 6px 0; }
       .game-card { width: 100%; height: calc(100svh - 138px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); max-height: calc(100svh - 138px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); border-radius: 10px; }
@@ -579,6 +595,8 @@
     let feedPool = [];
     let feedShownIds = new Set();
     let adminRows = [];
+    let adminSelectedFamily = "";
+    let adminSelectedGameId = "";
     const adminEmail = "mitchell@blastoff.org";
     const rendererByType = {};
     const save = () => localStorage.setItem(storeKey, JSON.stringify(state));
@@ -2550,7 +2568,10 @@
         status: "seeded",
         version: game.version || 1,
         traits: Array.isArray(game.traits) ? game.traits : [],
-        answer: game.gameSpec?.san || game.gameSpec?.answer || game.gameSpec?.a || game.gameSpec?.target || "See renderer"
+        answer: game.gameSpec?.san || game.gameSpec?.answer || game.gameSpec?.a || game.gameSpec?.target || "See renderer",
+        gameSpec: game.gameSpec || {},
+        renderer: game.renderer,
+        game_type: game.game_type || game.type || ""
       }));
     }
 
@@ -2573,82 +2594,252 @@
     }
 
     function renderAdminCatalog() {
-      const category = $("#adminCategory")?.value || "";
-      const difficulty = $("#adminDifficulty")?.value || "";
-      const status = $("#adminStatus")?.value || "";
-      const search = ($("#adminSearch")?.value || "").trim().toLowerCase();
-      const filtered = adminRows
-        .filter(g => !category || g.category === category)
-        .filter(g => !difficulty || g.difficulty === difficulty)
-        .filter(g => !status || g.status === status)
-        .filter(g => {
-          if (!search) return true;
-          return [g.title, g.category, g.difficulty, g.status, g.source, g.answer, ...(g.traits || [])]
-            .join(" ")
-            .toLowerCase()
-            .includes(search);
-        })
-        .sort((a, b) =>
-          a.category.localeCompare(b.category) ||
-          a.difficultyRank - b.difficultyRank ||
-          String(a.title || "").localeCompare(String(b.title || ""))
-        );
+      const filtered = adminFilteredRows();
       renderAdminSummary(filtered);
       if (!filtered.length) {
         $("#adminPanel").innerHTML = `<div class="panel"><h3>No games found</h3><p class="muted">Adjust the filters or search text.</p></div>`;
         return;
       }
-      const grouped = filtered.reduce((acc, game) => {
-        (acc[game.category] ||= []).push(game);
+      if (adminSelectedGameId) {
+        const game = filtered.find(g => String(g.id) === String(adminSelectedGameId)) || adminGameById(adminSelectedGameId);
+        if (game) {
+          renderAdminGameDetail(game);
+          return;
+        }
+        adminSelectedGameId = "";
+      }
+      if (adminSelectedFamily) {
+        const familyRows = filtered.filter(game => adminFamilyName(game) === adminSelectedFamily);
+        if (familyRows.length) {
+          renderAdminVersions(adminSelectedFamily, familyRows);
+          return;
+        }
+        adminSelectedFamily = "";
+      }
+      renderAdminFamilies(filtered);
+    }
+
+    function adminFilteredRows() {
+      const category = $("#adminCategory")?.value || "";
+      const difficulty = $("#adminDifficulty")?.value || "";
+      const status = $("#adminStatus")?.value || "";
+      const search = ($("#adminSearch")?.value || "").trim().toLowerCase();
+      return adminRows
+        .filter(g => !category || g.category === category)
+        .filter(g => !difficulty || g.difficulty === difficulty)
+        .filter(g => !status || g.status === status)
+        .filter(g => {
+          if (!search) return true;
+          return [g.id, g.title, adminFamilyName(g), g.category, g.difficulty, g.status, g.source, g.answer, ...(g.traits || [])]
+            .join(" ")
+            .toLowerCase()
+            .includes(search);
+        })
+        .sort(adminSortRows);
+    }
+
+    function adminFamilyName(game) {
+      const text = `${game.id || ""} ${game.title || ""} ${game.game_type || ""}`.toLowerCase();
+      if (text.includes("chess")) return "Chess Mate";
+      if (text.includes("wordle")) return "Wordle";
+      if (text.includes("connections") || /^con\d+/.test(text)) return "Connections";
+      if (text.includes("crossword") || /^cw\d+/.test(text)) return "Crossword";
+      if (text.includes("hard sudoku") || /^sdh\d+/.test(text)) return "Hard Sudoku";
+      if (text.includes("sudoku") || /^sd\d+/.test(text)) return "Mini Sudoku";
+      if (text.includes("timeline")) return "Timeline";
+      if (text.includes("go capture") || /^go\d+/.test(text)) return "Go Capture";
+      if (text.includes("poker")) return "Poker Read";
+      if (text.includes("tetris")) return "Tetris Mini";
+      if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
+      if (text.includes("number") || /^num\d+/.test(text)) return "Number Tap";
+      if (text.includes("math")) return "Quick Math";
+      if (text.includes("scramble") || /^scr\d+/.test(text)) return "Word Scramble";
+      if (text.includes("country")) return "Country Bigger";
+      if (text.includes("shape")) return "Shape Match";
+      if (text.includes("pattern") || /^pat\d+/.test(text)) return "Pattern";
+      if (text.includes("logic")) return "Mini Logic";
+      return game.category || "Other";
+    }
+
+    function adminIdNumber(game) {
+      return Number(String(game.id || "").match(/\d+/)?.[0] || game.version || 0);
+    }
+
+    function adminSortRows(a, b) {
+      return adminFamilyName(a).localeCompare(adminFamilyName(b)) ||
+        adminIdNumber(a) - adminIdNumber(b) ||
+        Number(a.difficultyRank || 2) - Number(b.difficultyRank || 2) ||
+        String(a.title || "").localeCompare(String(b.title || ""));
+    }
+
+    function adminOpenFamily(family) {
+      adminSelectedFamily = family;
+      adminSelectedGameId = "";
+      renderAdminCatalog();
+    }
+
+    function adminOpenGame(id) {
+      adminSelectedGameId = id;
+      renderAdminCatalog();
+    }
+
+    function adminBackToFamilies() {
+      adminSelectedFamily = "";
+      adminSelectedGameId = "";
+      renderAdminCatalog();
+    }
+
+    function adminBackToVersions() {
+      adminSelectedGameId = "";
+      renderAdminCatalog();
+    }
+
+    function adminGameById(id) {
+      return adminRows.find(game => String(game.id) === String(id));
+    }
+
+    function renderAdminFamilies(rows) {
+      const grouped = rows.reduce((acc, game) => {
+        const family = adminFamilyName(game);
+        (acc[family] ||= []).push(game);
         return acc;
       }, {});
-      $("#adminPanel").innerHTML = `<div class="admin-groups">${Object.entries(grouped).map(([categoryName, rows]) => `
-        <div class="admin-group">
-          <div class="admin-group-title">
-            <h3>${esc(categoryName)}</h3>
-            <span class="pill">${rows.length} ${rows.length === 1 ? "game" : "games"}</span>
+      const cards = Object.entries(grouped)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([family, familyRows]) => {
+          const sorted = [...familyRows].sort(adminSortRows);
+          const ranks = sorted.map(g => Number(g.difficultyRank || 2));
+          const minRank = Math.min(...ranks);
+          const maxRank = Math.max(...ranks);
+          const sampleIds = sorted.slice(0, 4).map(g => g.id).filter(Boolean).join(", ");
+          return `
+            <button class="admin-family-card" onclick="adminOpenFamily('${escAttr(family)}')">
+              <span class="pill">${sorted.length} ${sorted.length === 1 ? "version" : "versions"}</span>
+              <b>${esc(family)}</b>
+              <p class="muted">Rank ${esc(minRank)}${minRank === maxRank ? "" : `-${esc(maxRank)}`} difficulty</p>
+              <div class="admin-traits">${sampleIds ? `<span>${esc(sampleIds)}</span>` : `<span>${esc(sorted[0]?.category || "Game")}</span>`}</div>
+            </button>
+          `;
+        }).join("");
+      $("#adminPanel").innerHTML = `<div class="admin-family-grid">${cards}</div>`;
+    }
+
+    function renderAdminVersions(family, rows) {
+      const sorted = [...rows].sort(adminSortRows);
+      $("#adminPanel").innerHTML = `
+        <div class="admin-groups">
+          <div class="admin-breadcrumb">
+            <div>
+              <p class="muted">Game</p>
+              <h3>${esc(family)}</h3>
+            </div>
+            <button class="btn ghost" onclick="adminBackToFamilies()">All games</button>
           </div>
-          <div class="admin-table-wrap">
-            <div class="admin-table">
-              <div class="admin-row head">
-                <span>Game</span><span>Difficulty</span><span>Version</span><span>Status</span><span>Source</span><span>Answer</span>
+          <div class="admin-version-list">
+            ${sorted.map(adminGameRow).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function adminPlayableGame(game) {
+      return {
+        ...game,
+        gameSpec: game.gameSpec || game.game_spec || {},
+        renderer: game.renderer || rendererByType[game.game_type] || rendererByType[game.type] || MiniLogic,
+        time: game.time || `${game.estimated_seconds || 60}s`
+      };
+    }
+
+    function adminSolutionForGame(game) {
+      const spec = game.gameSpec || game.game_spec || {};
+      if (game.answer && game.answer !== "See renderer") return game.answer;
+      if (spec.san) return spec.san;
+      if (spec.answer) return spec.answer;
+      if (spec.target) return spec.target;
+      if (Array.isArray(spec.answers)) return spec.answers.join(", ");
+      if (Array.isArray(spec.solution)) return spec.solution.join(", ");
+      if (Array.isArray(spec.events)) return spec.events.slice().sort((a, b) => a.y - b.y).map(e => `${e.t} (${e.y})`).join(" -> ");
+      if (Array.isArray(spec.groups)) return spec.groups.map(group => `${group.name}: ${(group.words || []).join(", ")}`).join(" | ");
+      return "Open the preview to inspect the playable solution.";
+    }
+
+    function renderAdminGameDetail(game) {
+      const traits = (game.traits || []).slice(0, 6).map(t => `<span>${esc(t)}</span>`).join("");
+      $("#adminPanel").innerHTML = `
+        <div class="admin-groups">
+          <div class="admin-breadcrumb">
+            <div>
+              <p class="muted">${esc(adminFamilyName(game))}</p>
+              <h3>${esc(game.title || "Untitled game")}</h3>
+            </div>
+            <button class="btn ghost" onclick="adminBackToVersions()">Back to versions</button>
+          </div>
+          <div class="admin-detail-grid">
+            <div class="admin-detail-card">
+              <div class="admin-title">
+                <b>${esc(game.title || "Untitled game")}</b>
+                <p class="muted">${esc(game.id || "no-id")}</p>
               </div>
-              ${rows.map(adminGameRow).join("")}
+              <div class="metric"><span>Difficulty</span><b>Rank ${esc(game.difficultyRank || 2)} · ${esc(game.difficulty || "Medium")}</b></div>
+              <div class="metric"><span>Version</span><b>v${esc(game.version || adminIdNumber(game) || 1)}</b></div>
+              <div class="metric"><span>Status</span><b>${esc(game.status || "seeded")}</b></div>
+              <div class="metric"><span>Source</span><b>${esc(game.source || "Seeded")}</b></div>
+              <div class="admin-traits">${traits || `<span>${esc(game.category || "Game")}</span>`}</div>
+              <div>
+                <p class="muted">Solution</p>
+                <div class="admin-solution">${esc(adminSolutionForGame(game))}</div>
+              </div>
+            </div>
+            <div>
+              <div id="adminPreviewStage" class="admin-preview-stage"></div>
+              <div id="adminPreviewFeedback" class="admin-preview-feedback">Admin preview</div>
             </div>
           </div>
         </div>
-      `).join("")}</div>`;
+      `;
+      mountAdminPreview(game.id);
     }
 
-    function renderAdminSummary(rows) {
-      const total = rows.length;
-      const categories = new Set(rows.map(g => g.category)).size;
-      const averageRank = total ? (rows.reduce((sum, g) => sum + Number(g.difficultyRank || 2), 0) / total).toFixed(1) : "0.0";
-      const needsReview = rows.filter(g => ["draft", "generated", "pending"].includes(String(g.status).toLowerCase())).length;
-      $("#adminSummary").innerHTML = [
-        ["Visible games", total],
-        ["Categories", categories],
-        ["Avg rank", averageRank],
-        ["Needs review", needsReview]
-      ].map(([label, value]) => `<div class="admin-stat"><span class="muted">${label}</span><b>${esc(value)}</b></div>`).join("");
+    function mountAdminPreview(id) {
+      const game = adminPlayableGame(adminGameById(id) || {});
+      const stage = $("#adminPreviewStage");
+      const feedback = $("#adminPreviewFeedback");
+      if (!stage || !game.renderer) return;
+      stage.innerHTML = "";
+      game.renderer(stage, game, (score, label) => {
+        feedback.textContent = `${label || "Result"} · ${score || 0} pts`;
+      });
     }
 
     function adminGameRow(game) {
       const traits = (game.traits || []).slice(0, 4).map(t => `<span>${esc(t)}</span>`).join("");
       return `
-        <div class="admin-row">
+        <button class="admin-version-card" onclick="adminOpenGame('${escAttr(game.id || "")}')">
           <div class="admin-title">
             <b>${esc(game.title || "Untitled game")}</b>
-            <p class="muted">${esc(game.id || "no-id")}</p>
+            <p class="muted">${esc(game.id || "no-id")} · v${esc(game.version || adminIdNumber(game) || 1)}</p>
             <div class="admin-traits">${traits || `<span>${esc(game.category)}</span>`}</div>
           </div>
-          <span><b>Rank ${esc(game.difficultyRank || 2)}</b><p class="muted">${esc(game.difficulty || "Medium")}</p></span>
-          <span class="pill">v${esc(game.version || 1)}</span>
-          <span class="pill">${esc(game.status || "seeded")}</span>
-          <span>${esc(game.source || "Seeded")}</span>
-          <span class="admin-answer">${esc(game.answer || "Hidden")}</span>
-        </div>
+          <span>
+            <b>Rank ${esc(game.difficultyRank || 2)}</b>
+            <p class="muted">${esc(game.difficulty || "Medium")}</p>
+          </span>
+        </button>
       `;
+    }
+
+    function renderAdminSummary(rows) {
+      const total = rows.length;
+      const gameTypes = new Set(rows.map(adminFamilyName)).size;
+      const averageRank = total ? (rows.reduce((sum, g) => sum + Number(g.difficultyRank || 2), 0) / total).toFixed(1) : "0.0";
+      const needsReview = rows.filter(g => ["draft", "generated", "pending"].includes(String(g.status).toLowerCase())).length;
+      $("#adminSummary").innerHTML = [
+        ["Visible games", total],
+        ["Game types", gameTypes],
+        ["Avg rank", averageRank],
+        ["Needs review", needsReview]
+      ].map(([label, value]) => `<div class="admin-stat"><span class="muted">${label}</span><b>${esc(value)}</b></div>`).join("");
     }
 
     function showView(id) {
