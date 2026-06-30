@@ -631,7 +631,7 @@
     save();
 
     const games = [
-      { id: "ch1", title: "Chess Mate 1", category: "Strategy", difficulty: "Easy", difficultyRank: 1, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: 0 }, renderer: ChessMate },
+      { id: "ch1", title: "Chess Tactic 1", category: "Strategy", difficulty: "Easy", difficultyRank: 1, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: 0 }, renderer: ChessMate },
       { id: "wordle1", title: "Wordle 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: ["BRAIN", "LOGIC", "FOCUS", "MATCH", "GRASP"] }, renderer: WordGrid },
       { id: "con1", title: "Connections 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Mental Flexibility", "Verbal Reasoning"], renderer: Connections },
       { id: "cw1", title: "Mini Crossword 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Verbal Reasoning", "Focus"], gameSpec: { crosswordIndex: 0 }, renderer: MiniCrossword },
@@ -782,33 +782,33 @@
       }
     ];
     const chessVariants = [
-      { pieces: { a1: "♚", c2: "♕", c1: "♔" }, q: "White to move. Find mate in one.", from: "c2", to: "b1", san: "Qb1#" },
-      { pieces: { h1: "♚", f2: "♕", f1: "♔" }, q: "White to move. Find mate in one.", from: "f2", to: "g1", san: "Qg1#" },
-      { pieces: { a8: "♚", b6: "♕", a6: "♔" }, q: "White to move. Find mate in one.", from: "b6", to: "a7", san: "Qa7#" },
-      { pieces: { h8: "♚", a7: "♕", g6: "♔" }, q: "White to move. Find mate in one.", from: "a7", to: "a8", san: "Qa8#" },
-      { pieces: { b1: "♚", d2: "♕", a3: "♔" }, q: "White to move. Find mate in one.", from: "d2", to: "d1", san: "Qd1#" },
-      { pieces: { g1: "♚", a2: "♕", g3: "♔" }, q: "White to move. Find mate in one.", from: "a2", to: "a1", san: "Qa1#" },
-      { pieces: { a2: "♚", b4: "♕", c1: "♔" }, q: "White to move. Find mate in one.", from: "b4", to: "a4", san: "Qa4#" },
-      { pieces: { h2: "♚", g4: "♕", f1: "♔" }, q: "White to move. Find mate in one.", from: "g4", to: "h4", san: "Qh4#" },
-      { pieces: { a7: "♚", b1: "♕", c7: "♔" }, q: "White to move. Find mate in one.", from: "b1", to: "a1", san: "Qa1#" },
-      { pieces: { h7: "♚", g1: "♕", f7: "♔" }, q: "White to move. Find mate in one.", from: "g1", to: "h1", san: "Qh1#" },
-      { pieces: { c1: "♚", e2: "♕", b3: "♔" }, q: "White to move. Find mate in one.", from: "e2", to: "e1", san: "Qe1#" },
-      { pieces: { f1: "♚", h2: "♕", e3: "♔" }, q: "White to move. Find mate in one.", from: "h2", to: "h1", san: "Qh1#" },
-      { pieces: { a3: "♚", b5: "♕", c2: "♔" }, q: "White to move. Find mate in one.", from: "b5", to: "a5", san: "Qa5#" },
-      { pieces: { h3: "♚", g5: "♕", f2: "♔" }, q: "White to move. Find mate in one.", from: "g5", to: "h5", san: "Qh5#" },
-      { pieces: { c8: "♚", e7: "♕", b6: "♔" }, q: "White to move. Find mate in one.", from: "e7", to: "e8", san: "Qe8#" },
-      { pieces: { f8: "♚", h7: "♕", e6: "♔" }, q: "White to move. Find mate in one.", from: "h7", to: "h8", san: "Qh8#" },
-      { pieces: { b8: "♚", d7: "♕", a6: "♔" }, q: "White to move. Find mate in one.", from: "d7", to: "d8", san: "Qd8#" },
-      { pieces: { g8: "♚", a7: "♕", g6: "♔" }, q: "White to move. Find mate in one.", from: "a7", to: "b8", san: "Qb8#" },
-      { pieces: { d1: "♚", f2: "♕", c3: "♔" }, q: "White to move. Find mate in one.", from: "f2", to: "f1", san: "Qf1#" },
-      { pieces: { e8: "♚", g7: "♕", d6: "♔" }, q: "White to move. Find mate in one.", from: "g7", to: "g8", san: "Qg8#" }
+      { pieces: { g8: "♚", f7: "♟", g7: "♟", h7: "♟", e1: "♖", g1: "♔", a2: "♙", b7: "♟" }, q: "White to move. Back-rank tactic.", from: "e1", to: "e8", san: "Re8#", result: "checkmate" },
+      { pieces: { h8: "♚", g7: "♟", h7: "♟", c3: "♕", e6: "♘", g1: "♔", f2: "♙", b8: "♜" }, q: "White to move. Break the corner shelter.", from: "c3", to: "g7", san: "Qxg7#", result: "checkmate" },
+      { pieces: { e8: "♚", a8: "♜", d7: "♟", b5: "♘", g1: "♔", e2: "♙", h7: "♟" }, q: "White to move. Find the royal fork.", from: "b5", to: "c7", san: "Nc7+", result: "forks king and rook" },
+      { pieces: { g8: "♚", d8: "♛", f7: "♟", c4: "♗", g1: "♔", g7: "♟", h7: "♟", b2: "♙" }, q: "White to move. Use the diagonal.", from: "c4", to: "f7", san: "Bxf7+", result: "wins time with check" },
+      { pieces: { g8: "♚", c8: "♛", f5: "♘", g1: "♔", f7: "♟", g7: "♟", h7: "♟", c2: "♙" }, q: "White to move. Fork the royal pieces.", from: "f5", to: "e7", san: "Ne7+", result: "forks king and queen" },
+      { pieces: { g8: "♚", e8: "♛", f7: "♟", g7: "♟", h7: "♟", e1: "♖", g1: "♔", a2: "♙", b2: "♙" }, q: "White to move. A pinned queen sits on the file.", from: "e1", to: "e8", san: "Rxe8+", result: "wins the queen" },
+      { pieces: { b8: "♚", h3: "♕", b6: "♘", a7: "♟", c7: "♟", g1: "♔", c2: "♙", f2: "♙" }, q: "White to move. Find the quiet mate.", from: "h3", to: "c8", san: "Qc8#", result: "checkmate" },
+      { pieces: { h8: "♚", d8: "♛", g7: "♟", h7: "♟", g5: "♘", g1: "♔", e2: "♙", f2: "♙" }, q: "White to move. A knight fork is hiding.", from: "g5", to: "f7", san: "Nf7+", result: "forks king and queen" },
+      { pieces: { e8: "♚", e7: "♟", d7: "♟", f7: "♟", a4: "♕", g1: "♔", e1: "♖", h2: "♙", c2: "♙" }, q: "White to move. Use the rook file.", from: "e1", to: "e7", san: "Rxe7+", result: "wins a defender with check" },
+      { pieces: { g8: "♚", b6: "♛", f7: "♟", g7: "♟", h7: "♟", d3: "♗", g1: "♔", c2: "♙", h2: "♙" }, q: "White to move. Skewer the queen.", from: "d3", to: "h7", san: "Bxh7+", result: "opens a skewer" },
+      { pieces: { h8: "♚", a8: "♜", g7: "♟", h7: "♟", e5: "♕", g1: "♔", e1: "♖", f2: "♙", g2: "♙" }, q: "White to move. Find the forcing queen check.", from: "e5", to: "e8", san: "Qe8+", result: "wins the rook after check" },
+      { pieces: { b8: "♚", d8: "♛", b7: "♟", c7: "♟", a7: "♟", g2: "♗", g1: "♔", b2: "♙", c2: "♙" }, q: "White to move. Remove the guard.", from: "g2", to: "b7", san: "Bxb7", result: "wins a key pawn" },
+      { pieces: { g8: "♚", c8: "♛", f8: "♜", g7: "♟", h7: "♟", d5: "♘", g1: "♔", e2: "♙", f2: "♙", h2: "♙" }, q: "White to move. The knight can fork two heavy pieces.", from: "d5", to: "e7", san: "Ne7+", result: "forks king and queen" },
+      { pieces: { g8: "♚", e8: "♛", e7: "♟", f7: "♟", b5: "♗", g1: "♔", d1: "♕", e2: "♙", h2: "♙" }, q: "White to move. Pin pressure becomes material.", from: "b5", to: "e8", san: "Bxe8", result: "wins the queen" },
+      { pieces: { h8: "♚", d8: "♛", f8: "♜", g7: "♟", h7: "♟", b1: "♕", g1: "♔", e1: "♖", f2: "♙", g2: "♙" }, q: "White to move. Find the long diagonal shot.", from: "b1", to: "h7", san: "Qxh7+", result: "forces the king open" },
+      { pieces: { g8: "♚", e8: "♜", d8: "♛", f7: "♟", g7: "♟", h7: "♟", e1: "♖", b5: "♗", g1: "♔", c2: "♙", f2: "♙" }, q: "White to move. Deflect the rook from the queen.", from: "e1", to: "e8", san: "Rxe8+", result: "deflects the defender" },
+      { pieces: { b8: "♚", c7: "♟", a7: "♟", h3: "♕", b6: "♘", e2: "♗", g1: "♔", a2: "♙", f2: "♙", h2: "♙" }, q: "White to move. Coordinate queen, knight, and bishop.", from: "h3", to: "c8", san: "Qc8#", result: "checkmate" },
+      { pieces: { h8: "♚", d8: "♛", f8: "♜", g7: "♟", h7: "♟", f5: "♘", e1: "♖", g1: "♔", c2: "♙", d2: "♙", g2: "♙" }, q: "White to move. Pick the forcing knight fork.", from: "f5", to: "h6", san: "Nh6", result: "forks king-side threats" },
+      { pieces: { g8: "♚", e8: "♛", a8: "♜", e7: "♟", f7: "♟", g7: "♟", b5: "♗", d1: "♕", e1: "♖", g1: "♔", c2: "♙", h2: "♙" }, q: "White to move. Find the overloaded defender.", from: "b5", to: "e8", san: "Bxe8", result: "wins decisive material" },
+      { pieces: { g8: "♚", d8: "♛", a8: "♜", f8: "♜", f7: "♟", g7: "♟", h7: "♟", e1: "♖", e5: "♕", c4: "♗", g1: "♔", f2: "♙", g2: "♙", h2: "♙" }, q: "White to move. Choose the strongest forcing move.", from: "e5", to: "e8", san: "Qe8+", result: "wins the back rank" }
     ];
     games.push(...chessVariants.slice(1).map((variant, index) => {
       const number = index + 2;
       const difficulty = number <= 5 ? "Easy" : number <= 11 ? "Medium" : number <= 16 ? "Hard" : "Expert";
       return {
         id: `ch${number}`,
-        title: `Chess Mate ${number}`,
+        title: `Chess Tactic ${number}`,
         category: "Strategy",
         difficulty,
         difficultyRank: difficultyRanks[difficulty],
@@ -1380,28 +1380,63 @@
       let selected = null;
       let locked = false;
       const whitePieces = new Set(["♕", "♔", "♖", "♗", "♘", "♙"]);
-
-      const queenTargets = (from) => {
+      const blackPieces = new Set(["♚", "♛", "♜", "♝", "♞", "♟"]);
+      const inBounds = (fileIndex, rank) => fileIndex >= 0 && fileIndex < 8 && rank >= 1 && rank <= 8;
+      const squareAt = (fileIndex, rank) => `${files[fileIndex]}${rank}`;
+      const addTarget = (targets, square) => {
+        const occupant = pieces[square];
+        if (whitePieces.has(occupant)) return false;
+        targets.add(square);
+        return !blackPieces.has(occupant);
+      };
+      const slideTargets = (from, directions) => {
         const fileIndex = files.indexOf(from[0]);
         const rank = Number(from[1]);
-        const targets = [];
-        for (let f = 0; f < 8; f++) if (f !== fileIndex) targets.push(`${files[f]}${rank}`);
-        for (let r = 1; r <= 8; r++) if (r !== rank) targets.push(`${from[0]}${r}`);
-        for (const df of [-1, 1]) {
-          for (const dr of [-1, 1]) {
-            let f = fileIndex + df;
-            let r = rank + dr;
-            while (f >= 0 && f < 8 && r >= 1 && r <= 8) {
-              targets.push(`${files[f]}${r}`);
-              f += df;
-              r += dr;
-            }
+        const targets = new Set();
+        directions.forEach(([df, dr]) => {
+          let f = fileIndex + df;
+          let r = rank + dr;
+          while (inBounds(f, r)) {
+            if (!addTarget(targets, squareAt(f, r))) break;
+            f += df;
+            r += dr;
           }
-        }
-        return new Set(targets);
+        });
+        return targets;
       };
 
-      const legalTargets = (from) => pieces[from] === "♕" ? queenTargets(from) : new Set();
+      const legalTargets = (from) => {
+        const piece = pieces[from];
+        const fileIndex = files.indexOf(from[0]);
+        const rank = Number(from[1]);
+        const targets = new Set();
+        if (piece === "♕") return slideTargets(from, [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]);
+        if (piece === "♖") return slideTargets(from, [[1,0],[-1,0],[0,1],[0,-1]]);
+        if (piece === "♗") return slideTargets(from, [[1,1],[1,-1],[-1,1],[-1,-1]]);
+        if (piece === "♘") {
+          [[1,2],[2,1],[2,-1],[1,-2],[-1,-2],[-2,-1],[-2,1],[-1,2]].forEach(([df, dr]) => {
+            if (inBounds(fileIndex + df, rank + dr)) addTarget(targets, squareAt(fileIndex + df, rank + dr));
+          });
+          return targets;
+        }
+        if (piece === "♔") {
+          for (let df = -1; df <= 1; df++) for (let dr = -1; dr <= 1; dr++) {
+            if ((df || dr) && inBounds(fileIndex + df, rank + dr)) addTarget(targets, squareAt(fileIndex + df, rank + dr));
+          }
+          return targets;
+        }
+        if (piece === "♙") {
+          const one = squareAt(fileIndex, rank + 1);
+          if (inBounds(fileIndex, rank + 1) && !pieces[one]) targets.add(one);
+          [-1, 1].forEach(df => {
+            if (!inBounds(fileIndex + df, rank + 1)) return;
+            const capture = squareAt(fileIndex + df, rank + 1);
+            if (blackPieces.has(pieces[capture])) targets.add(capture);
+          });
+          return targets;
+        }
+        return targets;
+      };
       const draw = (lastMove = null) => {
         const squares = [];
         const targets = selected ? legalTargets(selected) : new Set();
@@ -1416,7 +1451,7 @@
               dark ? "dark" : "light",
               piece ? "has-piece" : "",
               selected === square ? "selected" : "",
-              selected && targets.has(square) && !pieces[square] ? "targetable" : "",
+              selected && targets.has(square) && !whitePieces.has(piece) ? "targetable" : "",
               lastMove?.includes(square) ? "last-move" : ""
             ].filter(Boolean).join(" ");
             squares.push(`<div class="${classes}" data-square="${square}">${coord}<span>${piece}</span></div>`);
@@ -1458,10 +1493,10 @@
         locked = true;
         draw([from, square]);
         if (from === p.from && square === p.to) {
-          $(".chess-status", root).textContent = `${p.san} - checkmate.`;
-          done(1000, "Mate found.");
+          $(".chess-status", root).textContent = `${p.san} - ${p.result || "best move"}.`;
+          done(1000, p.result || "Best move found.");
         } else {
-          $(".chess-status", root).textContent = `Not mate. Best move: ${p.san}`;
+          $(".chess-status", root).textContent = `Best move: ${p.san}`;
           done(160, `Best move: ${p.san}`);
         }
       };
@@ -2652,7 +2687,7 @@
 
     function adminFamilyName(game) {
       const text = `${game.id || ""} ${game.title || ""} ${game.game_type || ""}`.toLowerCase();
-      if (text.includes("chess") || /^ch\d+/.test(text)) return "Chess Mate";
+      if (text.includes("chess") || /^ch\d+/.test(text)) return "Chess";
       if (text.includes("wordle")) return "Wordle";
       if (text.includes("connections") || /^con\d+/.test(text)) return "Connections";
       if (text.includes("crossword") || /^cw\d+/.test(text)) return "Crossword";
