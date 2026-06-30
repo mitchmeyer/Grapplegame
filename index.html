@@ -76,6 +76,15 @@
     .create-preview { display: grid; gap: 10px; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
     .preview-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .create-preview .game-stage { min-height: 220px; background: white; }
+    .create-builder { display: grid; gap: 12px; margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #FBFAFF; }
+    .idea-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+    .idea-chip { min-height: 38px; padding: 8px 10px; border: 1px solid #D8CCFF; border-radius: 8px; background: white; color: var(--dark-purple); font-size: 12px; font-weight: 900; text-align: left; }
+    .question-list { display: grid; gap: 7px; color: var(--muted); font-size: 13px; font-weight: 750; }
+    .question-list div { display: flex; gap: 8px; align-items: flex-start; }
+    .question-list span { color: var(--primary); font-weight: 950; }
+    .draft-fields { display: grid; grid-template-columns: 1fr 150px; gap: 8px; }
+    .playtest-status { min-height: 34px; display: grid; place-items: center; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: white; color: var(--muted); font-size: 13px; font-weight: 850; text-align: center; }
+    .playtest-status.ready { color: #047857; background: #ECFDF5; border-color: #BBF7D0; }
     .points-hud { position: fixed; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 0 13px; border-radius: 999px; color: white; background: var(--dark-purple); box-shadow: var(--shadow); font-weight: 900; }
     .points-hud.bump { animation: points-pop .32s ease; }
     .auth-bar { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); z-index: 12; min-height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 999px; background: white; border: 1px solid var(--line); box-shadow: var(--shadow); font-size: 12px; font-weight: 850; }
@@ -369,6 +378,7 @@
       .start-cover h3 { font-size: 22px; }
       .start-cover p { font-size: 14px; }
       .choices, .two-col { grid-template-columns: 1fr; }
+      .draft-fields { grid-template-columns: 1fr; }
       .topbar { align-items: flex-start; }
       .connections-grid { grid-template-columns: repeat(2, 1fr); }
       .conn { min-height: 42px; padding: 6px; font-size: 11px; }
@@ -466,6 +476,8 @@
               <button class="btn primary auth-action">Continue with Google</button>
             </div>
             <textarea id="createPrompt" placeholder="Example: a 4x4 logic puzzle about chess forks"></textarea>
+            <div id="createGuide" class="create-builder"></div>
+            <textarea id="createNotes" placeholder="Answer the questions or add rules here before generating."></textarea>
             <div class="action-row" style="margin-top:12px;">
               <button class="btn primary" id="generateDraft">Generate</button>
               <button class="btn ghost" id="saveDraft">Save Blank</button>
@@ -3033,9 +3045,58 @@
         prompt: d.prompt,
         caption: d.caption || "",
         status: d.status || "draft",
+        playtested: Boolean(d.playtested),
+        playtestResult: d.playtestResult || "",
         game: null
       }));
       return [...state.createdGames, ...localDrafts].filter(item => !isTicTacToeGame(item) && !isTicTacToeGame(item.game));
+    }
+
+    const createIdeaTemplates = [
+      { label: "Word puzzle", text: "Make a Wordle-style word puzzle with a satisfying reveal and one clear answer.", questions: ["What is the theme of the answer word?", "Should it be easy, medium, or hard?", "Should guesses teach the player something?"] },
+      { label: "Logic grid", text: "Make a compact logic puzzle that fits on one phone screen with one correct solution.", questions: ["What facts should the player deduce?", "How many steps should it take?", "What clue should be withheld until a hint?"] },
+      { label: "Visual board", text: "Make a visual board puzzle with tappable pieces and a clear win condition.", questions: ["What should the player tap or move?", "What does a correct final board look like?", "What mistake should the game catch?"] },
+      { label: "Trivia twist", text: "Make a trivia puzzle that asks the player to compare or order things, not just recall a fact.", questions: ["What category should it cover?", "What makes the wrong answers tempting?", "Should it be quick or thoughtful?"] },
+      { label: "Friend challenge", text: "Make a game that produces a score so two friends can compete on the same prompt.", questions: ["Is speed or accuracy more important?", "How should ties be broken?", "What score should a strong player get?"] }
+    ];
+
+    function createQuestionsFor(prompt) {
+      const text = prompt.toLowerCase();
+      if (/word|scramble|letter|wordle/.test(text)) return createIdeaTemplates[0].questions;
+      if (/logic|grid|sudoku|deduce|clue/.test(text)) return createIdeaTemplates[1].questions;
+      if (/board|move|piece|chess|go|tetris|visual/.test(text)) return createIdeaTemplates[2].questions;
+      if (/trivia|country|history|timeline|compare|bigger/.test(text)) return createIdeaTemplates[3].questions;
+      return ["What does the player actually do?", "What is the win condition?", "What should make it challenging but fair?"];
+    }
+
+    function renderCreateGuide() {
+      const prompt = $("#createPrompt")?.value.trim() || "";
+      const guide = $("#createGuide");
+      if (!guide) return;
+      const questions = createQuestionsFor(prompt);
+      guide.innerHTML = `
+        <div>
+          <b>Shape the game</b>
+          <p class="muted">${prompt ? "Answer one or two questions before generating." : "Start with an idea, or tap a format below."}</p>
+        </div>
+        <div class="idea-grid">
+          ${createIdeaTemplates.map((idea, index) => `<button class="idea-chip" type="button" onclick="applyCreateIdea(${index})">${esc(idea.label)}</button>`).join("")}
+        </div>
+        <div class="question-list">
+          ${questions.map((q, i) => `<div><span>${i + 1}</span><p>${esc(q)}</p></div>`).join("")}
+        </div>
+      `;
+    }
+
+    function applyCreateIdea(index) {
+      const idea = createIdeaTemplates[index];
+      if (!idea) return;
+      const promptBox = $("#createPrompt");
+      const notesBox = $("#createNotes");
+      promptBox.value = promptBox.value.trim() ? `${promptBox.value.trim()}\n${idea.text}` : idea.text;
+      notesBox.value = idea.questions.map(q => `${q} `).join("\n");
+      renderCreateGuide();
+      promptBox.focus();
     }
 
     function renderCreate() {
@@ -3046,19 +3107,26 @@
             <div>
               <span class="pill">${esc(d.status || "draft")}</span>
               <span class="pill">${esc(d.category || "Puzzle")}</span>
-              <input class="input" value="${escAttr(d.title || "Untitled game")}" onchange="updateCreatedGame('${escAttr(d.id)}', 'title', this.value)" style="margin-top:10px;">
+              <span class="pill">${d.playtested ? "playtested" : "untested"}</span>
+              <div class="draft-fields" style="margin-top:10px;">
+                <input class="input" value="${escAttr(d.title || "Untitled game")}" onchange="updateCreatedGame('${escAttr(d.id)}', 'title', this.value)">
+                <select class="input" onchange="updateCreatedGame('${escAttr(d.id)}', 'category', this.value)">
+                  ${["Logic", "Language", "Strategy", "Math", "Memory", "History", "Arcade", "Trivia"].map(cat => `<option value="${escAttr(cat)}" ${cat === d.category ? "selected" : ""}>${esc(cat)}</option>`).join("")}
+                </select>
+              </div>
               <p class="muted">${esc(d.prompt || "Created in Grapple")}</p>
             </div>
             <textarea placeholder="Add a caption before you post" onchange="updateCreatedGame('${escAttr(d.id)}', 'caption', this.value)">${esc(d.caption || "")}</textarea>
             <div class="create-preview" data-preview-id="${escAttr(d.id)}">
-              <div class="preview-title"><b>Preview</b><span class="pill">${d.game ? "Playable" : "Idea"}</span></div>
+              <div class="preview-title"><b>Playtest</b><span class="pill">${d.game ? "Playable" : "Idea"}</span></div>
               <div class="game-stage"></div>
               <div class="feedback-box"></div>
+              <div class="playtest-status ${d.playtested ? "ready" : ""}">${esc(d.playtestResult || (d.game ? "Play the draft here before posting." : "Generate a game to unlock playtesting."))}</div>
             </div>
             <div class="action-row">
               <button class="btn ghost" onclick="saveCreatedGame('${escAttr(d.id)}')">Save edits</button>
-              <button class="btn ghost" onclick="refreshCreatedPreview('${escAttr(d.id)}')">Reset preview</button>
-              <button class="btn primary" onclick="publishCreatedGame('${escAttr(d.id)}')">${d.status === "published" ? "Posted" : "Post"}</button>
+              <button class="btn ghost" onclick="refreshCreatedPreview('${escAttr(d.id)}')">Replay test</button>
+              <button class="btn primary" onclick="publishCreatedGame('${escAttr(d.id)}')">${d.status === "published" ? "Posted" : d.playtested ? "Post" : "Post anyway"}</button>
             </div>
           </div>
         </div>
@@ -3083,6 +3151,8 @@
           prompt: d.prompt,
           caption: d.caption || "",
           status: d.status || "draft",
+          playtested: false,
+          playtestResult: "",
           game: {
             id: d.id,
             title: d.title,
@@ -3105,7 +3175,9 @@
     function addDraft(prompt) {
       const cats = ["Logic", "Language", "Strategy", "Math"];
       const category = choice(cats);
-      state.drafts.unshift({ id: crypto.randomUUID(), title: `${category} Puzzle`, category, prompt: prompt || "Untitled puzzle idea", caption: "", status: "draft", date: today });
+      const notes = $("#createNotes")?.value.trim();
+      const fullPrompt = [prompt || "Untitled puzzle idea", notes ? `Builder notes:\n${notes}` : ""].filter(Boolean).join("\n\n");
+      state.drafts.unshift({ id: crypto.randomUUID(), title: `${category} Puzzle`, category, prompt: fullPrompt, caption: "", status: "draft", date: today, playtested: false, playtestResult: "" });
       save();
       renderCreate();
       renderProfile();
@@ -3120,6 +3192,7 @@
       if (!item) return;
       item[field] = value;
       if (item.game && field === "title") item.game.title = value;
+      if (item.game && field === "category") item.game.category = value;
       save();
       renderProfile();
     }
@@ -3150,8 +3223,18 @@
       const game = normalizeGame(item.game);
       game.renderer(stage, game, (score, label) => {
         const good = score >= 700;
+        item.playtested = true;
+        item.playtestResult = good
+          ? `Playtest passed: ${Math.round(score)} points.`
+          : `Playtest result: ${label || "Needs adjustment."}`;
+        save();
         feedback.className = `feedback-box show ${good ? "good" : "bad"}`;
         feedback.innerHTML = good ? `<span class="feedback-mark">✓</span>` : `<span class="feedback-mark">!</span><span>${esc(label)}</span>`;
+        const status = $(".playtest-status", box);
+        if (status) {
+          status.className = "playtest-status ready";
+          status.textContent = item.playtestResult;
+        }
       });
     }
 
@@ -3176,6 +3259,7 @@
     async function publishCreatedGame(id) {
       const item = findCreatedGame(id);
       if (!item) return;
+      if (item.game && !item.playtested && !confirm("Post this game without playtesting it first?")) return;
       item.status = "published";
       if (item.game) {
         const normalized = normalizeGame(item.game);
@@ -3923,7 +4007,9 @@
       $$(".challenge-panel").forEach(p => p.classList.toggle("active", p.id === tab.dataset.panel));
     };
     async function generateDraft() {
-      const prompt = $("#createPrompt").value.trim() || "A fresh puzzle for the Grapple feed";
+      const basePrompt = $("#createPrompt").value.trim() || "A fresh puzzle for the Grapple feed";
+      const notes = $("#createNotes").value.trim();
+      const prompt = [basePrompt, notes ? `Builder notes:\n${notes}` : ""].filter(Boolean).join("\n\n");
       if (!supabaseClient || !currentUser) {
         showAuthModal("Sign in to create AI games.");
         return;
@@ -3949,6 +4035,7 @@
         const data = await response.json().catch(() => ({}));
         if (response.ok && data?.game) {
           $("#createPrompt").value = "";
+          $("#createNotes").value = "";
           state.createdGames.unshift({
             id: data.game.id || crypto.randomUUID(),
             title: data.game.title,
@@ -3956,10 +4043,13 @@
             prompt,
             caption: "",
             status: "draft",
+            playtested: false,
+            playtestResult: "",
             game: data.game
           });
           save();
           renderCreate();
+          renderCreateGuide();
           renderProfile();
           toast("AI game created as draft");
           return;
@@ -3973,9 +4063,13 @@
       }
     }
     $("#generateDraft").onclick = generateDraft;
+    $("#createPrompt")?.addEventListener("input", renderCreateGuide);
+    renderCreateGuide();
     $("#saveDraft").onclick = () => {
       addDraft($("#createPrompt").value.trim());
       $("#createPrompt").value = "";
+      $("#createNotes").value = "";
+      renderCreateGuide();
       toast("Draft saved");
     };
     const googleLoginButton = $("#googleLogin");
