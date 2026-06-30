@@ -161,12 +161,26 @@
     .challenge-start { min-height: 58px; border-radius: 7px; color: white; background: #9B7CF7; font-size: 19px; font-weight: 900; }
     .friend-list { display: grid; gap: 12px; }
     .friend-card { min-height: 106px; display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid #E5EAF2; border-radius: 10px; background: white; box-shadow: 0 2px 7px rgba(15,23,42,.05); text-align: left; }
+    .friend-card > button:not(.btn) { background: transparent; text-align: left; }
     .friend-avatar { width: 54px; height: 54px; border-radius: 16px; font-size: 27px; }
     .friend-name { color: #111827; font-size: 20px; font-weight: 900; }
     .friend-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; color: #697386; font-size: 16px; font-weight: 750; }
     .active-pill { display: inline-flex; align-items: center; min-height: 30px; padding: 0 15px; border-radius: 999px; color: #168A43; background: #ECFDF5; border: 1px solid #BBF7D0; font-weight: 900; }
     .challenge-empty { padding: 24px; border: 1px solid #E5EAF2; border-radius: 12px; text-align: center; color: var(--muted); }
     .username-card { margin-bottom: 14px; }
+    .challenge-action-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .challenge-action-row .btn { min-height: 38px; padding: 0 14px; }
+    .challenge-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+    .challenge-detail-head .challenge-title { margin-top: 0; text-align: left; }
+    .challenge-game-grid { display: grid; gap: 10px; }
+    .challenge-game-button { min-height: 72px; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 12px 14px; border: 1px solid #E5EAF2; border-radius: 10px; background: white; text-align: left; box-shadow: 0 2px 7px rgba(15,23,42,.05); }
+    .challenge-game-button b { display: block; color: #111827; font-size: 16px; }
+    .challenge-scoreline { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; color: #697386; font-size: 14px; font-weight: 800; }
+    .status-pill { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 999px; color: #5B4E84; background: #F3EEFF; border: 1px solid #DCD1FF; font-size: 13px; font-weight: 900; }
+    .status-pill.win { color: #168A43; background: #ECFDF5; border-color: #BBF7D0; }
+    .status-pill.loss { color: #B42318; background: #FEF2F2; border-color: #FECACA; }
+    .status-pill.waiting { color: #8A5A00; background: #FFFBEB; border-color: #FDE68A; }
+    .friend-card.is-detail { grid-template-columns: 48px minmax(0, 1fr); }
     .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
     .tab { flex: 0 0 auto; padding: 0 13px; color: var(--dark-purple); background: white; }
     .tab.active { color: white; background: var(--primary); border-color: var(--primary); }
@@ -552,6 +566,7 @@
     state.drafts ||= [];
     state.createdGames ||= [];
     state.comments ||= {};
+    state.challenges ||= [];
     state.usernamePrompted ||= false;
     state.drafts.forEach((draft, index) => {
       draft.id ||= `local-draft-${index}-${today}`;
@@ -1071,6 +1086,7 @@
         ? `<span class="feedback-mark">✓</span>`
         : `<span class="feedback-mark">!</span><span>${label}</span>`;
       recordPlay(game, score, label, points);
+      if (game.challengeId) completeChallengeScore(game.challengeId, score, points, label);
       syncPlay(game, points, isCorrect, label);
     }
 
@@ -2019,58 +2035,233 @@
       { name: "Sawyer", avatar: "🤖", record: "1W-1L", active: 3 }
     ];
 
-    function challengeFriend(name) {
-      const game = choice(rankedGames().slice(0, 12));
-      toast(`Challenge sent to ${name}`);
-      state.plays.unshift({ title: `Challenge: ${name}`, category: game.category, points: 0, label: game.title, date: today });
-      state.plays = state.plays.slice(0, 30);
+    function challengeGameOptions() {
+      return rankedGames().filter(game => !isTicTacToeGame(game)).slice(0, 18);
+    }
+
+    function friendByName(name) {
+      return challengeFriends.find(friend => friend.name === name) || { name, avatar: "🤖", record: "0W-0L", active: 0 };
+    }
+
+    function challengesForFriend(name) {
+      return (state.challenges || []).filter(challenge => challenge.friend === name);
+    }
+
+    function challengeResult(challenge) {
+      if (challenge.myScore == null) return { label: "Your turn", className: "waiting" };
+      if (challenge.friendScore == null) return { label: "Waiting", className: "waiting" };
+      if (challenge.myScore > challenge.friendScore) return { label: "Win", className: "win" };
+      if (challenge.myScore < challenge.friendScore) return { label: "Loss", className: "loss" };
+      return { label: "Tie", className: "" };
+    }
+
+    function friendStats(name) {
+      const items = challengesForFriend(name);
+      const done = items.filter(challenge => challenge.myScore != null && challenge.friendScore != null);
+      return {
+        total: items.length,
+        wins: done.filter(challenge => challenge.myScore > challenge.friendScore).length,
+        losses: done.filter(challenge => challenge.myScore < challenge.friendScore).length,
+        ties: done.filter(challenge => challenge.myScore === challenge.friendScore).length,
+        active: items.filter(challenge => challenge.myScore == null || challenge.friendScore == null).length
+      };
+    }
+
+    function sortedChallengeFriends() {
+      return challengeFriends
+        .map(friend => ({ ...friend, stats: friendStats(friend.name) }))
+        .sort((a, b) => (b.stats.total - a.stats.total) || (b.stats.active - a.stats.active) || a.name.localeCompare(b.name));
+    }
+
+    function startChallenge(friendName, gameId = "random") {
+      const options = challengeGameOptions();
+      const game = gameId === "random" ? choice(options) : options.find(item => item.id === gameId);
+      if (!game) return toast("No challenge game found");
+      state.challenges ||= [];
+      state.challenges.unshift({
+        id: crypto.randomUUID(),
+        friend: friendName,
+        gameId: game.id,
+        gameTitle: game.title,
+        category: game.category,
+        difficulty: game.difficulty || "Medium",
+        createdAt: new Date().toISOString(),
+        date: today,
+        myScore: null,
+        friendScore: null,
+        answer: ""
+      });
+      state.challengePickerFriend = "";
+      save();
+      renderChallenges();
+      toast(`Challenge sent to ${friendName}`);
+    }
+
+    function openFriendChallenges(name) {
+      state.selectedChallengeFriend = name;
+      state.challengePickerFriend = "";
       save();
       renderChallenges();
     }
 
-    function friendRow(friend) {
+    function closeFriendChallenges() {
+      state.selectedChallengeFriend = "";
+      state.challengePickerFriend = "";
+      save();
+      renderChallenges();
+    }
+
+    function openChallengePicker(name) {
+      state.challengePickerFriend = name;
+      state.selectedChallengeFriend = name;
+      save();
+      renderChallenges();
+    }
+
+    function playChallenge(id) {
+      const challenge = state.challenges.find(item => item.id === id);
+      if (!challenge) return toast("Challenge not found");
+      const source = rankedGames().find(game => game.id === challenge.gameId) || games.find(game => game.id === challenge.gameId);
+      if (!source) return toast("That game is no longer available");
+      const challengeGame = { ...source, challengeId: challenge.id, title: `${source.title} vs ${challenge.friend}` };
+      const feed = $("#feed");
+      feed.innerHTML = "";
+      feed.onscroll = null;
+      feed.appendChild(buildGameCard(challengeGame));
+      showView("feedView");
+      feed.scrollTop = 0;
+      toast(`Beat ${challenge.friend}'s score`);
+    }
+
+    function completeChallengeScore(id, score, points, label) {
+      const challenge = state.challenges.find(item => item.id === id);
+      if (!challenge || challenge.myScore != null) return;
+      challenge.myScore = points;
+      challenge.rawScore = Math.round(score);
+      challenge.answer = label || "";
+      save();
+      renderChallenges();
+      toast(`Challenge score saved: ${points}`);
+    }
+
+    function simulateFriendScore(id) {
+      const challenge = state.challenges.find(item => item.id === id);
+      if (!challenge || challenge.myScore == null) return toast("Play your turn first");
+      if (challenge.friendScore != null) return toast("Friend already played");
+      const difficultyBonus = challenge.difficulty === "Hard" ? 15 : challenge.difficulty === "Easy" ? -8 : 4;
+      const swing = Math.floor(Math.random() * 55) - 18;
+      challenge.friendScore = Math.max(0, Math.min(110, Math.round((challenge.myScore || 0) + difficultyBonus + swing)));
+      challenge.friendRawScore = challenge.friendScore * 10;
+      save();
+      renderChallenges();
+      const result = challengeResult(challenge);
+      toast(result.label === "Win" ? "You won the challenge" : result.label === "Loss" ? "They won this one" : "Challenge tied");
+    }
+
+    function challengeActions(challenge) {
+      if (challenge.myScore == null) return `<button class="btn primary" onclick="playChallenge('${escAttr(challenge.id)}')">Play</button>`;
+      if (challenge.friendScore == null) return `<button class="btn ghost" onclick="simulateFriendScore('${escAttr(challenge.id)}')">Friend Played</button>`;
+      return `<button class="btn ghost" onclick="openChallengePicker('${escAttr(challenge.friend)}')">Rematch</button>`;
+    }
+
+    function challengeRow(challenge) {
+      const result = challengeResult(challenge);
       return `
-        <button class="friend-card" onclick="challengeFriend('${escAttr(friend.name)}')">
+        <div class="friend-card is-detail">
+          <span class="friend-avatar">${friendByName(challenge.friend).avatar}</span>
+          <span>
+            <span class="friend-name">${esc(challenge.gameTitle)}</span>
+            <span class="challenge-scoreline">
+              <span>${esc(challenge.friend)}</span>
+              <span>You: ${challenge.myScore == null ? "-" : challenge.myScore}</span>
+              <span>Them: ${challenge.friendScore == null ? "-" : challenge.friendScore}</span>
+              <span class="status-pill ${result.className}">${result.label}</span>
+            </span>
+            <span class="challenge-action-row">${challengeActions(challenge)}</span>
+          </span>
+        </div>
+      `;
+    }
+
+    function friendRow(friend) {
+      const stats = friend.stats || friendStats(friend.name);
+      const record = `${stats.wins}W-${stats.losses}L${stats.ties ? `-${stats.ties}T` : ""}`;
+      return `
+        <div class="friend-card">
+          <button class="friend-avatar" onclick="openFriendChallenges('${escAttr(friend.name)}')">${friend.avatar}</button>
+          <button onclick="openFriendChallenges('${escAttr(friend.name)}')">
+            <span class="friend-name">${esc(friend.name)}</span>
+            <span class="friend-meta"><span>🏆 ${record}</span><span class="active-pill">${stats.active} Active</span><span>${stats.total} total</span></span>
+          </button>
+          <button class="btn ghost" onclick="openChallengePicker('${escAttr(friend.name)}')">Challenge</button>
+        </div>
+      `;
+    }
+
+    function renderChallengePicker(friendName) {
+      const friend = friendByName(friendName);
+      const options = challengeGameOptions();
+      return `
+        <div class="challenge-detail-head">
+          <h2 class="challenge-title">Challenge ${esc(friend.name)}</h2>
+          <button class="btn ghost" onclick="openFriendChallenges('${escAttr(friend.name)}')">Back</button>
+        </div>
+        <button class="challenge-start" onclick="startChallenge('${escAttr(friend.name)}', 'random')">Random Game</button>
+        <div class="challenge-game-grid">
+          ${options.slice(0, 12).map(game => `
+            <button class="challenge-game-button" onclick="startChallenge('${escAttr(friend.name)}', '${escAttr(game.id)}')">
+              <span><b>${esc(game.title)}</b><span class="friend-meta">${esc(game.category)} · ${esc(game.difficulty || "Medium")}</span></span>
+              <span class="status-pill">${esc(game.difficulty || "Medium")}</span>
+            </button>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderFriendDetail(friendName) {
+      const friend = friendByName(friendName);
+      const stats = friendStats(friend.name);
+      const items = challengesForFriend(friend.name);
+      return `
+        <div class="challenge-detail-head">
+          <h2 class="challenge-title">${esc(friend.name)}</h2>
+          <button class="btn ghost" onclick="closeFriendChallenges()">Back</button>
+        </div>
+        <div class="friend-card">
           <span class="friend-avatar">${friend.avatar}</span>
           <span>
-            <span class="friend-name">${esc(friend.name)}</span>
-            <span class="friend-meta"><span>🏆 ${esc(friend.record)}</span><span class="active-pill">${friend.active} Active</span></span>
+            <span class="friend-name">${stats.wins}W-${stats.losses}L${stats.ties ? `-${stats.ties}T` : ""}</span>
+            <span class="friend-meta"><span>${stats.total} total challenges</span><span class="active-pill">${stats.active} Active</span></span>
           </span>
-          <span class="btn ghost">Challenge</span>
-        </button>
+          <button class="btn primary" onclick="openChallengePicker('${escAttr(friend.name)}')">New</button>
+        </div>
+        <div class="friend-list">${items.map(challengeRow).join("") || `<div class="challenge-empty">No challenges with ${esc(friend.name)} yet.</div>`}</div>
       `;
     }
 
     function renderChallenges() {
       const me = currentProfile?.username || "your username";
-      $("#friendsPanel").innerHTML = `
-        <h2 class="challenge-title">Challenge Friends</h2>
-        <button class="challenge-start" onclick="toast('Pick a friend below to start')">Start New Challenge</button>
-        <div class="challenge-empty username-card">Your username: <b>${esc(me)}</b></div>
-        <div class="friend-list">${challengeFriends.map(friendRow).join("")}</div>
-      `;
+      const active = (state.challenges || []).filter(challenge => challenge.myScore == null || challenge.friendScore == null);
+      const history = (state.challenges || []).filter(challenge => challenge.myScore != null && challenge.friendScore != null);
+      if (state.challengePickerFriend) {
+        $("#friendsPanel").innerHTML = renderChallengePicker(state.challengePickerFriend);
+      } else if (state.selectedChallengeFriend) {
+        $("#friendsPanel").innerHTML = renderFriendDetail(state.selectedChallengeFriend);
+      } else {
+        $("#friendsPanel").innerHTML = `
+          <h2 class="challenge-title">Challenge Friends</h2>
+          <button class="challenge-start" onclick="toast('Pick a friend below')">Start New Challenge</button>
+          <div class="challenge-empty username-card">Your username: <b>${esc(me)}</b></div>
+          <div class="friend-list">${sortedChallengeFriends().map(friendRow).join("")}</div>
+        `;
+      }
       $("#activePanel").innerHTML = `
         <h2 class="challenge-title">Active Challenges</h2>
-        <div class="friend-list">
-          ${challengeFriends.slice(0, 3).map(f => `
-            <button class="friend-card" onclick="showView('feedView')">
-              <span class="friend-avatar">${f.avatar}</span>
-              <span><span class="friend-name">${esc(f.name)}</span><span class="friend-meta"><span>${esc(choice(games).title)}</span><span class="active-pill">Play</span></span></span>
-              <span class="btn primary">Open</span>
-            </button>
-          `).join("")}
-        </div>
+        <div class="friend-list">${active.map(challengeRow).join("") || `<div class="challenge-empty">No active challenges. Send one from Friends.</div>`}</div>
       `;
       $("#historyPanel").innerHTML = `
         <h2 class="challenge-title">History</h2>
-        <div class="friend-list">
-          ${state.plays.filter(p => /^Challenge:/.test(p.title)).slice(0, 8).map(p => `
-            <div class="friend-card">
-              <span class="friend-avatar">🏆</span>
-              <span><span class="friend-name">${esc(p.title.replace("Challenge: ", ""))}</span><span class="friend-meta"><span>${esc(p.label || "Puzzle challenge")}</span><span>${esc(p.date || today)}</span></span></span>
-            </div>
-          `).join("") || `<div class="challenge-empty">No completed friend challenges yet.</div>`}
-        </div>
+        <div class="friend-list">${history.map(challengeRow).join("") || `<div class="challenge-empty">No completed friend challenges yet.</div>`}</div>
       `;
     }
 
