@@ -1355,16 +1355,16 @@
     }));
 
     const goCatalog = [
-      { name: "Net the Runner", difficulty: "Easy", black: ["c4","d3","e4","e5"], white: ["d4"], line: ["c5","d5","d6"], tactic: "Net", goal: "Use a diagonal net, let White run, then fill the last liberty." },
-      { name: "Mirror Net", difficulty: "Easy", black: ["e4","d3","c4","c5"], white: ["d4"], line: ["e5","d5","d6"], tactic: "Net", goal: "Close the outside first. White's extension creates the final capture point." },
-      { name: "Low Side Chase", difficulty: "Medium", black: ["c4","d5","e4","e3"], white: ["d4"], line: ["c3","d3","d2"], tactic: "Squeeze", goal: "Force White downward, then remove the final liberty on the second line." },
-      { name: "Shoulder Net", difficulty: "Medium", black: ["d5","c4","d3","e3"], white: ["d4"], line: ["e5","e4","f4"], tactic: "Net", goal: "Play from the outside shoulder so White's only run is into capture." },
-      { name: "Two-Step Ladder", difficulty: "Hard", black: ["c4","d3","e4","e5","e6","c7","e7"], white: ["d4"], line: ["c5","d5","c6","d6","d7"], tactic: "Ladder", goal: "Chase White upward. Each black move removes the next escape." },
-      { name: "Reverse Ladder", difficulty: "Hard", black: ["e4","d3","c4","c5","c6","e7","c7"], white: ["d4"], line: ["e5","d5","e6","d6","d7"], tactic: "Ladder", goal: "Drive White into the top wall, then close the final point." },
-      { name: "Right-Side Squeeze", difficulty: "Hard", black: ["d5","c4","d3","e3","f3","g5","g3"], white: ["d4"], line: ["e5","e4","f5","f4","g4"], tactic: "Squeeze", goal: "Herd the group right until it has nowhere to breathe." },
-      { name: "Left-Side Squeeze", difficulty: "Expert", black: ["d3","e4","d5","c5","b5","a3","a5"], white: ["d4"], line: ["c3","c4","b3","b4","a4"], tactic: "Squeeze", goal: "Force White into the edge. The side of the board becomes part of the net." },
-      { name: "Edge Trap", difficulty: "Expert", black: ["c4","d5","e4","e3","e2","c1","e1"], white: ["d4"], line: ["c3","d3","c2","d2","d1"], tactic: "Edge capture", goal: "Keep White crawling toward the edge, then take away the final liberty." },
-      { name: "Corner Clamp", difficulty: "Expert", black: ["e4","d5","c4","c3","c2","e1","c1"], white: ["d4"], line: ["e3","d3","e2","d2","d1"], tactic: "Corner capture", goal: "Clamp from the outside and let the corner finish the capture." }
+      { name: "Net the Runner", difficulty: "Easy", black: ["c4","d3","e4","e5"], white: ["d4"], line: ["c5","d5","d6"], tactic: "Net" },
+      { name: "Mirror Net", difficulty: "Easy", black: ["e4","d3","c4","c5"], white: ["d4"], line: ["e5","d5","d6"], tactic: "Net" },
+      { name: "Low Side Chase", difficulty: "Medium", black: ["c4","d5","e4","e3"], white: ["d4"], line: ["c3","d3","d2"], tactic: "Squeeze" },
+      { name: "Shoulder Net", difficulty: "Medium", black: ["d5","c4","d3","e3"], white: ["d4"], line: ["e5","e4","f4"], tactic: "Net" },
+      { name: "Two-Step Ladder", difficulty: "Hard", black: ["c4","d3","e4","e5","e6","c7","e7"], white: ["d4"], line: ["c5","d5","c6","d6","d7"], tactic: "Ladder" },
+      { name: "Reverse Ladder", difficulty: "Hard", black: ["e4","d3","c4","c5","c6","e7","c7"], white: ["d4"], line: ["e5","d5","e6","d6","d7"], tactic: "Ladder" },
+      { name: "Right-Side Squeeze", difficulty: "Hard", black: ["d5","c4","d3","e3","f3","g5","g3"], white: ["d4"], line: ["e5","e4","f5","f4","g4"], tactic: "Squeeze" },
+      { name: "Left-Side Squeeze", difficulty: "Expert", black: ["d3","e4","d5","c5","b5","a3","a5"], white: ["d4"], line: ["c3","c4","b3","b4","a4"], tactic: "Squeeze" },
+      { name: "Edge Trap", difficulty: "Expert", black: ["c4","d5","e4","e3","e2","c1","e1"], white: ["d4"], line: ["c3","d3","c2","d2","d1"], tactic: "Edge capture" },
+      { name: "Corner Clamp", difficulty: "Expert", black: ["e4","d5","c4","c3","c2","e1","c1"], white: ["d4"], line: ["e3","d3","e2","d2","d1"], tactic: "Corner capture" }
     ];
     games.push(...goCatalog.map((gameSpec, index) => {
       return catalogBase(`go${index + 1}`, `Go Capture ${index + 1}`, "Strategy", gameSpec.difficulty, ["Strategy", "Spatial Reasoning"], GoCapture, gameSpec, "");
@@ -2445,7 +2445,7 @@
         <div class="go-shell">
           <button class="go-rules-btn" type="button" aria-label="Go rules">?</button>
           <div class="go-rules-popover"><b>Go basics</b>Stones live by open adjacent points called liberties. Connected stones share liberties. Surround an opponent group so it has no liberties to capture it. Black plays; White answers automatically.</div>
-          <p class="muted">${esc(spec.goal || "Black to play. Win the capture sequence.")}</p>
+          <p class="muted">Black to play. Capture the white stones.</p>
           <div class="go-board"></div>
           <div class="go-status"></div>
         </div>`;
