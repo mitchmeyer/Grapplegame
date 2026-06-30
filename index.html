@@ -801,7 +801,17 @@
       { pieces: { b8: "♚", c7: "♟", a7: "♟", h3: "♕", b6: "♘", e2: "♗", g1: "♔", a2: "♙", f2: "♙", h2: "♙" }, q: "White to move. Coordinate queen, knight, and bishop.", from: "h3", to: "c8", san: "Qc8#", result: "checkmate" },
       { pieces: { h8: "♚", d8: "♛", f8: "♜", g7: "♟", h7: "♟", f5: "♘", e1: "♖", g1: "♔", c2: "♙", d2: "♙", g2: "♙" }, q: "White to move. Pick the forcing knight fork.", from: "f5", to: "h6", san: "Nh6", result: "forks king-side threats" },
       { pieces: { g8: "♚", e8: "♛", a8: "♜", e7: "♟", f7: "♟", g7: "♟", b5: "♗", d1: "♕", e1: "♖", g1: "♔", c2: "♙", h2: "♙" }, q: "White to move. Find the overloaded defender.", from: "b5", to: "e8", san: "Bxe8", result: "wins decisive material" },
-      { pieces: { g8: "♚", d8: "♛", a8: "♜", f8: "♜", f7: "♟", g7: "♟", h7: "♟", e1: "♖", e5: "♕", c4: "♗", g1: "♔", f2: "♙", g2: "♙", h2: "♙" }, q: "White to move. Choose the strongest forcing move.", from: "e5", to: "e8", san: "Qe8+", result: "wins the back rank" }
+      { pieces: { g8: "♚", d8: "♛", a8: "♜", f8: "♜", f7: "♟", g7: "♟", h7: "♟", e1: "♖", e5: "♕", c4: "♗", g1: "♔", f2: "♙", g2: "♙", h2: "♙" }, q: "White to move. Choose the strongest forcing move.", from: "e5", to: "e8", san: "Qe8+", result: "wins the back rank" },
+      { pieces: { a1: "♚", c1: "♔", h7: "♟", g7: "♟", d1: "♕" }, q: "Expert: White to move and mate in 2.", san: "Qb1#", result: "checkmate", line: [{ from: "d1", to: "c2", san: "Qc2!" }, { side: "black", from: "g7", to: "g6", san: "...g6" }, { from: "c2", to: "b1", san: "Qb1#", result: "checkmate" }] },
+      { pieces: { h1: "♚", f1: "♔", h7: "♟", g7: "♟", e1: "♕" }, q: "Expert: White to move and mate in 2.", san: "Qg1#", result: "checkmate", line: [{ from: "e1", to: "f2", san: "Qf2!" }, { side: "black", from: "g7", to: "g6", san: "...g6" }, { from: "f2", to: "g1", san: "Qg1#", result: "checkmate" }] },
+      { pieces: { a8: "♚", a6: "♔", h7: "♟", g7: "♟", b1: "♕" }, q: "Expert: White to move and mate in 2.", san: "Qa7#", result: "checkmate", line: [{ from: "b1", to: "b6", san: "Qb6!" }, { side: "black", from: "g7", to: "g6", san: "...g6" }, { from: "b6", to: "a7", san: "Qa7#", result: "checkmate" }] },
+      { pieces: { h8: "♚", g6: "♔", a7: "♟", b7: "♟", e1: "♕" }, q: "Expert: White to move and mate in 2.", san: "Qh7#", result: "checkmate", line: [{ from: "e1", to: "e7", san: "Qe7!" }, { side: "black", from: "b7", to: "b6", san: "...b6" }, { from: "e7", to: "h7", san: "Qh7#", result: "checkmate" }] },
+      { pieces: { b1: "♚", b3: "♔", h7: "♟", g7: "♟", e2: "♕" }, q: "Expert: White to move and mate in 2.", san: "Qb2#", result: "checkmate", line: [{ from: "e2", to: "d2", san: "Qd2!" }, { side: "black", from: "g7", to: "g6", san: "...g6" }, { from: "d2", to: "b2", san: "Qb2#", result: "checkmate" }] },
+      { pieces: { g8: "♚", g6: "♔", a7: "♟", b7: "♟", a1: "♕" }, q: "Expert: White to move and mate in 3.", san: "Qg7#", result: "checkmate", line: [{ from: "a1", to: "f1", san: "Qf1!" }, { side: "black", from: "a7", to: "a6", san: "...a6" }, { from: "f1", to: "a1", san: "Qa1!" }, { side: "black", from: "b7", to: "b6", san: "...b6" }, { from: "a1", to: "g7", san: "Qg7#", result: "checkmate" }] },
+      { pieces: { b8: "♚", a6: "♔", h7: "♟", g7: "♟", a1: "♕" }, q: "Expert: White to move and mate in 3.", san: "Qd8#", result: "checkmate", line: [{ from: "a1", to: "d1", san: "Qd1!" }, { side: "black", from: "h7", to: "h6", san: "...h6" }, { from: "d1", to: "d7", san: "Qd7!" }, { side: "black", from: "g7", to: "g6", san: "...g6" }, { from: "d7", to: "d8", san: "Qd8#", result: "checkmate" }] },
+      { pieces: { g8: "♚", g6: "♔", h2: "♟", g2: "♟", b1: "♕" }, q: "Expert: White to move and mate in 3.", san: "Qb8#", result: "checkmate", line: [{ from: "b1", to: "a1", san: "Qa1!" }, { side: "black", from: "h2", to: "h1", san: "...h1" }, { from: "a1", to: "a7", san: "Qa7!" }, { side: "black", from: "g2", to: "g1", san: "...g1" }, { from: "a7", to: "b8", san: "Qb8#", result: "checkmate" }] },
+      { pieces: { d1: "♚", c3: "♔", h7: "♟", g7: "♟", b2: "♕" }, q: "Expert: White to move and mate in 3.", san: "Qf1#", result: "checkmate", line: [{ from: "b2", to: "a2", san: "Qa2!" }, { side: "black", from: "h7", to: "h6", san: "...h6" }, { from: "a2", to: "f2", san: "Qf2!" }, { side: "black", from: "g7", to: "g6", san: "...g6" }, { from: "f2", to: "f1", san: "Qf1#", result: "checkmate" }] },
+      { pieces: { e8: "♚", d6: "♔", a7: "♟", b7: "♟", b1: "♕" }, q: "Expert: White to move and mate in 3.", san: "Qg8#", result: "checkmate", line: [{ from: "b1", to: "a1", san: "Qa1!" }, { side: "black", from: "a7", to: "a6", san: "...a6" }, { from: "a1", to: "g7", san: "Qg7!" }, { side: "black", from: "b7", to: "b6", san: "...b6" }, { from: "g7", to: "g8", san: "Qg8#", result: "checkmate" }] }
     ];
     games.push(...chessVariants.slice(1).map((variant, index) => {
       const number = index + 2;
@@ -1379,6 +1389,8 @@
       const pieces = { ...p.pieces };
       let selected = null;
       let locked = false;
+      let lineIndex = 0;
+      const line = Array.isArray(p.line) && p.line.length ? p.line : [{ from: p.from, to: p.to, san: p.san, result: p.result }];
       const whitePieces = new Set(["♕", "♔", "♖", "♗", "♘", "♙"]);
       const blackPieces = new Set(["♚", "♛", "♜", "♝", "♞", "♟"]);
       const inBounds = (fileIndex, rank) => fileIndex >= 0 && fileIndex < 8 && rank >= 1 && rank <= 8;
@@ -1437,6 +1449,21 @@
         }
         return targets;
       };
+      const applyMove = (move) => {
+        const moving = pieces[move.from];
+        delete pieces[move.from];
+        pieces[move.to] = moving;
+      };
+      const nextWhiteMove = () => line.slice(lineIndex).find(move => (move.side || "white") === "white");
+      const playBlackReplies = () => {
+        while (line[lineIndex] && line[lineIndex].side === "black") {
+          const reply = line[lineIndex];
+          applyMove(reply);
+          lineIndex++;
+          draw([reply.from, reply.to]);
+          $(".chess-status", root).textContent = `Black replies ${reply.san}. Find the next move.`;
+        }
+      };
       const draw = (lastMove = null) => {
         const squares = [];
         const targets = selected ? legalTargets(selected) : new Set();
@@ -1487,21 +1514,29 @@
         const moving = pieces[from];
         const legal = legalTargets(from);
         if (!legal.has(square)) return toast("That piece can't move there");
-        delete pieces[from];
-        pieces[square] = moving;
+        applyMove({ from, to: square });
         selected = null;
-        locked = true;
         draw([from, square]);
-        if (from === p.from && square === p.to) {
-          $(".chess-status", root).textContent = `${p.san} - ${p.result || "best move"}.`;
-          done(1000, p.result || "Best move found.");
+        const expected = line[lineIndex];
+        if (expected && (expected.side || "white") === "white" && from === expected.from && square === expected.to) {
+          lineIndex++;
+          if (lineIndex >= line.length) {
+            locked = true;
+            $(".chess-status", root).textContent = `${expected.san} - ${expected.result || p.result || "checkmate"}.`;
+            done(1200, expected.result || p.result || "Checkmate.");
+            return;
+          }
+          $(".chess-status", root).textContent = `${expected.san}.`;
+          playBlackReplies();
         } else {
-          $(".chess-status", root).textContent = `Best move: ${p.san}`;
-          done(160, `Best move: ${p.san}`);
+          locked = true;
+          const best = nextWhiteMove() || line.find(move => (move.side || "white") === "white") || p;
+          $(".chess-status", root).textContent = `Best move: ${best.san}`;
+          done(160, `Best move: ${best.san}`);
         }
       };
 
-      root.innerHTML = `<div class="chess-shell"><p class="muted">${p.q}</p><div class="chess-board"></div><div class="chess-status">Select a white piece, then its destination.</div></div>`;
+      root.innerHTML = `<div class="chess-shell"><p class="muted">${p.q}</p><div class="chess-board"></div><div class="chess-status">${line.length > 1 ? "Find the full mating line." : "Select a white piece, then its destination."}</div></div>`;
       draw();
     }
 
