@@ -480,7 +480,7 @@
       <section id="profileView" class="view">
         <div class="topbar">
           <div class="brand"><div class="logo">M</div><div><h1>Profile</h1><p class="tagline">Your stats, history, strengths, and created games.</p></div></div>
-          <span class="pill">Brain Level 12</span>
+          <span id="profileScorePill" class="pill">0 pts</span>
         </div>
         <div id="adminEntry" class="panel" style="display:none; margin-bottom:14px;">
           <div class="metric"><span><b>Admin</b><p class="muted">Review games, versions, answers, categories, and difficulty ranks.</p></span><button class="btn primary" onclick="showView('adminView')">Open Admin</button></div>
@@ -518,8 +518,6 @@
       <button data-view="profileView"><span class="ico">@</span>Profile</button>
     </nav>
   </div>
-  <div id="authBar" class="auth-bar"><span id="authStatus">Offline mode</span><button id="googleLogin">Google</button></div>
-  <div id="pointsHud" class="points-hud"><span id="pointsValue">0</span> pts</div>
   <div id="toast" class="toast"></div>
   <div id="authModal" class="auth-modal">
     <div class="auth-card">
@@ -876,8 +874,14 @@
     }
 
     function renderPoints() {
-      $("#pointsValue").textContent = currentProfile?.total_points ?? state.points;
+      const total = currentProfile?.total_points ?? state.points;
+      const profileScore = $("#profileScorePill");
+      if (profileScore) profileScore.textContent = `${total} pts`;
+      const pointsValue = $("#pointsValue");
+      if (!pointsValue) return;
+      pointsValue.textContent = total;
       const hud = $("#pointsHud");
+      if (!hud) return;
       hud.classList.remove("bump");
       void hud.offsetWidth;
       hud.classList.add("bump");
@@ -889,23 +893,27 @@
       const createGate = $("#createAuthGate");
       const generateButton = $("#generateDraft");
       if (!supabaseClient) {
-        status.textContent = "Offline mode";
-        button.style.display = "none";
+        if (status) status.textContent = "Offline mode";
+        if (button) button.style.display = "none";
         createGate?.classList.add("show");
         if (generateButton) generateButton.disabled = true;
         return;
       }
       if (currentUser) {
-        status.textContent = currentProfile?.username || currentProfile?.display_name || currentUser.email || "Signed in";
-        button.textContent = "Sign out";
-        button.className = "signout";
+        if (status) status.textContent = currentProfile?.username || currentProfile?.display_name || currentUser.email || "Signed in";
+        if (button) {
+          button.textContent = "Sign out";
+          button.className = "signout";
+        }
         createGate?.classList.remove("show");
         if (generateButton) generateButton.disabled = false;
         $("#authModal")?.classList.remove("show");
       } else {
-        status.textContent = "Sign in";
-        button.textContent = "Google";
-        button.className = "";
+        if (status) status.textContent = "Sign in";
+        if (button) {
+          button.textContent = "Google";
+          button.className = "";
+        }
         createGate?.classList.add("show");
         if (generateButton) generateButton.disabled = false;
       }
@@ -2321,6 +2329,8 @@
         return `<div class="metric"><span>${t}</span><div class="bar"><span style="width:${val}%"></span></div><b>${val}</b></div>`;
       }).join("");
       const totalPoints = currentProfile?.total_points ?? state.points;
+      const profileScore = $("#profileScorePill");
+      if (profileScore) profileScore.textContent = `${totalPoints} pts`;
       const username = currentProfile?.username || (currentUser ? defaultUsername(currentUser) : "Sign in");
       $("#historyList").innerHTML = `
         <div class="metric">
@@ -2552,7 +2562,8 @@
       $("#createPrompt").value = "";
       toast("Draft saved");
     };
-    $("#googleLogin").onclick = async () => {
+    const googleLoginButton = $("#googleLogin");
+    if (googleLoginButton) googleLoginButton.onclick = async () => {
       if (!supabaseClient) return;
       if (currentUser) {
         await supabaseClient.auth.signOut();
