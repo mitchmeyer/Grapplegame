@@ -229,6 +229,7 @@
     .wordle-cell.hit { color: white; background: #6AAA64; border-color: #6AAA64; }
     .wordle-cell.near { color: white; background: #C9B458; border-color: #C9B458; }
     .wordle-cell.miss { color: white; background: #787C7E; border-color: #787C7E; }
+    .wordle-hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
     .wordle-keyboard { display: grid; gap: 6px; width: min(100%, 420px); margin: 0 auto; }
     .key-row { display: flex; justify-content: center; gap: 5px; }
     .key { min-width: 28px; height: 38px; padding: 0 8px; border-radius: 4px; background: #D3D6DA; color: #1A1A1B; font-weight: 850; text-transform: uppercase; }
@@ -1419,30 +1420,82 @@
         : [];
       const answer = choice(answers.length ? answers : ["BRAIN", "LOGIC", "FOCUS", "MATCH"]);
       let tries = 0;
+      let currentGuess = "";
+      let locked = false;
       root.innerHTML = `
-        <p class="muted">Guess the five-letter word.</p>
+        <p class="muted">Tap the grid and type your guess.</p>
         <div class="wordle-board" id="wordleRows">${Array.from({ length: 6 }, () => `<div class="wordle-row">${Array.from({ length: 5 }, () => `<div class="wordle-cell"></div>`).join("")}</div>`).join("")}</div>
-        <div class="action-row"><input class="input guess" maxlength="5" placeholder="Type guess"><button class="btn primary submit">Enter</button></div>
+        <input class="wordle-hidden-input" maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Wordle keyboard input">
       `;
+      root.tabIndex = 0;
+      const hiddenInput = $(".wordle-hidden-input", root);
+      const focusInput = () => hiddenInput.focus();
+      root.onclick = focusInput;
+      $(".wordle-board", root).onclick = focusInput;
+      const currentCells = () => $$(".wordle-row", root)[tries]?.children || [];
+      const drawGuess = () => {
+        [...currentCells()].forEach((cell, index) => {
+          cell.textContent = currentGuess[index] || "";
+          cell.className = `wordle-cell${currentGuess[index] ? " filled" : ""}`;
+        });
+      };
+      const addLetter = (letter) => {
+        if (locked || tries >= 6 || currentGuess.length >= 5) return;
+        currentGuess += letter.toUpperCase();
+        drawGuess();
+      };
+      const deleteLetter = () => {
+        if (locked || !currentGuess) return;
+        currentGuess = currentGuess.slice(0, -1);
+        drawGuess();
+      };
       const submitGuess = () => {
-        if (tries >= 6) return;
-        const guess = $(".guess", root).value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 5);
+        if (locked || tries >= 6) return;
+        const guess = currentGuess;
         if (guess.length !== 5) return toast("Use five letters");
-        const cells = $$(".wordle-row", root)[tries].children;
+        const cells = currentCells();
         [...guess].forEach((ch, i) => {
           const state = ch === answer[i] ? "hit" : answer.includes(ch) ? "near" : "miss";
           cells[i].textContent = ch;
           cells[i].className = `wordle-cell filled ${state}`;
         });
         tries++;
-        $(".guess", root).value = "";
-        if (guess === answer) done(Math.max(300, 1200 - tries * 140), `Solved in ${tries} guesses.`);
-        else if (tries >= 6) done(120, `Answer: ${answer}`);
+        currentGuess = "";
+        if (guess === answer) {
+          locked = true;
+          done(Math.max(300, 1200 - tries * 140), `Solved in ${tries} guesses.`);
+        } else if (tries >= 6) {
+          locked = true;
+          done(120, `Answer: ${answer}`);
+        }
       };
-      $(".submit", root).onclick = () => {
-        submitGuess();
+      const handleKey = (key, event) => {
+        if (/^[a-z]$/i.test(key)) {
+          event?.preventDefault();
+          addLetter(key);
+        } else if (key === "Backspace") {
+          event?.preventDefault();
+          deleteLetter();
+        } else if (key === "Enter") {
+          event?.preventDefault();
+          submitGuess();
+        }
       };
-      $(".guess", root).onkeydown = (e) => { if (e.key === "Enter") submitGuess(); };
+      root.onkeydown = (e) => {
+        if (e.target === hiddenInput) return;
+        handleKey(e.key, e);
+      };
+      hiddenInput.onkeydown = (e) => {
+        if (e.key === "Backspace" || e.key === "Enter") {
+          e.stopPropagation();
+          handleKey(e.key, e);
+        }
+      };
+      hiddenInput.oninput = () => {
+        const letter = hiddenInput.value.replace(/[^a-z]/ig, "").slice(-1);
+        hiddenInput.value = "";
+        if (letter) addLetter(letter);
+      };
     }
 
     function Connections(root, game, done) {
