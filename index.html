@@ -700,13 +700,10 @@
       /^poker(?:[1-9]|10)$/i,
       /^tetris(?:[1-5])$/i,
       /^mem(?:[1-9]|1\d|20)$/i,
-      /^num(?:[1-9]|1\d|20)$/i,
       /^math(?:[1-9]|1\d|20)$/i,
-      /^scr(?:[1-9]|1\d|20)$/i,
-      /^shape(?:[1-9]|1\d|20)$/i,
-      /^pat(?:[1-9]|1\d|20)$/i
+      /^scr(?:[1-9]|1\d|20)$/i
     ];
-    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|poker read|tetris mini|memory grid|number tap|quick math|scramble|shape match|pattern/i;
+    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|poker read|tetris mini|memory grid|quick math|scramble/i;
     const isCuratedCatalogGame = (game) => {
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const text = `${id} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`;
@@ -730,6 +727,16 @@
       const type = String(game?.game_type || game?.type || "").toLowerCase();
       const title = String(game?.title || "").toLowerCase();
       return /^logic\d+$/i.test(id) || title.includes("mini logic") || type === "logic";
+    };
+    const isRemovedCatalogGame = (game) => {
+      const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
+      const type = String(game?.game_type || game?.type || "").toLowerCase();
+      const title = String(game?.title || "").toLowerCase();
+      return /^(num|pat|shape)\d+$/i.test(id) ||
+        ["number_tap", "pattern", "shape_match"].includes(type) ||
+        title.includes("number tap") ||
+        title.includes("shape match") ||
+        title.includes("pattern");
     };
     state.playedGameIds = [...new Set((state.playedGameIds || []).map(canonicalGameId))];
     state.adminDeletedGameIds = [...new Set((state.adminDeletedGameIds || []).map(id => gameUniqueKey({ id })))];
@@ -1377,24 +1384,11 @@
     }));
     games.push(...Array.from({ length: 20 }, (_, index) => {
       const difficulty = catalogDifficulty(index);
-      return catalogBase(`num${index + 1}`, `Number Tap ${index + 1}`, "Speed", difficulty, ["Processing Speed", "Focus"], NumberTap, { count: 10 + index }, "30s");
-    }));
-    games.push(...Array.from({ length: 20 }, (_, index) => {
-      const difficulty = catalogDifficulty(index);
       return catalogBase(`math${index + 1}`, `Quick Math ${index + 1}`, "Math", difficulty, ["Quantitative Reasoning"], QuickMath, { min: 2 + Math.floor(index / 3), max: 10 + index, ops: index < 6 ? ["+"] : index < 12 ? ["+", "-"] : ["+", "-", "x"] }, "45s");
     }));
     games.push(...scrambleSets.slice(0, 20).map((words, index) => {
       const difficulty = catalogDifficulty(index);
       return catalogBase(`scr${index + 1}`, `Word Scramble ${index + 1}`, "Language", difficulty, ["Verbal Reasoning"], WordScramble, { words }, "");
-    }));
-    games.push(...Array.from({ length: 20 }, (_, index) => {
-      const difficulty = catalogDifficulty(index);
-      const shapes = ["triangle", "arrow", "l"];
-      return catalogBase(`shape${index + 1}`, `Shape Match ${index + 1}`, "Visual Reasoning", difficulty, ["Spatial Reasoning"], ShapeMatch, { shape: shapes[index % shapes.length], rotation: [0, 90, 180, 270][index % 4] }, "");
-    }));
-    games.push(...patternVariants.slice(0, 20).map((pattern, index) => {
-      const difficulty = catalogDifficulty(index);
-      return catalogBase(`pat${index + 1}`, `Pattern ${index + 1}`, "Logic", difficulty, ["Pattern Recognition"], PatternNext, { patterns: [pattern] }, "");
     }));
     dedupeGameCatalog();
 
@@ -1405,6 +1399,7 @@
       games.forEach(game => {
         if (isTicTacToeGame(game)) return;
         if (isMiniLogicGame(game)) return;
+        if (isRemovedCatalogGame(game)) return;
         if (isLegacyGeneratedGame(game)) return;
         if (!isValidConnectionGame(game)) return;
         if (!isValidCountryBiggerGame(game)) return;
@@ -1445,7 +1440,7 @@
         .eq("is_public", true)
         .order("created_at", { ascending: false });
       if (error || !data?.length) return;
-      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
+      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game) && !isRemovedCatalogGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
       remote.forEach(game => {
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(game) || gameTitleKey(existing) === gameTitleKey(game))) games.unshift(game);
       });
@@ -2997,6 +2992,7 @@
       const normalized = normalizeGame(item.game);
       if (isTicTacToeGame(normalized)) return toast("That game type was removed");
       if (isMiniLogicGame(normalized)) return toast("That game type was removed");
+      if (isRemovedCatalogGame(normalized)) return toast("That game type was removed");
       if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(normalized) || gameTitleKey(existing) === gameTitleKey(normalized))) games.unshift(normalized);
       dedupeGameCatalog();
       renderFeed();
@@ -3012,6 +3008,7 @@
         const normalized = normalizeGame(item.game);
         if (isTicTacToeGame(normalized)) return toast("That game type was removed");
         if (isMiniLogicGame(normalized)) return toast("That game type was removed");
+        if (isRemovedCatalogGame(normalized)) return toast("That game type was removed");
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(normalized) || gameTitleKey(existing) === gameTitleKey(normalized))) games.unshift(normalized);
         dedupeGameCatalog();
         renderFeed();
@@ -3373,7 +3370,7 @@
           status: game.status || "seeded",
           version: game.version || 1,
           traits: Array.isArray(game.traits) ? game.traits : []
-        })).filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
+        })).filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game) && !isRemovedCatalogGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
         const seen = new Set(remoteRows.map(row => gameUniqueKey(row)));
         adminRows = [...remoteRows, ...localAdminRows().filter(row => !seen.has(gameUniqueKey(row)))];
         hydrateAdminControls();
@@ -3412,7 +3409,7 @@
     }
 
     function localAdminRows() {
-      return games.filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game)).map(game => ({
+      return games.filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game) && !isRemovedCatalogGame(game)).map(game => ({
         id: canonicalGameId(game.id),
         title: game.title,
         category: game.category || "Uncategorized",
@@ -3505,12 +3502,9 @@
       if (text.includes("poker")) return "Poker Read";
       if (text.includes("tetris")) return "Tetris Mini";
       if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
-      if (text.includes("number") || /^num\d+/.test(text)) return "Number Tap";
       if (text.includes("math")) return "Quick Math";
       if (text.includes("scramble") || /^scr\d+/.test(text)) return "Word Scramble";
       if (text.includes("country") || /^cb\d+/.test(text)) return "Country Bigger";
-      if (text.includes("shape")) return "Shape Match";
-      if (text.includes("pattern") || /^pat\d+/.test(text)) return "Pattern";
       return game.category || "Other";
     }
 
