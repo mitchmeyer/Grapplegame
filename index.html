@@ -76,6 +76,9 @@
     .create-preview { display: grid; gap: 10px; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
     .preview-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .create-preview .game-stage { min-height: 220px; background: white; }
+    .created-card-slot { display: grid; justify-items: center; }
+    .created-card-slot .feed-card-wrap { width: 100%; min-height: 0; padding: 0; }
+    .created-card-slot .game-card { width: min(100%, 520px); max-height: none; }
     .create-builder { display: grid; gap: 12px; margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #FBFAFF; }
     .idea-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
     .idea-chip { min-height: 38px; padding: 8px 10px; border: 1px solid #D8CCFF; border-radius: 8px; background: white; color: var(--dark-purple); font-size: 12px; font-weight: 900; text-align: left; }
@@ -1371,6 +1374,8 @@
     }
 
     function normalizeGame(row) {
+      const gameType = row.game_type || row.type || row.kind || row.renderer;
+      const gameSpec = row.game_spec || row.gameSpec || row.spec || {};
       return {
         id: canonicalGameId(row.game_key || row.slug || row.id),
         dbId: row.id,
@@ -1382,8 +1387,44 @@
         time: `${row.estimated_seconds || 60}s`,
         source: row.source || (row.is_official ? "Official" : "Community"),
         traits: row.traits || [],
-        gameSpec: row.game_spec || {},
-        renderer: rendererByType[row.game_type] || GeneratedVisualGame
+        gameSpec,
+        renderer: rendererByType[gameType] || GeneratedVisualGame
+      };
+    }
+
+    function inferGeneratedGameType(game, prompt = "") {
+      const spec = game?.game_spec || game?.gameSpec || game?.spec || {};
+      const text = `${game?.game_type || ""} ${game?.type || ""} ${game?.kind || ""} ${game?.title || ""} ${prompt}`.toLowerCase();
+      if (Array.isArray(spec.groups) || text.includes("connections")) return "connections";
+      if (Array.isArray(spec.countries) || text.includes("country bigger")) return "country_bigger";
+      if (Array.isArray(spec.entries) || spec.across || spec.down || text.includes("crossword")) return "crossword";
+      if (Array.isArray(spec.answers) || text.includes("wordle")) return "wordle";
+      if (Array.isArray(spec.events) || text.includes("timeline")) return "timeline_challenge";
+      if (Array.isArray(spec.words) || text.includes("scramble")) return "word_scramble";
+      if (spec.board || spec.size || text.includes("sudoku")) return text.includes("hard") ? "sudoku_hard" : "sudoku_4x4";
+      if (text.includes("go")) return "go";
+      if (text.includes("tetris")) return "tetris";
+      return "visual_board";
+    }
+
+    function createGameFromResponse(data, prompt) {
+      const raw = data?.game || data?.draft?.game || data?.draft || data?.data?.game || data?.data || data?.result;
+      if (!raw || typeof raw !== "object") return null;
+      const row = raw.game && typeof raw.game === "object" ? { ...raw, ...raw.game } : raw;
+      const gameSpec = row.game_spec || row.gameSpec || row.spec || row.payload || {};
+      const gameType = row.game_type || row.type || row.kind || inferGeneratedGameType(row, prompt);
+      return {
+        ...row,
+        id: row.game_key || row.slug || row.id || crypto.randomUUID(),
+        title: row.title || row.name || "Generated Grapple",
+        category: row.category || row.topic || "Puzzle",
+        difficulty: row.difficulty || "Medium",
+        estimated_seconds: row.estimated_seconds || row.estimatedSeconds || 60,
+        source: row.source || "AI",
+        traits: row.traits || ["Generated"],
+        game_type: gameType,
+        game_spec: gameSpec,
+        is_official: false
       };
     }
 
@@ -1841,24 +1882,33 @@
       const isCorrect = score >= 700;
       const hintPenalty = Number(card.dataset.hintPenalty || 0);
       const points = isCorrect ? Math.max(0, Math.round(score / 10) - hintPenalty) : 0;
-      state.points += points;
-      $(".card-score", card).textContent = points;
+      const isPlaytest = card.dataset.playtest === "true";
+      if (!isPlaytest) state.points += points;
+      $(".card-score", card).textContent = isPlaytest ? Math.max(0, Math.round(score) - hintPenalty) : points;
       if (!isCorrect) $(".card-errors", card).textContent = String(Number($(".card-errors", card)?.textContent || 0) + 1);
       const box = $(".feedback-box", card);
       box.className = `feedback-box show ${isCorrect ? "good" : "bad"}`;
       box.innerHTML = isCorrect
         ? `<span class="feedback-mark">✓</span>`
         : `<span class="feedback-mark">!</span><span>${label}</span>`;
+      if (isPlaytest) {
+        card._onFinish?.(score, label, isCorrect);
+        return;
+      }
       recordPlay(game, score, label, points);
       if (game.challengeId) completeChallengeScore(game.challengeId, score, points, label);
       syncPlay(game, points, isCorrect, label);
     }
 
-    function buildGameCard(game) {
+    function buildGameCard(game, options = {}) {
       const wrap = document.createElement("article");
       wrap.className = "feed-card-wrap";
       const card = document.createElement("div");
       card.className = "game-card";
+      if (options.playtest) {
+        card.dataset.playtest = "true";
+        card._onFinish = options.onFinish;
+      }
       const liked = isGameLiked(game);
       const disliked = isGameDisliked(game);
       const likeCount = baseLikeCount(game) + (liked ? 1 : 0);
@@ -1918,6 +1968,7 @@
         $(".start-btn", stage).onclick = mount;
       };
       $(".like-btn", card).onclick = () => {
+        if (options.playtest) return toast("Likes turn on after posting");
         state.liked ||= [];
         state.likedGameIds ||= [];
         state.dislikedGameIds ||= [];
@@ -1939,6 +1990,7 @@
         $("span", $(".like-btn", card)).textContent = baseLikeCount(game) + (index < 0 ? 1 : 0);
       };
       $(".dislike-btn", card).onclick = () => {
+        if (options.playtest) return toast("Votes turn on after posting");
         state.saved ||= [];
         state.likedGameIds ||= [];
         state.dislikedGameIds ||= [];
@@ -2987,9 +3039,13 @@
 
     function GeneratedVisualGame(root, game, done) {
       const spec = game.gameSpec || {};
-      const cards = Array.isArray(spec.cards) ? spec.cards.map(String).slice(0, 6) : ["Start", "Choose", "Solve"];
-      const correct = String(spec.correct || cards[0]);
-      root.innerHTML = `<p class="muted">${esc(spec.instructions || game.title || "Interact with the generated game.")}</p><div class="choices"></div>`;
+      const rawChoices = spec.cards || spec.choices || spec.options || spec.answers;
+      const cards = Array.isArray(rawChoices) && rawChoices.length
+        ? rawChoices.map(item => typeof item === "string" ? item : item?.label || item?.text || item?.answer || "").map(String).filter(Boolean).slice(0, 6)
+        : ["Start", "Choose", "Solve"];
+      const correct = String(spec.correct || spec.answer || spec.solution || spec.correctAnswer || cards[0]);
+      const instructions = spec.instructions || spec.prompt || spec.question || game.title || "Interact with the generated game.";
+      root.innerHTML = `<p class="muted">${esc(instructions)}</p><div class="choices"></div>`;
       cards.forEach(label => {
         const b = document.createElement("button");
         b.className = "choice";
@@ -3047,7 +3103,7 @@
         status: d.status || "draft",
         playtested: Boolean(d.playtested),
         playtestResult: d.playtestResult || "",
-        game: null
+        game: d.game || null
       }));
       return [...state.createdGames, ...localDrafts].filter(item => !isTicTacToeGame(item) && !isTicTacToeGame(item.game));
     }
@@ -3118,9 +3174,8 @@
             </div>
             <textarea placeholder="Add a caption before you post" onchange="updateCreatedGame('${escAttr(d.id)}', 'caption', this.value)">${esc(d.caption || "")}</textarea>
             <div class="create-preview" data-preview-id="${escAttr(d.id)}">
-              <div class="preview-title"><b>Playtest</b><span class="pill">${d.game ? "Playable" : "Idea"}</span></div>
-              <div class="game-stage"></div>
-              <div class="feedback-box"></div>
+              <div class="preview-title"><b>Game card preview</b><span class="pill">${d.game ? "Playable" : "Idea"}</span></div>
+              <div class="created-card-slot"></div>
               <div class="playtest-status ${d.playtested ? "ready" : ""}">${esc(d.playtestResult || (d.game ? "Play the draft here before posting." : "Generate a game to unlock playtesting."))}</div>
             </div>
             <div class="action-row">
@@ -3211,31 +3266,29 @@
     }
 
     function mountCreatedPreview(box, item) {
-      const stage = $(".game-stage", box);
-      const feedback = $(".feedback-box", box);
-      feedback.className = "feedback-box";
-      feedback.innerHTML = "";
-      stage.innerHTML = "";
+      const slot = $(".created-card-slot", box);
+      slot.innerHTML = "";
       if (!item?.game) {
-        stage.innerHTML = `<p class="muted">This is an idea draft. Generate a game to get a playable preview.</p>`;
+        slot.innerHTML = `<p class="muted">This is an idea draft. Generate a game to get a playable preview.</p>`;
         return;
       }
       const game = normalizeGame(item.game);
-      game.renderer(stage, game, (score, label) => {
-        const good = score >= 700;
-        item.playtested = true;
-        item.playtestResult = good
-          ? `Playtest passed: ${Math.round(score)} points.`
-          : `Playtest result: ${label || "Needs adjustment."}`;
-        save();
-        feedback.className = `feedback-box show ${good ? "good" : "bad"}`;
-        feedback.innerHTML = good ? `<span class="feedback-mark">✓</span>` : `<span class="feedback-mark">!</span><span>${esc(label)}</span>`;
-        const status = $(".playtest-status", box);
-        if (status) {
-          status.className = "playtest-status ready";
-          status.textContent = item.playtestResult;
+      const card = buildGameCard(game, {
+        playtest: true,
+        onFinish: (score, label, good) => {
+          item.playtested = true;
+          item.playtestResult = good
+            ? `Playtest passed: ${Math.round(score)} points.`
+            : `Playtest result: ${label || "Needs adjustment."}`;
+          save();
+          const status = $(".playtest-status", box);
+          if (status) {
+            status.className = "playtest-status ready";
+            status.textContent = item.playtestResult;
+          }
         }
       });
+      slot.appendChild(card);
     }
 
     function mountCreatedPreviews() {
@@ -4033,19 +4086,20 @@
           body: JSON.stringify({ prompt })
         });
         const data = await response.json().catch(() => ({}));
-        if (response.ok && data?.game) {
+        const createdGame = createGameFromResponse(data, prompt);
+        if (response.ok && createdGame) {
           $("#createPrompt").value = "";
           $("#createNotes").value = "";
           state.createdGames.unshift({
-            id: data.game.id || crypto.randomUUID(),
-            title: data.game.title,
-            category: data.game.category,
+            id: createdGame.id || crypto.randomUUID(),
+            title: createdGame.title,
+            category: createdGame.category,
             prompt,
             caption: "",
             status: "draft",
             playtested: false,
             playtestResult: "",
-            game: data.game
+            game: createdGame
           });
           save();
           renderCreate();
