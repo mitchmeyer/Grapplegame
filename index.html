@@ -304,8 +304,13 @@
     .go-point.last .stone { outline: 3px solid rgba(108, 59, 255, .45); outline-offset: 2px; }
     .go-point.wrong::after { box-shadow: 0 0 0 5px rgba(239, 68, 68, .25); }
     .go-status { min-height: 34px; display: grid; place-items: center; padding: 8px 10px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
-    .poker-hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-    .card-face { width: 54px; height: 76px; display: grid; place-items: center; border: 1px solid #D1D5DB; border-radius: 8px; background: white; box-shadow: 0 3px 8px rgba(15,23,42,.08); font-size: 20px; font-weight: 950; }
+    .poker-table { width: min(100%, 360px); display: grid; gap: 8px; padding: 12px; border: 2px solid #166534; border-radius: 18px; background: radial-gradient(circle at center, #15803D 0%, #14532D 82%); color: white; box-shadow: inset 0 0 0 3px rgba(255,255,255,.12); }
+    .poker-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 900; }
+    .poker-pill { padding: 5px 8px; border-radius: 999px; background: rgba(255,255,255,.15); color: white; }
+    .poker-board-label { text-align: center; font-size: 11px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; opacity: .78; }
+    .poker-hand, .poker-board { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+    .poker-street-action { min-height: 46px; display: grid; place-items: center; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.12); color: white; text-align: center; font-size: 13px; font-weight: 850; line-height: 1.25; }
+    .card-face { width: 46px; height: 64px; display: grid; place-items: center; border: 1px solid #D1D5DB; border-radius: 8px; background: white; box-shadow: 0 3px 8px rgba(15,23,42,.14); color: #111827; font-size: 17px; font-weight: 950; }
     .card-face.red { color: #EF4444; }
     .poker-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; }
     .tetris-board { display: grid; grid-template-columns: repeat(10, 22px); grid-template-rows: repeat(18, 22px); border: 2px solid #CBD5E1; background: #F8FAFC; }
@@ -400,7 +405,11 @@
       .go-board { grid-template-columns: repeat(7, 34px); grid-template-rows: repeat(7, 34px); padding: 6px; }
       .go-point { width: 34px; height: 34px; }
       .stone { width: 24px; height: 24px; margin: 5px; }
-      .card-face { width: 42px; height: 58px; border-radius: 7px; font-size: 16px; }
+      .poker-table { width: min(100%, 292px); padding: 9px; border-radius: 15px; gap: 7px; }
+      .poker-row { font-size: 11px; gap: 5px; }
+      .poker-pill { padding: 4px 7px; }
+      .poker-street-action { min-height: 40px; padding: 7px; font-size: 12px; }
+      .card-face { width: 36px; height: 50px; border-radius: 7px; font-size: 14px; }
       .poker-options { gap: 6px; }
       .tetris-board { grid-template-columns: repeat(10, 13px); grid-template-rows: repeat(18, 13px); }
       .tet-cell { width: 13px; height: 13px; }
@@ -700,10 +709,9 @@
       /^poker(?:[1-9]|10)$/i,
       /^tetris(?:[1-5])$/i,
       /^mem(?:[1-9]|1\d|20)$/i,
-      /^math(?:[1-9]|1\d|20)$/i,
       /^scr(?:[1-9]|1\d|20)$/i
     ];
-    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|poker read|tetris mini|memory grid|quick math|scramble/i;
+    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|poker read|tetris mini|memory grid|scramble/i;
     const isCuratedCatalogGame = (game) => {
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const text = `${id} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`;
@@ -732,10 +740,11 @@
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const type = String(game?.game_type || game?.type || "").toLowerCase();
       const title = String(game?.title || "").toLowerCase();
-      return /^(num|pat|shape)\d+$/i.test(id) ||
-        ["number_tap", "pattern", "shape_match"].includes(type) ||
+      return /^(num|pat|shape|math)\d+$/i.test(id) ||
+        ["number_tap", "pattern", "shape_match", "quick_math"].includes(type) ||
         title.includes("number tap") ||
         title.includes("shape match") ||
+        title.includes("quick math") ||
         title.includes("pattern");
     };
     state.playedGameIds = [...new Set((state.playedGameIds || []).map(canonicalGameId))];
@@ -758,13 +767,9 @@
       poker: PokerRead,
       tetris: TetrisMini,
       memory: MemoryGrid,
-      number_tap: NumberTap,
-      quick_math: QuickMath,
       word_scramble: WordScramble,
       country_bigger: CountryBigger,
       timeline_sort: TimelineSort,
-      shape_match: ShapeMatch,
-      pattern: PatternNext,
       logic: GeneratedVisualGame,
       trivia: GeneratedVisualGame,
       visual_board: GeneratedVisualGame
@@ -1361,16 +1366,16 @@
     }));
 
     const pokerCatalog = [
-      { cards: ["A♠","A♥","A♦","7♣","2♠"], answer: "Three of a kind", opts: ["One pair", "Two pair", "Three of a kind", "Flush"] },
-      { cards: ["9♥","T♥","J♥","Q♥","K♥"], answer: "Straight flush", opts: ["Straight", "Flush", "Full house", "Straight flush"] },
-      { cards: ["4♣","4♦","K♠","K♥","K♣"], answer: "Full house", opts: ["Two pair", "Full house", "Four of a kind", "Flush"] },
-      { cards: ["2♣","5♣","8♣","J♣","K♣"], answer: "Flush", opts: ["Straight", "Flush", "High card", "Two pair"] },
-      { cards: ["6♠","7♦","8♣","9♥","T♠"], answer: "Straight", opts: ["Straight", "Flush", "Pair", "Full house"] },
-      { cards: ["Q♠","Q♦","Q♣","Q♥","3♦"], answer: "Four of a kind", opts: ["Full house", "Four of a kind", "Flush", "Straight"] },
-      { cards: ["A♣","K♦","9♥","6♠","3♣"], answer: "High card", opts: ["One pair", "High card", "Straight", "Flush"] },
-      { cards: ["J♠","J♦","8♣","8♥","2♦"], answer: "Two pair", opts: ["One pair", "Two pair", "Full house", "Straight"] },
-      { cards: ["5♠","5♦","5♣","9♥","9♠"], answer: "Full house", opts: ["Three of a kind", "Two pair", "Full house", "Four of a kind"] },
-      { cards: ["A♦","2♦","3♦","4♦","5♦"], answer: "Straight flush", opts: ["Straight", "Flush", "Straight flush", "High card"] }
+      { street: "Preflop", position: "Button", pot: "$45", stack: "$620", hero: ["A♠","K♠"], board: [], action: "Cutoff opens to $30. Small blind folds. You are on the button.", answer: "Raise to $95", opts: ["Fold", "Call $30", "Raise to $95", "Raise all-in"] },
+      { street: "Preflop", position: "Big blind", pot: "$70", stack: "$480", hero: ["7♦","2♣"], board: [], action: "Button raises to $40. Small blind folds. You are out of position.", answer: "Fold", opts: ["Fold", "Call $30 more", "Raise to $120", "Raise all-in"] },
+      { street: "Flop", position: "Button", pot: "$150", stack: "$540", hero: ["Q♠","Q♥"], board: ["Q♦","8♣","3♠"], action: "Opponent checks to you on a dry board. You have top set.", answer: "Bet $55", opts: ["Check", "Bet $55", "Bet $150", "Fold"] },
+      { street: "Flop", position: "Cutoff", pot: "$180", stack: "$510", hero: ["A♥","J♥"], board: ["K♥","T♥","2♣"], action: "Opponent bets $60. You have nut-flush draw plus a straight draw.", answer: "Raise to $190", opts: ["Fold", "Call $60", "Raise to $190", "Raise all-in"] },
+      { street: "Turn", position: "Big blind", pot: "$260", stack: "$390", hero: ["9♣","9♦"], board: ["A♠","K♥","7♣","2♦"], action: "Preflop raiser bets $210 after betting flop. Your pair is under two overcards.", answer: "Fold", opts: ["Fold", "Call $210", "Raise to $390", "Min-raise"] },
+      { street: "Turn", position: "Button", pot: "$240", stack: "$600", hero: ["K♣","Q♣"], board: ["K♦","Q♠","6♣","4♥"], action: "Opponent checks. You have top two pair on a board that can draw out.", answer: "Bet $170", opts: ["Check", "Bet $70", "Bet $170", "Fold"] },
+      { street: "River", position: "Small blind", pot: "$420", stack: "$500", hero: ["A♣","T♣"], board: ["J♣","8♣","2♦","4♣","K♣"], action: "You made the nut flush. Opponent checks behind after calling turn.", answer: "Bet $300", opts: ["Check", "Bet $120", "Bet $300", "Fold"] },
+      { street: "River", position: "Hijack", pot: "$360", stack: "$430", hero: ["T♠","T♦"], board: ["A♥","K♣","Q♠","J♦","3♣"], action: "Opponent shoves $430. The board has four to a straight and your pair is weak.", answer: "Fold", opts: ["Fold", "Call $430", "Raise all-in", "Min-raise"] },
+      { street: "Flop", position: "Big blind", pot: "$120", stack: "$520", hero: ["8♠","7♠"], board: ["9♠","6♦","2♠"], action: "Button continuation-bets $40. You have open-ended straight draw plus flush draw.", answer: "Raise to $145", opts: ["Fold", "Call $40", "Raise to $145", "Check"] },
+      { street: "Turn", position: "Button", pot: "$500", stack: "$360", hero: ["A♦","A♣"], board: ["J♠","9♠","4♥","2♣"], action: "Opponent bets $260. You have an overpair and stack-to-pot is low.", answer: "Raise all-in", opts: ["Fold", "Call $260", "Raise all-in", "Min-raise"] }
     ];
     games.push(...pokerCatalog.map((round, index) => {
       const difficulty = index < 3 ? "Easy" : index < 7 ? "Medium" : "Hard";
@@ -1381,10 +1386,6 @@
     games.push(...Array.from({ length: 20 }, (_, index) => {
       const difficulty = catalogDifficulty(index);
       return catalogBase(`mem${index + 1}`, `Memory Grid ${index + 1}`, "Memory", difficulty, ["Working Memory"], MemoryGrid, { count: difficulty === "Easy" ? 4 : difficulty === "Medium" ? 5 : difficulty === "Hard" ? 6 : 7 }, "12s");
-    }));
-    games.push(...Array.from({ length: 20 }, (_, index) => {
-      const difficulty = catalogDifficulty(index);
-      return catalogBase(`math${index + 1}`, `Quick Math ${index + 1}`, "Math", difficulty, ["Quantitative Reasoning"], QuickMath, { min: 2 + Math.floor(index / 3), max: 10 + index, ops: index < 6 ? ["+"] : index < 12 ? ["+", "-"] : ["+", "-", "x"] }, "45s");
     }));
     games.push(...scrambleSets.slice(0, 20).map((words, index) => {
       const difficulty = catalogDifficulty(index);
@@ -1482,7 +1483,7 @@
       if (/crossword/i.test(name)) return "Fill the shortest clue first, then use crossing letters.";
       if (/timeline/i.test(name)) return "Look for anchor events: inventions usually come after ancient history but before modern web events.";
       if (/go/i.test(name)) return "Capture stones by filling their last liberty.";
-      if (/poker/i.test(name)) return "A flush beats a straight; pairs lose to two pair and trips.";
+      if (/poker/i.test(name)) return "Think about position, stack-to-pot ratio, and whether your hand wants value, protection, or a fold.";
       if (/tetris/i.test(name)) return "Keep the stack low and move the falling piece toward the deepest gap.";
       if (/connections/i.test(name)) return "Say the possible category out loud before submitting four words.";
       return directionsForGame(game);
@@ -1533,13 +1534,11 @@
       if (/crossword/i.test(name)) return "Fill the grid from the clues. Each square takes one letter.";
       if (/sudoku/i.test(name)) return "Fill every empty square so each row, column, and box has each number once.";
       if (/memory/i.test(name)) return "Watch the flashing pattern, then repeat it in order.";
-      if (/number tap/i.test(name)) return "Tap the numbers in order as quickly as you can.";
-      if (/math/i.test(name)) return "Choose the correct answer before the round ends.";
       if (/scramble/i.test(name)) return "Unscramble the letters and choose the correct word.";
       if (/country/i.test(name)) return "Pick the country with the larger requested value.";
       if (/timeline/i.test(name)) return "Tap the events from earliest to latest.";
       if (/go/i.test(name)) return "Place one black stone to capture the marked white group.";
-      if (/poker/i.test(name)) return "Choose the strongest poker hand from the options.";
+      if (/poker/i.test(name)) return "Read the hand, pot, stack, and action. Choose the best move.";
       if (/tetris/i.test(name)) return "Move and rotate the falling piece to clear lines before the stack fills.";
       if (/shape/i.test(name)) return "Choose the shape that exactly matches the target rotation.";
       if (/pattern|strategy/i.test(name)) return "Study the sequence and choose what comes next.";
@@ -2544,17 +2543,39 @@
     function PokerRead(root, game, done) {
       const generatedRounds = Array.isArray(game.gameSpec?.rounds) ? game.gameSpec.rounds : [];
       const rounds = generatedRounds.length ? generatedRounds : [
-        { cards: ["A♠","A♥","A♦","7♣","2♠"], answer: "Three of a kind", opts: ["One pair", "Two pair", "Three of a kind", "Flush"] },
-        { cards: ["9♥","T♥","J♥","Q♥","K♥"], answer: "Straight flush", opts: ["Straight", "Flush", "Full house", "Straight flush"] },
-        { cards: ["4♣","4♦","K♠","K♥","K♣"], answer: "Full house", opts: ["Two pair", "Full house", "Four of a kind", "Flush"] }
+        { street: "Preflop", position: "Button", pot: "$45", stack: "$620", hero: ["A♠","K♠"], board: [], action: "Cutoff opens to $30. Small blind folds. You are on the button.", answer: "Raise to $95", opts: ["Fold", "Call $30", "Raise to $95", "Raise all-in"] }
       ];
       const round = choice(rounds);
-      root.innerHTML = `<div class="poker-shell"><div class="poker-hand">${round.cards.map(c => `<div class="card-face ${/[♥♦]/.test(c) ? "red" : ""}">${c}</div>`).join("")}</div><div class="poker-options"></div></div>`;
+      const renderCards = (cards = []) => cards.length
+        ? cards.map(c => `<div class="card-face ${/[♥♦]/.test(c) ? "red" : ""}">${esc(c)}</div>`).join("")
+        : `<span class="poker-pill">No board yet</span>`;
+      const hero = round.hero || round.cards?.slice(0, 2) || [];
+      const board = round.board || round.cards?.slice(2) || [];
+      const answer = round.answer;
+      root.innerHTML = `
+        <div class="poker-shell">
+          <div class="poker-table">
+            <div class="poker-row">
+              <span class="poker-pill">${esc(round.street || "Decision")}</span>
+              <span class="poker-pill">Pot ${esc(round.pot || "-")}</span>
+              <span class="poker-pill">Stack ${esc(round.stack || "-")}</span>
+            </div>
+            <div class="poker-board-label">Board</div>
+            <div class="poker-board">${renderCards(board)}</div>
+            <div class="poker-row">
+              <span class="poker-pill">${esc(round.position || "Hero")}</span>
+              <div class="poker-hand">${renderCards(hero)}</div>
+            </div>
+            <div class="poker-street-action">${esc(round.action || "Choose the best move.")}</div>
+          </div>
+          <div class="poker-options"></div>
+        </div>
+      `;
       round.opts.forEach(opt => {
         const btn = document.createElement("button");
         btn.className = "choice";
         btn.textContent = opt;
-        btn.onclick = () => done(opt === round.answer ? 950 : 120, opt === round.answer ? "Best hand." : `Answer: ${round.answer}`);
+        btn.onclick = () => done(opt === answer ? 950 : 120, opt === answer ? "Best move." : `Best move: ${answer}`);
         $(".poker-options", root).appendChild(btn);
       });
     }
@@ -2654,28 +2675,6 @@
         };
         field.appendChild(b);
       });
-    }
-
-    function QuickMath(root, game, done) {
-      let q = 0, hits = 0, start = now();
-      const spec = game.gameSpec || {};
-      const min = Number(spec.min || 3);
-      const max = Number(spec.max || 17);
-      const ops = Array.isArray(spec.ops) && spec.ops.length ? spec.ops : ["+", "-", "x"];
-      const ask = () => {
-        const a = min + Math.floor(Math.random() * Math.max(2, max)), b = 2 + Math.floor(Math.random() * Math.max(2, Math.floor(max * .75))), op = choice(ops);
-        const answer = op === "+" ? a + b : op === "-" ? a - b : a * b;
-        const opts = shuffle([answer, answer + 1, answer - 2, answer + 4 + Math.floor(Math.random() * 5)]);
-        root.innerHTML = `<p class="muted">Question ${q + 1} of 10</p><div class="math-card"><div class="big-text">${a} ${op} ${b}</div><p class="muted">Choose the correct answer</p></div><div class="choices"></div>`;
-        opts.forEach(o => {
-          const btn = document.createElement("button");
-          btn.className = "choice";
-          btn.textContent = o;
-          btn.onclick = () => { if (o === answer) hits++; q++; q === 10 ? done(Math.round(hits * 120 + Math.max(0, 500 - (now() - start) / 80)), `${hits}/10 correct.`) : ask(); };
-          $(".choices", root).appendChild(btn);
-        });
-      };
-      ask();
     }
 
     function WordScramble(root, game, done) {
@@ -3399,7 +3398,11 @@
       if (Array.isArray(spec.events)) return spec.events.slice().sort((a, b) => Number(a.y) - Number(b.y)).map(e => `${e.y}: ${e.t}`).join(" / ");
       if (Array.isArray(spec.line)) return `${spec.tactic || "Go line"}: ${spec.line.join(" -> ")}`;
       if (spec.correct) return spec.correct;
-      if (Array.isArray(spec.rounds)) return spec.rounds.map(round => `${(round.cards || []).join(" ")} -> ${round.answer}`).join(" / ");
+      if (Array.isArray(spec.rounds)) return spec.rounds.map(round => {
+        const hero = (round.hero || round.cards || []).join(" ");
+        const board = (round.board || []).join(" ");
+        return `${round.street || "Poker"} ${hero}${board ? ` on ${board}` : ""} -> ${round.answer}`;
+      }).join(" / ");
       if (Array.isArray(spec.patterns)) return spec.patterns.map(pattern => `${(pattern.seq || []).join(", ")} -> ${pattern.ans}`).join(" / ");
       if (Array.isArray(spec.puzzles)) return spec.puzzles.map(puzzle => `${puzzle.q} -> ${puzzle.a}`).join(" / ");
       if (Array.isArray(spec.words)) return spec.words.join(", ");
@@ -3502,7 +3505,6 @@
       if (text.includes("poker")) return "Poker Read";
       if (text.includes("tetris")) return "Tetris Mini";
       if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
-      if (text.includes("math")) return "Quick Math";
       if (text.includes("scramble") || /^scr\d+/.test(text)) return "Word Scramble";
       if (text.includes("country") || /^cb\d+/.test(text)) return "Country Bigger";
       return game.category || "Other";
