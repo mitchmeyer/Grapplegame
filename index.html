@@ -301,6 +301,9 @@
     .stone.black { background: #111827; }
     .stone.white { background: white; border: 1px solid #D1D5DB; }
     .go-point.choice::after { box-shadow: 0 0 0 5px rgba(155,124,247,.22); }
+    .go-point.last .stone { outline: 3px solid rgba(108, 59, 255, .45); outline-offset: 2px; }
+    .go-point.wrong::after { box-shadow: 0 0 0 5px rgba(239, 68, 68, .25); }
+    .go-status { min-height: 34px; display: grid; place-items: center; padding: 8px 10px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .poker-hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
     .card-face { width: 54px; height: 76px; display: grid; place-items: center; border: 1px solid #D1D5DB; border-radius: 8px; background: white; box-shadow: 0 3px 8px rgba(15,23,42,.08); font-size: 20px; font-weight: 950; }
     .card-face.red { color: #EF4444; }
@@ -1352,20 +1355,19 @@
     }));
 
     const goCatalog = [
-      { black: ["c4","d3","e4"], white: ["d4"], correct: "d5", choices: ["d5","c5","e5"] },
-      { black: ["b3","c2","d3"], white: ["c3"], correct: "c4", choices: ["c4","b4","d4"] },
-      { black: ["e5","f4","g5"], white: ["f5"], correct: "f6", choices: ["f6","e6","g6"] },
-      { black: ["c5","d4","e5"], white: ["d5"], correct: "d6", choices: ["d6","c6","e6"] },
-      { black: ["b5","c4","d5"], white: ["c5"], correct: "c6", choices: ["c6","b6","d6"] },
-      { black: ["e3","f2","g3"], white: ["f3"], correct: "f4", choices: ["f4","e4","g4"] },
-      { black: ["a4","b3","c4"], white: ["b4"], correct: "b5", choices: ["b5","a5","c5"] },
-      { black: ["d2","e1","f2"], white: ["e2"], correct: "e3", choices: ["e3","d3","f3"] },
-      { black: ["d6","e5","f6"], white: ["e6"], correct: "e7", choices: ["e7","d7","f7"] },
-      { black: ["c2","d1","e2"], white: ["d2"], correct: "d3", choices: ["d3","c3","e3"] }
+      { name: "Net the Runner", difficulty: "Easy", black: ["c4","d3","e4","e5"], white: ["d4"], line: ["c5","d5","d6"], tactic: "Net", goal: "Use a diagonal net, let White run, then fill the last liberty." },
+      { name: "Mirror Net", difficulty: "Easy", black: ["e4","d3","c4","c5"], white: ["d4"], line: ["e5","d5","d6"], tactic: "Net", goal: "Close the outside first. White's extension creates the final capture point." },
+      { name: "Low Side Chase", difficulty: "Medium", black: ["c4","d5","e4","e3"], white: ["d4"], line: ["c3","d3","d2"], tactic: "Squeeze", goal: "Force White downward, then remove the final liberty on the second line." },
+      { name: "Shoulder Net", difficulty: "Medium", black: ["d5","c4","d3","e3"], white: ["d4"], line: ["e5","e4","f4"], tactic: "Net", goal: "Play from the outside shoulder so White's only run is into capture." },
+      { name: "Two-Step Ladder", difficulty: "Hard", black: ["c4","d3","e4","e5","e6","c7","e7"], white: ["d4"], line: ["c5","d5","c6","d6","d7"], tactic: "Ladder", goal: "Chase White upward. Each black move removes the next escape." },
+      { name: "Reverse Ladder", difficulty: "Hard", black: ["e4","d3","c4","c5","c6","e7","c7"], white: ["d4"], line: ["e5","d5","e6","d6","d7"], tactic: "Ladder", goal: "Drive White into the top wall, then close the final point." },
+      { name: "Right-Side Squeeze", difficulty: "Hard", black: ["d5","c4","d3","e3","f3","g5","g3"], white: ["d4"], line: ["e5","e4","f5","f4","g4"], tactic: "Squeeze", goal: "Herd the group right until it has nowhere to breathe." },
+      { name: "Left-Side Squeeze", difficulty: "Expert", black: ["d3","e4","d5","c5","b5","a3","a5"], white: ["d4"], line: ["c3","c4","b3","b4","a4"], tactic: "Squeeze", goal: "Force White into the edge. The side of the board becomes part of the net." },
+      { name: "Edge Trap", difficulty: "Expert", black: ["c4","d5","e4","e3","e2","c1","e1"], white: ["d4"], line: ["c3","d3","c2","d2","d1"], tactic: "Edge capture", goal: "Keep White crawling toward the edge, then take away the final liberty." },
+      { name: "Corner Clamp", difficulty: "Expert", black: ["e4","d5","c4","c3","c2","e1","c1"], white: ["d4"], line: ["e3","d3","e2","d2","d1"], tactic: "Corner capture", goal: "Clamp from the outside and let the corner finish the capture." }
     ];
     games.push(...goCatalog.map((gameSpec, index) => {
-      const difficulty = index < 3 ? "Medium" : index < 7 ? "Hard" : "Expert";
-      return catalogBase(`go${index + 1}`, `Go Capture ${index + 1}`, "Strategy", difficulty, ["Strategy", "Spatial Reasoning"], GoCapture, gameSpec, "");
+      return catalogBase(`go${index + 1}`, `Go Capture ${index + 1}`, "Strategy", gameSpec.difficulty, ["Strategy", "Spatial Reasoning"], GoCapture, gameSpec, "");
     }));
 
     const pokerCatalog = [
@@ -2428,40 +2430,140 @@
 
     function GoCapture(root, game, done) {
       const spec = game.gameSpec || {};
-      const black = new Set(Array.isArray(spec.black) ? spec.black : ["c3", "d2", "e3", "d4"]);
-      const white = new Set(Array.isArray(spec.white) ? spec.white : ["d3"]);
-      const correct = spec.correct || "c4";
-      const choices = Array.isArray(spec.choices) && spec.choices.length ? spec.choices : ["c4", "d5", "e4"];
       const files = ["a","b","c","d","e","f","g"];
+      const boardState = {};
+      (Array.isArray(spec.black) ? spec.black : ["c4","d3","e4","e5"]).forEach(point => { boardState[point] = "black"; });
+      (Array.isArray(spec.white) ? spec.white : ["d4"]).forEach(point => { boardState[point] = "white"; });
+      const line = Array.isArray(spec.line) && spec.line.length >= 3 ? spec.line : ["c5","d5","d6"];
+      const blackMovesNeeded = Math.ceil(line.length / 2);
+      let lineIndex = 0;
+      let captures = 0;
+      let lastMove = "";
+      let finished = false;
+      let waitingForWhite = false;
       root.innerHTML = `
         <div class="go-shell">
           <button class="go-rules-btn" type="button" aria-label="Go rules">?</button>
-          <div class="go-rules-popover"><b>Go basics</b>Stones live by open adjacent points called liberties. Surround an opponent stone or group so it has no liberties to capture it. Here, black moves once to take the white stone.</div>
-          <p class="muted">Black to play. Capture the white stone.</p>
+          <div class="go-rules-popover"><b>Go basics</b>Stones live by open adjacent points called liberties. Connected stones share liberties. Surround an opponent group so it has no liberties to capture it. Black plays; White answers automatically.</div>
+          <p class="muted">${esc(spec.goal || "Black to play. Win the capture sequence.")}</p>
           <div class="go-board"></div>
+          <div class="go-status"></div>
         </div>`;
       const board = $(".go-board", root);
+      const status = $(".go-status", root);
       const rulesBtn = $(".go-rules-btn", root);
       const rulesPopover = $(".go-rules-popover", root);
       rulesBtn.onclick = () => {
         rulesBtn.classList.toggle("active");
         rulesPopover.classList.toggle("show");
       };
-      for (let r = 7; r >= 1; r--) {
-        files.forEach(f => {
+
+      const neighbors = (point) => {
+        const fileIndex = files.indexOf(point[0]);
+        const rank = Number(point.slice(1));
+        return [
+          fileIndex > 0 ? `${files[fileIndex - 1]}${rank}` : "",
+          fileIndex < files.length - 1 ? `${files[fileIndex + 1]}${rank}` : "",
+          rank > 1 ? `${point[0]}${rank - 1}` : "",
+          rank < 7 ? `${point[0]}${rank + 1}` : ""
+        ].filter(Boolean);
+      };
+      const groupAt = (point) => {
+        const color = boardState[point];
+        const seen = new Set([point]);
+        const stack = [point];
+        while (stack.length) {
+          const current = stack.pop();
+          neighbors(current).forEach(next => {
+            if (boardState[next] === color && !seen.has(next)) {
+              seen.add(next);
+              stack.push(next);
+            }
+          });
+        }
+        return [...seen];
+      };
+      const libertiesOf = (group) => {
+        const liberties = new Set();
+        group.forEach(point => neighbors(point).forEach(next => {
+          if (!boardState[next]) liberties.add(next);
+        }));
+        return [...liberties];
+      };
+      const playStone = (color, point) => {
+        if (boardState[point]) return { ok: false, reason: "That point is occupied." };
+        boardState[point] = color;
+        const opponent = color === "black" ? "white" : "black";
+        const captured = [];
+        neighbors(point).forEach(next => {
+          if (boardState[next] !== opponent) return;
+          const group = groupAt(next);
+          if (libertiesOf(group).length) return;
+          group.forEach(stone => {
+            delete boardState[stone];
+            captured.push(stone);
+          });
+        });
+        if (!libertiesOf(groupAt(point)).length && !captured.length) {
+          delete boardState[point];
+          return { ok: false, reason: "That move has no liberties." };
+        }
+        captures += captured.length;
+        lastMove = point;
+        return { ok: true, captured };
+      };
+      const renderBoard = (wrongPoint = "") => {
+        board.innerHTML = "";
+        for (let r = 7; r >= 1; r--) {
+          files.forEach(f => {
           const p = `${f}${r}`;
           const cell = document.createElement("button");
-          cell.className = "go-point" + (choices.includes(p) ? " choice" : "");
-          if (black.has(p)) cell.innerHTML = `<div class="stone black"></div>`;
-          if (white.has(p)) cell.innerHTML = `<div class="stone white"></div>`;
+            cell.className = `go-point${p === lastMove ? " last" : ""}${p === wrongPoint ? " wrong" : ""}`;
+            if (boardState[p]) cell.innerHTML = `<div class="stone ${boardState[p]}"></div>`;
           cell.onclick = () => {
-            if (black.has(p) || white.has(p)) return;
-            cell.innerHTML = `<div class="stone black"></div>`;
-            done(p === correct ? 1000 : 180, p === correct ? "Captured." : `The capture is at ${correct}.`);
+              if (finished || waitingForWhite || lineIndex >= line.length) return;
+              const expected = line[lineIndex];
+              if (p !== expected) {
+                status.textContent = "That gives White room. Find the forcing move.";
+                renderBoard(p);
+                setTimeout(() => renderBoard(), 450);
+                return;
+              }
+              const result = playStone("black", p);
+              if (!result.ok) {
+                status.textContent = result.reason;
+                renderBoard(p);
+                return;
+              }
+              lineIndex++;
+              const blackMovesMade = Math.ceil(lineIndex / 2);
+              status.textContent = result.captured.length
+                ? `Captured ${result.captured.length} stone${result.captured.length === 1 ? "" : "s"}.`
+                : `Good. Move ${Math.min(blackMovesMade + 1, blackMovesNeeded)} of ${blackMovesNeeded}.`;
+              renderBoard();
+              if (lineIndex >= line.length) {
+                finished = true;
+                done(900 + captures * 80, `Solved ${spec.tactic || "capture"} line: ${line.join(" → ")}`);
+                return;
+              }
+              waitingForWhite = true;
+              setTimeout(() => {
+                const reply = line[lineIndex];
+                const replyResult = playStone("white", reply);
+                lineIndex++;
+                waitingForWhite = false;
+                status.textContent = replyResult.ok
+                  ? `White replies at ${reply}. Your move ${Math.ceil(lineIndex / 2) + 1} of ${blackMovesNeeded}.`
+                  : "White cannot answer; finish the capture.";
+                renderBoard();
+              }, 380);
           };
           board.appendChild(cell);
         });
       }
+      };
+      status.textContent = `${spec.tactic || "Capture"} puzzle. Black move 1 of ${blackMovesNeeded}.`;
+      renderBoard();
     }
 
     function PokerRead(root, game, done) {
@@ -3316,6 +3418,7 @@
         }, []).map(row => row.join(" ")).join(" / ") : spec.solution.join(", ");
       }
       if (Array.isArray(spec.events)) return spec.events.slice().sort((a, b) => Number(a.y) - Number(b.y)).map(e => `${e.y}: ${e.t}`).join(" / ");
+      if (Array.isArray(spec.line)) return `${spec.tactic || "Go line"}: ${spec.line.join(" -> ")}`;
       if (spec.correct) return spec.correct;
       if (Array.isArray(spec.rounds)) return spec.rounds.map(round => `${(round.cards || []).join(" ")} -> ${round.answer}`).join(" / ");
       if (Array.isArray(spec.patterns)) return spec.patterns.map(pattern => `${(pattern.seq || []).join(", ")} -> ${pattern.ans}`).join(" / ");
