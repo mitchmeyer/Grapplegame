@@ -704,10 +704,9 @@
       /^math(?:[1-9]|1\d|20)$/i,
       /^scr(?:[1-9]|1\d|20)$/i,
       /^shape(?:[1-9]|1\d|20)$/i,
-      /^pat(?:[1-9]|1\d|20)$/i,
-      /^logic(?:[1-9]|1\d|20)$/i
+      /^pat(?:[1-9]|1\d|20)$/i
     ];
-    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|poker read|tetris mini|memory grid|number tap|quick math|scramble|shape match|pattern|logic/i;
+    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|poker read|tetris mini|memory grid|number tap|quick math|scramble|shape match|pattern/i;
     const isCuratedCatalogGame = (game) => {
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const text = `${id} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`;
@@ -725,6 +724,12 @@
       if (/^(wordle|sudoku|mini-sudoku)$/i.test(rawId)) return true;
       if (curatedCatalogTypes.test(text) && !curatedCatalogPatterns.some(pattern => pattern.test(id))) return true;
       return false;
+    };
+    const isMiniLogicGame = (game) => {
+      const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
+      const type = String(game?.game_type || game?.type || "").toLowerCase();
+      const title = String(game?.title || "").toLowerCase();
+      return /^logic\d+$/i.test(id) || title.includes("mini logic") || type === "logic";
     };
     state.playedGameIds = [...new Set((state.playedGameIds || []).map(canonicalGameId))];
     state.adminDeletedGameIds = [...new Set((state.adminDeletedGameIds || []).map(id => gameUniqueKey({ id })))];
@@ -753,8 +758,8 @@
       timeline_sort: TimelineSort,
       shape_match: ShapeMatch,
       pattern: PatternNext,
-      logic: MiniLogic,
-      trivia: MiniLogic,
+      logic: GeneratedVisualGame,
+      trivia: GeneratedVisualGame,
       visual_board: GeneratedVisualGame
     });
 
@@ -1186,28 +1191,6 @@
       { seq: ["7", "14", "13", "26"], ans: "25", opts: ["24", "25", "27", "28"] },
       { seq: ["GREEN", "BLUE", "PURPLE"], ans: "RED", opts: ["RED", "ORANGE", "YELLOW", "WHITE"] }
     ];
-    const logicVariants = [
-      { q: "All naves are blue. Rilo is a nave. Is Rilo blue?", a: "Yes" },
-      { q: "No terns are moons. Kavi is a tern. Is Kavi a moon?", a: "No" },
-      { q: "Some zeds are bright. Are all zeds bright?", a: "Can't Tell" },
-      { q: "Every glint is sharp. Mira found a glint. Is it sharp?", a: "Yes" },
-      { q: "No amber cards are wild. This card is amber. Is it wild?", a: "No" },
-      { q: "Some pilots like grids. Does every pilot like grids?", a: "Can't Tell" },
-      { q: "Every orbit has a center. This path is an orbit. Does it have a center?", a: "Yes" },
-      { q: "No silent cards are red. This card is silent. Is it red?", a: "No" },
-      { q: "Some locked boxes are heavy. Is every locked box heavy?", a: "Can't Tell" },
-      { q: "All bright tiles glow. Tile K glows. Is Tile K definitely bright?", a: "Can't Tell" },
-      { q: "No square buttons are round. This button is square. Is it round?", a: "No" },
-      { q: "Every alpha badge is gold. Mina has an alpha badge. Is Mina's badge gold?", a: "Yes" },
-      { q: "Some rivers are wide. This is a river. Is it definitely wide?", a: "Can't Tell" },
-      { q: "All coded doors need keys. Door 7 is coded. Does Door 7 need a key?", a: "Yes" },
-      { q: "No winter maps are tropical. This map is winter. Is it tropical?", a: "No" },
-      { q: "Some fast trains are blue. Train 4 is fast. Is Train 4 definitely blue?", a: "Can't Tell" },
-      { q: "Every sealed envelope is private. This envelope is sealed. Is it private?", a: "Yes" },
-      { q: "No prime tokens are even. This token is prime. Is it even?", a: "No" },
-      { q: "Some logic puzzles are timed. Is every logic puzzle timed?", a: "Can't Tell" },
-      { q: "All verified answers are accepted. This answer is verified. Is it accepted?", a: "Yes" }
-    ];
     const scrambleSets = [
       ["GRAPPLE", "FOCUS", "PUZZLE", "MEMORY", "VECTOR", "LOGIC"],
       ["ORBIT", "SIGNAL", "CIPHER", "MATRIX", "BEACON", "RADAR"],
@@ -1413,10 +1396,6 @@
       const difficulty = catalogDifficulty(index);
       return catalogBase(`pat${index + 1}`, `Pattern ${index + 1}`, "Logic", difficulty, ["Pattern Recognition"], PatternNext, { patterns: [pattern] }, "");
     }));
-    games.push(...logicVariants.slice(0, 20).map((puzzle, index) => {
-      const difficulty = catalogDifficulty(index);
-      return catalogBase(`logic${index + 1}`, `Mini Logic ${index + 1}`, "Logic", difficulty, ["Logical Reasoning"], MiniLogic, { puzzles: [puzzle] }, "");
-    }));
     dedupeGameCatalog();
 
     function dedupeGameCatalog() {
@@ -1425,6 +1404,7 @@
       const unique = [];
       games.forEach(game => {
         if (isTicTacToeGame(game)) return;
+        if (isMiniLogicGame(game)) return;
         if (isLegacyGeneratedGame(game)) return;
         if (!isValidConnectionGame(game)) return;
         if (!isValidCountryBiggerGame(game)) return;
@@ -1453,7 +1433,7 @@
         source: row.source || (row.is_official ? "Official" : "Community"),
         traits: row.traits || [],
         gameSpec: row.game_spec || {},
-        renderer: rendererByType[row.game_type] || MiniLogic
+        renderer: rendererByType[row.game_type] || GeneratedVisualGame
       };
     }
 
@@ -1465,7 +1445,7 @@
         .eq("is_public", true)
         .order("created_at", { ascending: false });
       if (error || !data?.length) return;
-      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
+      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
       remote.forEach(game => {
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(game) || gameTitleKey(existing) === gameTitleKey(game))) games.unshift(game);
       });
@@ -2943,7 +2923,7 @@
             estimated_seconds: d.estimated_seconds || 60,
             source: "AI",
             traits: d.traits || [],
-            game_type: d.game_type || "logic",
+            game_type: d.game_type || "visual_board",
             game_spec: d.game_spec || {},
             is_official: false
           }
@@ -3016,6 +2996,7 @@
       if (!item?.game) return toast("Generate the game first, then preview it");
       const normalized = normalizeGame(item.game);
       if (isTicTacToeGame(normalized)) return toast("That game type was removed");
+      if (isMiniLogicGame(normalized)) return toast("That game type was removed");
       if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(normalized) || gameTitleKey(existing) === gameTitleKey(normalized))) games.unshift(normalized);
       dedupeGameCatalog();
       renderFeed();
@@ -3030,6 +3011,7 @@
       if (item.game) {
         const normalized = normalizeGame(item.game);
         if (isTicTacToeGame(normalized)) return toast("That game type was removed");
+        if (isMiniLogicGame(normalized)) return toast("That game type was removed");
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(normalized) || gameTitleKey(existing) === gameTitleKey(normalized))) games.unshift(normalized);
         dedupeGameCatalog();
         renderFeed();
@@ -3391,7 +3373,7 @@
           status: game.status || "seeded",
           version: game.version || 1,
           traits: Array.isArray(game.traits) ? game.traits : []
-        })).filter(game => !isAdminDeletedGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
+        })).filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
         const seen = new Set(remoteRows.map(row => gameUniqueKey(row)));
         adminRows = [...remoteRows, ...localAdminRows().filter(row => !seen.has(gameUniqueKey(row)))];
         hydrateAdminControls();
@@ -3430,7 +3412,7 @@
     }
 
     function localAdminRows() {
-      return games.filter(game => !isAdminDeletedGame(game)).map(game => ({
+      return games.filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game)).map(game => ({
         id: canonicalGameId(game.id),
         title: game.title,
         category: game.category || "Uncategorized",
@@ -3529,7 +3511,6 @@
       if (text.includes("country") || /^cb\d+/.test(text)) return "Country Bigger";
       if (text.includes("shape")) return "Shape Match";
       if (text.includes("pattern") || /^pat\d+/.test(text)) return "Pattern";
-      if (text.includes("logic")) return "Mini Logic";
       return game.category || "Other";
     }
 
@@ -3618,7 +3599,7 @@
       return {
         ...game,
         gameSpec: game.gameSpec || game.game_spec || {},
-        renderer: game.renderer || rendererByType[game.game_type] || rendererByType[game.type] || MiniLogic,
+        renderer: game.renderer || rendererByType[game.game_type] || rendererByType[game.type] || GeneratedVisualGame,
         time: game.time || `${game.estimated_seconds || 60}s`
       };
     }
