@@ -585,10 +585,12 @@
       comments: {},
       streak: 2,
       points: 0,
-      categoryAffinity: { Logic: 7, Language: 7, Strategy: 6, Math: 5, Memory: 4 }
+      categoryAffinity: { Logic: 7, Language: 7, Strategy: 6, Math: 5, Memory: 4, Arcade: 5 }
     };
     let state = JSON.parse(localStorage.getItem(storeKey) || "null") || baseState;
     state.points ||= 0;
+    state.categoryAffinity ||= {};
+    state.categoryAffinity.Arcade ??= 5;
     state.drafts ||= [];
     state.createdGames ||= [];
     state.comments ||= {};
@@ -718,7 +720,7 @@
       /^sdh(?:[1-9]|1\d|20)$/i,
       /^tl(?:[1-9]|1\d|20)$/i,
       /^go(?:[1-9]|10)$/i,
-      /^tetris(?:[1-5])$/i,
+      /^tetris(?:[1-9]|1\d|20)$/i,
       /^mem(?:[1-9]|1\d|20)$/i,
       /^scr(?:[1-9]|1\d|20)$/i
     ];
@@ -1317,7 +1319,12 @@
       return catalogBase(`go${index + 1}`, `Go Capture ${index + 1}`, "Strategy", gameSpec.difficulty, ["Strategy", "Spatial Reasoning"], GoCapture, gameSpec, "");
     }));
 
-    games.push(...Array.from({ length: 5 }, (_, index) => catalogBase(`tetris${index + 1}`, `Tetris Mini ${index + 1}`, "Arcade", index < 2 ? "Medium" : "Hard", ["Spatial Reasoning", "Processing Speed"], TetrisMini, { startScore: 100 + index * 50, targetScore: 400 + index * 100 }, "60s")));
+    games.push(...Array.from({ length: 20 }, (_, index) => {
+      const difficulty = catalogDifficulty(index);
+      const startScore = 80 + index * 25;
+      const targetScore = difficulty === "Easy" ? 350 + index * 20 : difficulty === "Medium" ? 500 + index * 25 : difficulty === "Hard" ? 650 + index * 30 : 850 + index * 35;
+      return catalogBase(`tetris${index + 1}`, `Tetris Mini ${index + 1}`, "Arcade", difficulty, ["Spatial Reasoning", "Processing Speed"], TetrisMini, { startScore, targetScore }, "60s");
+    }));
     games.push(...Array.from({ length: 20 }, (_, index) => {
       const difficulty = catalogDifficulty(index);
       return catalogBase(`mem${index + 1}`, `Memory Grid ${index + 1}`, "Memory", difficulty, ["Working Memory"], MemoryGrid, { count: difficulty === "Easy" ? 4 : difficulty === "Medium" ? 5 : difficulty === "Hard" ? 6 : 7 }, "12s");
@@ -1473,15 +1480,34 @@
     }
 
     function arrangeFeedOrder(candidates) {
-      const remaining = [...candidates];
+      const rankIndex = new Map(candidates.map((game, index) => [gameUniqueKey(game), index]));
+      const groups = candidates.reduce((acc, game) => {
+        const family = gameFamilyName(game);
+        (acc[family] ||= []).push(game);
+        return acc;
+      }, {});
+      const families = Object.keys(groups);
       const ordered = [];
+      const familyPicks = {};
       let lastFamily = "";
-      while (remaining.length) {
-        let pickIndex = remaining.findIndex(game => gameFamilyName(game) !== lastFamily);
-        if (pickIndex < 0) pickIndex = 0;
-        const [game] = remaining.splice(pickIndex, 1);
+      const bestRankForFamily = family => rankIndex.get(gameUniqueKey(groups[family][0])) ?? 9999;
+      const chooseFamily = () => {
+        const available = families.filter(family => groups[family]?.length && family !== lastFamily);
+        const pool = available.length ? available : families.filter(family => groups[family]?.length);
+        const coverageMode = ordered.length < families.length;
+        return pool.sort((a, b) => {
+          if (coverageMode) return (familyPicks[a] || 0) - (familyPicks[b] || 0) || bestRankForFamily(a) - bestRankForFamily(b);
+          if ((ordered.length + 1) % 7 === 0) return (familyPicks[a] || 0) - (familyPicks[b] || 0) || bestRankForFamily(a) - bestRankForFamily(b);
+          return bestRankForFamily(a) - bestRankForFamily(b);
+        })[0];
+      };
+      while (families.some(family => groups[family]?.length)) {
+        const family = chooseFamily();
+        if (!family) break;
+        const game = groups[family].shift();
         ordered.push(game);
-        lastFamily = gameFamilyName(game);
+        familyPicks[family] = (familyPicks[family] || 0) + 1;
+        lastFamily = family;
       }
       return ordered;
     }
