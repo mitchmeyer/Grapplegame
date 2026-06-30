@@ -960,144 +960,83 @@
       };
     }
 
-    const crosswordCatalog = [
-      { difficulty: "Easy", size: 5, entries: [
-        { dir: "across", row: 0, col: 0, answer: "BOARD", clue: "Game surface" },
-        { dir: "down", row: 0, col: 0, answer: "BRAIN", clue: "Thinking organ" },
-        { dir: "down", row: 0, col: 2, answer: "ARRAY", clue: "Ordered data group" },
-        { dir: "down", row: 0, col: 4, answer: "DEBUG", clue: "Fix code errors" }
-      ] },
-      { difficulty: "Easy", size: 5, entries: [
-        { dir: "across", row: 0, col: 0, answer: "SHARE", clue: "Post to others" },
-        { dir: "down", row: 0, col: 0, answer: "SOLVE", clue: "Find the answer" },
-        { dir: "down", row: 0, col: 1, answer: "HINTS", clue: "Helpful tips" },
-        { dir: "down", row: 0, col: 4, answer: "EDITS", clue: "Text changes" }
-      ] },
-      { difficulty: "Easy", size: 5, entries: [
-        { dir: "across", row: 0, col: 0, answer: "TRACE", clue: "Follow a path" },
-        { dir: "down", row: 0, col: 0, answer: "TIMER", clue: "Clock for a round" },
-        { dir: "down", row: 0, col: 3, answer: "CODES", clue: "Program instructions" },
-        { dir: "down", row: 0, col: 4, answer: "EVENT", clue: "Something that happens" }
-      ] },
-      { difficulty: "Easy", size: 5, entries: [
-        { dir: "across", row: 0, col: 0, answer: "FOCUS", clue: "Concentrate" },
-        { dir: "down", row: 0, col: 0, answer: "FRAME", clue: "Border around a picture" },
-        { dir: "down", row: 0, col: 1, answer: "OASIS", clue: "Desert refuge" },
-        { dir: "down", row: 0, col: 3, answer: "UNITY", clue: "State of togetherness" },
-      ] },
-      { difficulty: "Medium", size: 6, entries: [
-        { dir: "across", row: 0, col: 0, answer: "PUZZLE", clue: "Brain teaser" },
-        { dir: "down", row: 0, col: 0, answer: "PLANET", clue: "World in orbit" },
-        { dir: "down", row: 0, col: 1, answer: "UNIQUE", clue: "One of a kind" },
-        { dir: "down", row: 0, col: 3, answer: "ZODIAC", clue: "Star-sign circle" },
-        { dir: "down", row: 0, col: 5, answer: "EDITOR", clue: "One who revises" }
-      ] },
-      { difficulty: "Medium", size: 6, entries: [
-        { dir: "across", row: 0, col: 0, answer: "SIGNAL", clue: "Transmitted cue" },
-        { dir: "down", row: 0, col: 0, answer: "SYSTEM", clue: "Connected set" },
-        { dir: "down", row: 0, col: 2, answer: "GALAXY", clue: "Star system" },
-        { dir: "down", row: 0, col: 4, answer: "ANCHOR", clue: "Ship holder" },
-        { dir: "down", row: 0, col: 5, answer: "LOGICS", clue: "Reasoning systems" }
-      ] },
-      { difficulty: "Medium", size: 6, entries: [
-        { dir: "across", row: 0, col: 0, answer: "VECTOR", clue: "Quantity with direction" },
-        { dir: "down", row: 0, col: 0, answer: "VISION", clue: "Ability to see" },
-        { dir: "down", row: 0, col: 1, answer: "EDITOR", clue: "Revision worker" },
-        { dir: "down", row: 0, col: 4, answer: "ORANGE", clue: "Citrus fruit" },
-        { dir: "down", row: 0, col: 5, answer: "RIDDLE", clue: "Tricky question" }
-      ] },
-      { difficulty: "Medium", size: 6, entries: [
-        { dir: "across", row: 0, col: 0, answer: "ROCKET", clue: "Space vehicle" },
-        { dir: "down", row: 0, col: 0, answer: "RADIUS", clue: "Circle measure" },
-        { dir: "down", row: 0, col: 2, answer: "CIRCLE", clue: "Round shape" },
-        { dir: "down", row: 0, col: 3, answer: "KERNEL", clue: "Seed core" },
-        { dir: "down", row: 0, col: 5, answer: "TIMBER", clue: "Cut wood" }
-      ] },
-      { difficulty: "Hard", size: 7, entries: [
-        { dir: "across", row: 0, col: 0, answer: "PATTERN", clue: "Repeated design" },
-        { dir: "down", row: 0, col: 0, answer: "PUZZLES", clue: "Brain games" },
-        { dir: "down", row: 0, col: 2, answer: "TACTICS", clue: "Strategic moves" },
-        { dir: "down", row: 0, col: 4, answer: "EXPLAIN", clue: "Make clear" },
-        { dir: "down", row: 0, col: 6, answer: "NETWORK", clue: "Connected system" }
-      ] },
-      { difficulty: "Hard", size: 7, entries: [
-        { dir: "across", row: 0, col: 0, answer: "DIGITAL", clue: "Computer-based" },
-        { dir: "down", row: 0, col: 0, answer: "DISPLAY", clue: "Screen output" },
-        { dir: "down", row: 0, col: 1, answer: "INSIGHT", clue: "Deep understanding" },
-        { dir: "down", row: 0, col: 4, answer: "TESTING", clue: "Checking for bugs" },
-        { dir: "down", row: 0, col: 6, answer: "LETTERS", clue: "Alphabet marks" }
-      ] },
-      { difficulty: "Hard", size: 7, entries: [
-        { dir: "across", row: 0, col: 0, answer: "CIRCUIT", clue: "Closed electric path" },
-        { dir: "down", row: 0, col: 0, answer: "CAPTION", clue: "Text under an image" },
-        { dir: "down", row: 0, col: 1, answer: "IMAGINE", clue: "Picture mentally" },
-        { dir: "down", row: 0, col: 5, answer: "INSIGHT", clue: "Deep understanding" },
-        { dir: "down", row: 0, col: 6, answer: "TACTICS", clue: "Planned moves" }
-      ] },
-      { difficulty: "Hard", size: 7, entries: [
-        { dir: "across", row: 0, col: 0, answer: "MYSTERY", clue: "Unsolved question" },
-        { dir: "down", row: 0, col: 0, answer: "MEASURE", clue: "Find amount" },
-        { dir: "down", row: 0, col: 2, answer: "SYMBOLS", clue: "Meaningful marks" },
-        { dir: "down", row: 0, col: 3, answer: "TACTICS", clue: "Planned moves" },
-        { dir: "down", row: 0, col: 6, answer: "YIELDED", clue: "Gave way" }
-      ] },
-      { difficulty: "Hard", size: 7, entries: [
-        { dir: "across", row: 0, col: 0, answer: "BALANCE", clue: "Evenness or stability" },
-        { dir: "down", row: 0, col: 0, answer: "BRIDGES", clue: "River crossings" },
-        { dir: "down", row: 0, col: 1, answer: "AUTHORS", clue: "Book writers" },
-        { dir: "down", row: 0, col: 3, answer: "ANALYZE", clue: "Study closely" },
-        { dir: "down", row: 0, col: 6, answer: "EXAMPLE", clue: "Illustrative case" }
-      ] },
-      { difficulty: "Hard", size: 7, entries: [
-        { dir: "across", row: 0, col: 0, answer: "HORIZON", clue: "Skyline edge" },
-        { dir: "down", row: 0, col: 0, answer: "HISTORY", clue: "Study of the past" },
-        { dir: "down", row: 0, col: 1, answer: "ORIGAMI", clue: "Paper-folding art" },
-        { dir: "down", row: 0, col: 2, answer: "RIDDLES", clue: "Tricky questions" },
-        { dir: "down", row: 0, col: 6, answer: "NETWORK", clue: "Connected group" }
-      ] },
-      { difficulty: "Expert", size: 8, entries: [
-        { dir: "across", row: 0, col: 0, answer: "LANGUAGE", clue: "System of words" },
-        { dir: "down", row: 0, col: 0, answer: "LEARNING", clue: "Gaining knowledge" },
-        { dir: "down", row: 0, col: 2, answer: "NUMERALS", clue: "Number symbols" },
-        { dir: "down", row: 0, col: 4, answer: "UNLOCKED", clue: "Opened access" },
-        { dir: "down", row: 0, col: 6, answer: "GRAPHICS", clue: "Visual elements" }
-      ] },
-      { difficulty: "Expert", size: 8, entries: [
-        { dir: "across", row: 0, col: 0, answer: "STRATEGY", clue: "Long-term plan" },
-        { dir: "down", row: 0, col: 0, answer: "SEQUENCE", clue: "Ordered series" },
-        { dir: "down", row: 0, col: 1, answer: "TRIANGLE", clue: "Three-sided shape" },
-        { dir: "down", row: 0, col: 2, answer: "REASONED", clue: "Thought through" },
-        { dir: "down", row: 0, col: 6, answer: "GROUPING", clue: "Set arrangement" }
-      ] },
-      { difficulty: "Expert", size: 8, entries: [
-        { dir: "across", row: 0, col: 0, answer: "CROSSING", clue: "Place where paths meet" },
-        { dir: "down", row: 0, col: 0, answer: "CAPTIONS", clue: "Image text labels" },
-        { dir: "down", row: 0, col: 2, answer: "OPPOSITE", clue: "Across from" },
-        { dir: "down", row: 0, col: 3, answer: "SCORINGS", clue: "Ways of earning points" },
-        { dir: "down", row: 0, col: 7, answer: "GRIDLOCK", clue: "Traffic standstill" }
-      ] },
-      { difficulty: "Expert", size: 8, entries: [
-        { dir: "across", row: 0, col: 0, answer: "CLUELESS", clue: "Without hints" },
-        { dir: "down", row: 0, col: 0, answer: "CREATIVE", clue: "Inventive" },
-        { dir: "down", row: 0, col: 2, answer: "UNIVERSE", clue: "Everything in space" },
-        { dir: "down", row: 0, col: 4, answer: "LITERACY", clue: "Reading and writing skill" },
-        { dir: "down", row: 0, col: 7, answer: "SEASHELL", clue: "Beach find" }
-      ] },
-      { difficulty: "Expert", size: 8, entries: [
-        { dir: "across", row: 0, col: 0, answer: "KEYBOARD", clue: "Typing device" },
-        { dir: "down", row: 0, col: 0, answer: "KINDNESS", clue: "Friendly care" },
-        { dir: "down", row: 0, col: 1, answer: "ELEVATED", clue: "Raised up" },
-        { dir: "down", row: 0, col: 4, answer: "ORIGINAL", clue: "First of its kind" },
-        { dir: "down", row: 0, col: 7, answer: "DISTANCE", clue: "Space between" }
-      ] },
-      { difficulty: "Expert", size: 8, entries: [
-        { dir: "across", row: 0, col: 0, answer: "QUESTION", clue: "Prompt seeking an answer" },
-        { dir: "down", row: 0, col: 0, answer: "QUANTIFY", clue: "Express as a number" },
-        { dir: "down", row: 0, col: 1, answer: "UNIVERSE", clue: "Everything in space" },
-        { dir: "down", row: 0, col: 5, answer: "INSIGHTS", clue: "Deep understandings" },
-        { dir: "down", row: 0, col: 7, answer: "NAVIGATE", clue: "Find a route through" }
-      ] }
+    const crosswordClues = {
+      ALARM: "Warning sound",
+      EMPTY: "Containing nothing",
+      THEME: "Central subject",
+      ALERT: "Ready and watchful",
+      APPLE: "Orchard fruit",
+      MAYBE: "Perhaps",
+      GREAT: "Excellent",
+      ENTER: "Go in",
+      ANGLE: "Point of view",
+      MOTOR: "Engine",
+      PHONE: "Call device",
+      GROUP: "Collection",
+      EVERY: "Each one",
+      BASIC: "Simple or essential",
+      ALIVE: "Living",
+      DREAM: "Sleep vision",
+      BRAND: "Product name",
+      SHINE: "Give off light",
+      CREAM: "Rich dairy topping",
+      BLADE: "Cutting edge",
+      SHIFT: "Move or change",
+      CLEAR: "Easy to see",
+      BRAVE: "Courageous",
+      SMILE: "Happy expression",
+      CHEST: "Upper torso",
+      ALONE: "By oneself",
+      HUMAN: "Person",
+      BEACH: "Sandy shore",
+      STORM: "Severe weather",
+      CLEAN: "Not dirty",
+      IMAGE: "Picture",
+      BUILD: "Construct",
+      SHARE: "Give part of something",
+      BRIDE: "Wedding woman",
+      SMART: "Clever",
+      GREEN: "Grass color",
+      BRING: "Carry toward",
+      SPACE: "Open area",
+      INNER: "Inside",
+      SENSE: "Meaning or perception",
+      CARRY: "Hold and move",
+      SCORE: "Points total",
+      SHORT: "Not long",
+      SHAPE: "Form",
+      EVENT: "Happening"
+    };
+    const crosswordEntriesFromRows = (rows, cols) => [
+      ...rows.map((answer, index) => ({ dir: "across", row: index * 2, col: 0, answer, clue: crosswordClues[answer] || "Common word" })),
+      ...cols.map((answer, index) => ({ dir: "down", row: 0, col: index * 2, answer, clue: crosswordClues[answer] || "Common word" }))
     ];
+    const crosswordCatalog = [
+      { difficulty: "Easy", rows: ["ALARM", "EMPTY", "THEME"], cols: ["ALERT", "APPLE", "MAYBE"] },
+      { difficulty: "Easy", rows: ["ALARM", "GREAT", "ENTER"], cols: ["ANGLE", "ALERT", "MOTOR"] },
+      { difficulty: "Easy", rows: ["ANGLE", "PHONE", "EMPTY"], cols: ["APPLE", "GROUP", "EVERY"] },
+      { difficulty: "Easy", rows: ["BASIC", "ALIVE", "DREAM"], cols: ["BRAND", "SHINE", "CREAM"] },
+      { difficulty: "Medium", rows: ["BASIC", "ALIVE", "ENTER"], cols: ["BLADE", "SHIFT", "CLEAR"] },
+      { difficulty: "Medium", rows: ["BASIC", "ALIVE", "EVENT"], cols: ["BRAVE", "SMILE", "CHEST"] },
+      { difficulty: "Medium", rows: ["BASIC", "ALONE", "HUMAN"], cols: ["BEACH", "STORM", "CLEAN"] },
+      { difficulty: "Medium", rows: ["BASIC", "IMAGE", "DREAM"], cols: ["BUILD", "SHARE", "CREAM"] },
+      { difficulty: "Hard", rows: ["BASIC", "IMAGE", "ENTER"], cols: ["BRIDE", "SMART", "CLEAR"] },
+      { difficulty: "Hard", rows: ["BASIC", "IMAGE", "GREEN"], cols: ["BRING", "SPACE", "CLEAN"] },
+      { difficulty: "Hard", rows: ["BASIC", "INNER", "EVERY"], cols: ["BRIDE", "SENSE", "CARRY"] },
+      { difficulty: "Hard", rows: ["BEACH", "STORM", "CLEAN"], cols: ["BASIC", "ALONE", "HUMAN"] },
+      { difficulty: "Hard", rows: ["BLADE", "SCORE", "CHEST"], cols: ["BASIC", "ALONE", "EVENT"] },
+      { difficulty: "Hard", rows: ["BLADE", "SHIFT", "CLEAR"], cols: ["BASIC", "ALIVE", "ENTER"] },
+      { difficulty: "Expert", rows: ["BLADE", "SHINE", "CHEST"], cols: ["BASIC", "ALIVE", "EVENT"] },
+      { difficulty: "Expert", rows: ["BLADE", "SHORT", "CLEAR"], cols: ["BASIC", "ALONE", "ENTER"] },
+      { difficulty: "Expert", rows: ["BRAVE", "SCORE", "CHEST"], cols: ["BASIC", "ALONE", "EVENT"] },
+      { difficulty: "Expert", rows: ["BRAVE", "SHIFT", "CLEAR"], cols: ["BASIC", "ALIVE", "ENTER"] },
+      { difficulty: "Expert", rows: ["BRING", "SHAPE", "CLEAN"], cols: ["BASIC", "IMAGE", "GREEN"] },
+      { difficulty: "Expert", rows: ["BRING", "SPACE", "CLEAN"], cols: ["BASIC", "IMAGE", "GREEN"] }
+    ].map(spec => ({
+      ...spec,
+      size: 5,
+      entries: crosswordEntriesFromRows(spec.rows, spec.cols)
+    }));
     games.push(...crosswordCatalog.map((spec, index) => {
       const number = index + 1;
       return {
