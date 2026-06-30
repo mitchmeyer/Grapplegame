@@ -577,6 +577,8 @@
     const baseState = {
       liked: ["Chess Mate in One", "Wordle"],
       saved: ["Mini Sudoku"],
+      likedGameIds: [],
+      dislikedGameIds: [],
       plays: [],
       drafts: [],
       createdGames: [],
@@ -592,6 +594,8 @@
     state.comments ||= {};
     state.challenges ||= [];
     state.playedGameIds ||= [];
+    state.likedGameIds ||= [];
+    state.dislikedGameIds ||= [];
     state.adminDeletedGameIds ||= [];
     state.usernamePrompted ||= false;
     state.drafts.forEach((draft, index) => {
@@ -604,6 +608,7 @@
     let feedCursor = 0;
     let feedPool = [];
     let feedShownIds = new Set();
+    let feedLastFamily = "";
     let adminRows = [];
     let adminSelectedFamily = "";
     let adminSelectedGameId = "";
@@ -626,6 +631,7 @@
       data?.details || data?.error || error?.context?.details || error?.message || "AI generation failed";
     const difficultyRanks = { Easy: 1, Medium: 2, Hard: 3, Expert: 4 };
     const getDifficultyRank = (game) => Number(game.difficultyRank || game.difficulty_rank || difficultyRanks[game.difficulty] || 2);
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const canonicalGameId = (value) => String(value || "")
       .trim()
       .replace(/^chess(\d+)$/i, "ch$1")
@@ -648,6 +654,24 @@
       .replace(/^(?:mini[-_\s]*logic|logic)[-_\s]*(\d+)$/i, "logic$1");
     const gameUniqueKey = (game) => canonicalGameId(game.id || `${game.title}-${game.category}-${game.version || 1}`).toLowerCase().trim();
     const gameTitleKey = (game) => String(game.title || game.id || "").toLowerCase().trim();
+    function gameFamilyName(game) {
+      const text = `${game?.id || ""} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`.toLowerCase();
+      if (text.includes("chess") || /^ch\d+/.test(text)) return "Chess";
+      if (text.includes("wordle") || /^wordle\d+/.test(text)) return "Wordle";
+      if (text.includes("connections") || /^con\d+/.test(text)) return "Connections";
+      if (text.includes("crossword") || /^cw\d+/.test(text)) return "Crossword";
+      if (text.includes("hard sudoku") || /^sdh\d+/.test(text)) return "Hard Sudoku";
+      if (text.includes("sudoku") || /^sd\d+/.test(text)) return "Mini Sudoku";
+      if (text.includes("timeline") || /^tl\d+/.test(text)) return "Timeline";
+      if (text.includes("go capture") || /^go\d+/.test(text)) return "Go Capture";
+      if (text.includes("tetris")) return "Tetris Mini";
+      if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
+      if (text.includes("scramble") || /^scr\d+/.test(text)) return "Word Scramble";
+      if (text.includes("country") || /^cb\d+/.test(text)) return "Country Bigger";
+      return game?.category || "Other";
+    }
+    const isGameLiked = (game) => state.likedGameIds.includes(gameUniqueKey(game)) || state.liked?.includes(game.title);
+    const isGameDisliked = (game) => state.dislikedGameIds.includes(gameUniqueKey(game)) || state.saved?.includes(`dislike:${game.title}`);
     const isTicTacToeGame = (game) => /(^|\b)tic[-_\s]*tac[-_\s]*toe\b|tiktaktoe|tictactoe|^tic-\d+|tic_tac_toe/i.test(`${game?.id || ""} ${game?.title || ""} ${game?.gameSpec?.kind || ""}`);
     const isAdminDeletedGame = (gameOrId) => state.adminDeletedGameIds.includes(gameUniqueKey(typeof gameOrId === "object" ? gameOrId : { id: gameOrId }));
     const isAdmin = () => (currentUser?.email || "").toLowerCase() === adminEmail;
@@ -735,7 +759,9 @@
         title.includes("poker") ||
         title.includes("pattern");
     };
-    state.playedGameIds = [...new Set((state.playedGameIds || []).map(canonicalGameId))];
+    state.playedGameIds = [...new Set((state.playedGameIds || []).map(id => gameUniqueKey({ id })))];
+    state.likedGameIds = [...new Set((state.likedGameIds || []).map(id => gameUniqueKey({ id })))];
+    state.dislikedGameIds = [...new Set((state.dislikedGameIds || []).map(id => gameUniqueKey({ id })))];
     state.adminDeletedGameIds = [...new Set((state.adminDeletedGameIds || []).map(id => gameUniqueKey({ id })))];
     state.challenges = (state.challenges || []).map(challenge => ({ ...challenge, gameId: canonicalGameId(challenge.gameId) }));
     save();
@@ -1360,18 +1386,112 @@
       renderChallenges();
     }
 
-    function recommendationScore(game) {
-      if (state.playedGameIds?.includes(gameUniqueKey(game))) return -9999;
-      const affinity = state.categoryAffinity[game.category] || 2;
-      const saved = state.saved?.includes(game.title) ? 10 : 0;
-      const liked = state.liked?.includes(game.title) ? 8 : 0;
-      const puzzleBoost = ["Strategy", "Language", "Logic"].includes(game.category) ? 7 : 0;
-      const fatigue = state.plays.slice(0, 4).some(p => p.title === game.title) ? -10 : 0;
-      return affinity * 3 + saved + liked + puzzleBoost + fatigue + Math.random() * 3;
+    function gameForPlay(play) {
+      const playKey = gameUniqueKey({ id: play.id });
+      return games.find(game => gameUniqueKey(game) === playKey || game.title === play.title);
     }
+
+    function buildPerformanceProfile() {
+      const profile = { families: {}, categories: {}, recentFamilies: [] };
+      const add = (bucket, key, rank, correct, recentWeight) => {
+        const stats = bucket[key] ||= { attempts: 0, correct: 0, rankTotal: 0, recentAttempts: 0, recentCorrect: 0, recentRankTotal: 0 };
+        stats.attempts += 1;
+        stats.correct += correct ? 1 : 0;
+        stats.rankTotal += rank;
+        stats.recentAttempts += recentWeight;
+        stats.recentCorrect += correct ? recentWeight : 0;
+        stats.recentRankTotal += rank * recentWeight;
+      };
+      (state.plays || []).forEach((play, index) => {
+        const game = gameForPlay(play);
+        const family = play.family || (game ? gameFamilyName(game) : play.category || "Other");
+        const category = play.category || game?.category || "Other";
+        const rank = clamp(Number(play.difficultyRank || (game ? getDifficultyRank(game) : 2)), 1, 4);
+        const correct = play.correct === true || (play.correct !== false && Number(play.points || 0) > 0);
+        const recentWeight = index < 8 ? Math.max(0.25, (8 - index) / 8) : 0;
+        add(profile.families, family, rank, correct, recentWeight);
+        add(profile.categories, category, rank, correct, recentWeight);
+        if (index < 8) profile.recentFamilies.push(family);
+      });
+      return profile;
+    }
+
+    function buildReactionProfile() {
+      const profile = { likedFamilies: {}, likedCategories: {}, dislikedFamilies: {}, dislikedCategories: {} };
+      games.forEach(game => {
+        const family = gameFamilyName(game);
+        const category = game.category || "Other";
+        if (isGameLiked(game)) {
+          profile.likedFamilies[family] = (profile.likedFamilies[family] || 0) + 1;
+          profile.likedCategories[category] = (profile.likedCategories[category] || 0) + 1;
+        }
+        if (isGameDisliked(game)) {
+          profile.dislikedFamilies[family] = (profile.dislikedFamilies[family] || 0) + 1;
+          profile.dislikedCategories[category] = (profile.dislikedCategories[category] || 0) + 1;
+        }
+      });
+      return profile;
+    }
+
+    function targetDifficultyForFamily(family, profile) {
+      const stats = profile.families[family];
+      if (!stats || stats.attempts < 2) return 2;
+      const recentRate = stats.recentAttempts ? stats.recentCorrect / stats.recentAttempts : stats.correct / stats.attempts;
+      const avgRecentRank = stats.recentAttempts ? stats.recentRankTotal / stats.recentAttempts : stats.rankTotal / stats.attempts;
+      let target = Math.round(avgRecentRank || 2);
+      if (stats.attempts >= 3 && recentRate >= 0.72) target += 1;
+      if (stats.attempts >= 6 && recentRate >= 0.88) target += 1;
+      if (stats.attempts >= 3 && recentRate <= 0.38) target -= 1;
+      if (stats.attempts >= 5 && recentRate <= 0.22) target -= 1;
+      return clamp(target, 1, 4);
+    }
+
+    function recommendationScore(game, profile, reactions) {
+      if (state.playedGameIds?.includes(gameUniqueKey(game))) return -9999;
+      const family = gameFamilyName(game);
+      const category = game.category || "Other";
+      const rank = clamp(getDifficultyRank(game), 1, 4);
+      const targetRank = targetDifficultyForFamily(family, profile);
+      const familyStats = profile.families[family];
+      const categoryStats = profile.categories[category];
+      const accuracy = familyStats?.attempts ? familyStats.correct / familyStats.attempts : 0.5;
+      const difficultyFit = 16 - Math.abs(rank - targetRank) * 7 + (rank === targetRank ? 4 : 0);
+      const categoryAffinity = clamp(Number(state.categoryAffinity?.[category] || 2), 0, 14) * 0.8;
+      const likedBoost = Math.min(8, (reactions.likedFamilies[family] || 0) * 2.5 + (reactions.likedCategories[category] || 0) * 1.2);
+      const dislikePenalty = Math.min(12, (reactions.dislikedFamilies[family] || 0) * 4 + (reactions.dislikedCategories[category] || 0) * 2);
+      const strengthRamp = familyStats?.attempts >= 4 && accuracy > 0.7 ? rank * 1.8 : 0;
+      const supportRamp = familyStats?.attempts >= 4 && accuracy < 0.42 ? (5 - rank) * 1.8 : 0;
+      const exploration = !familyStats ? 5 : Math.max(0, 3 - familyStats.attempts) * 1.2;
+      const categoryConfidence = categoryStats?.attempts ? Math.min(4, categoryStats.correct / categoryStats.attempts * 4) : 1.5;
+      const recentIndex = profile.recentFamilies.indexOf(family);
+      const fatigue = recentIndex === 0 ? -30 : recentIndex > 0 ? -8 + recentIndex : 0;
+      const saved = state.saved?.includes(game.title) ? 4 : 0;
+      const exactLike = isGameLiked(game) ? 5 : 0;
+      const exactDislike = isGameDisliked(game) ? 10 : 0;
+      const puzzleBoost = ["Strategy", "Language", "Logic", "Math"].includes(category) ? 3 : 0;
+      return difficultyFit + categoryAffinity + likedBoost - dislikePenalty + strengthRamp + supportRamp + exploration + categoryConfidence + fatigue + saved + exactLike - exactDislike + puzzleBoost + Math.random() * 2.5;
+    }
+
+    function arrangeFeedOrder(candidates) {
+      const remaining = [...candidates];
+      const ordered = [];
+      let lastFamily = "";
+      while (remaining.length) {
+        let pickIndex = remaining.findIndex(game => gameFamilyName(game) !== lastFamily);
+        if (pickIndex < 0) pickIndex = 0;
+        const [game] = remaining.splice(pickIndex, 1);
+        ordered.push(game);
+        lastFamily = gameFamilyName(game);
+      }
+      return ordered;
+    }
+
     const rankedGames = () => {
       dedupeGameCatalog();
-      return [...games].sort((a, b) => recommendationScore(b) - recommendationScore(a));
+      const profile = buildPerformanceProfile();
+      const reactions = buildReactionProfile();
+      const ranked = [...games].sort((a, b) => recommendationScore(b, profile, reactions) - recommendationScore(a, profile, reactions));
+      return arrangeFeedOrder(ranked);
     };
 
     function difficultyBadge(game) {
@@ -1632,11 +1752,27 @@
 
     function recordPlay(game, score, label, points) {
       const gameId = gameUniqueKey(game);
+      const correct = score >= 700;
+      const family = gameFamilyName(game);
+      const difficultyRank = clamp(getDifficultyRank(game), 1, 4);
       state.playedGameIds ||= [];
       if (!state.playedGameIds.includes(gameId)) state.playedGameIds.push(gameId);
-      state.plays.unshift({ id: gameId, title: game.title, category: game.category, points, label, date: today });
-      state.plays = state.plays.slice(0, 30);
-      state.categoryAffinity[game.category] = (state.categoryAffinity[game.category] || 0) + 1;
+      state.plays.unshift({
+        id: gameId,
+        title: game.title,
+        category: game.category,
+        family,
+        difficulty: game.difficulty || "Medium",
+        difficultyRank,
+        correct,
+        score: Math.round(score),
+        points,
+        label,
+        date: today
+      });
+      state.plays = state.plays.slice(0, 80);
+      const affinityDelta = correct ? 0.8 : -0.25;
+      state.categoryAffinity[game.category] = clamp((state.categoryAffinity[game.category] || 0) + affinityDelta, 0, 18);
       save();
       renderPoints();
       renderProfile();
@@ -1685,8 +1821,8 @@
       wrap.className = "feed-card-wrap";
       const card = document.createElement("div");
       card.className = "game-card";
-      const liked = state.liked?.includes(game.title);
-      const disliked = state.saved?.includes(`dislike:${game.title}`);
+      const liked = isGameLiked(game);
+      const disliked = isGameDisliked(game);
       const likeCount = baseLikeCount(game) + (liked ? 1 : 0);
       const timed = isTimedGame(game);
       const initialSeconds = gameSeconds(game);
@@ -1745,19 +1881,44 @@
       };
       $(".like-btn", card).onclick = () => {
         state.liked ||= [];
-        const index = state.liked.indexOf(game.title);
-        if (index >= 0) state.liked.splice(index, 1);
-        else state.liked.push(game.title);
+        state.likedGameIds ||= [];
+        state.dislikedGameIds ||= [];
+        const key = gameUniqueKey(game);
+        const index = state.likedGameIds.indexOf(key);
+        const titleIndex = state.liked.indexOf(game.title);
+        if (index >= 0) {
+          state.likedGameIds.splice(index, 1);
+          if (titleIndex >= 0) state.liked.splice(titleIndex, 1);
+        } else {
+          state.likedGameIds.push(key);
+          if (titleIndex < 0) state.liked.push(game.title);
+          state.dislikedGameIds = state.dislikedGameIds.filter(id => id !== key);
+          state.saved = (state.saved || []).filter(item => item !== `dislike:${game.title}`);
+          $(".dislike-btn", card).classList.remove("disliked");
+        }
         save();
         $(".like-btn", card).classList.toggle("liked", index < 0);
         $("span", $(".like-btn", card)).textContent = baseLikeCount(game) + (index < 0 ? 1 : 0);
       };
       $(".dislike-btn", card).onclick = () => {
         state.saved ||= [];
+        state.likedGameIds ||= [];
+        state.dislikedGameIds ||= [];
+        state.liked ||= [];
+        const key = gameUniqueKey(game);
         const marker = `dislike:${game.title}`;
-        const index = state.saved.indexOf(marker);
-        if (index >= 0) state.saved.splice(index, 1);
-        else state.saved.push(marker);
+        const index = state.dislikedGameIds.indexOf(key);
+        if (index >= 0) {
+          state.dislikedGameIds.splice(index, 1);
+          state.saved = state.saved.filter(item => item !== marker);
+        } else {
+          state.dislikedGameIds.push(key);
+          if (!state.saved.includes(marker)) state.saved.push(marker);
+          state.likedGameIds = state.likedGameIds.filter(id => id !== key);
+          state.liked = state.liked.filter(title => title !== game.title);
+          $(".like-btn", card).classList.remove("liked");
+          $("span", $(".like-btn", card)).textContent = baseLikeCount(game);
+        }
         save();
         $(".dislike-btn", card).classList.toggle("disliked", index < 0);
       };
@@ -1780,6 +1941,7 @@
       feedPool = rankedGames().filter(game => !state.playedGameIds.includes(gameUniqueKey(game)));
       feedCursor = 0;
       feedShownIds = new Set();
+      feedLastFamily = "";
       feed.innerHTML = "";
       appendFeedBatch(24);
       feed.onscroll = () => {
@@ -1793,11 +1955,23 @@
       if (!feedPool.length) feedPool = rankedGames().filter(game => !state.playedGameIds.includes(gameUniqueKey(game)));
       let added = 0;
       while (added < count && feedCursor < feedPool.length) {
+        if (gameFamilyName(feedPool[feedCursor]) === feedLastFamily) {
+          const swapIndex = feedPool.findIndex((candidate, index) =>
+            index > feedCursor &&
+            !state.playedGameIds.includes(gameUniqueKey(candidate)) &&
+            !feedShownIds.has(gameUniqueKey(candidate)) &&
+            gameFamilyName(candidate) !== feedLastFamily
+          );
+          if (swapIndex > feedCursor) {
+            [feedPool[feedCursor], feedPool[swapIndex]] = [feedPool[swapIndex], feedPool[feedCursor]];
+          }
+        }
         const game = feedPool[feedCursor];
         const key = gameUniqueKey(game);
         feedCursor++;
         if (state.playedGameIds.includes(key)) continue;
         if (feedShownIds.has(key)) continue;
+        feedLastFamily = gameFamilyName(game);
         feedShownIds.add(key);
         feed.appendChild(buildGameCard(game));
         added++;
