@@ -616,13 +616,17 @@
       data?.details || data?.error || error?.context?.details || error?.message || "AI generation failed";
     const difficultyRanks = { Easy: 1, Medium: 2, Hard: 3, Expert: 4 };
     const getDifficultyRank = (game) => Number(game.difficultyRank || game.difficulty_rank || difficultyRanks[game.difficulty] || 2);
-    const gameUniqueKey = (game) => String(game.id || `${game.title}-${game.category}-${game.version || 1}`).toLowerCase().trim();
+    const canonicalGameId = (value) => String(value || "").trim().replace(/^chess(\d+)$/i, "ch$1");
+    const gameUniqueKey = (game) => canonicalGameId(game.id || `${game.title}-${game.category}-${game.version || 1}`).toLowerCase().trim();
     const gameTitleKey = (game) => String(game.title || game.id || "").toLowerCase().trim();
     const isTicTacToeGame = (game) => /(^|\b)tic[-_\s]*tac[-_\s]*toe\b|tiktaktoe|tictactoe|^tic-\d+|tic_tac_toe/i.test(`${game?.id || ""} ${game?.title || ""} ${game?.gameSpec?.kind || ""}`);
     const isAdmin = () => (currentUser?.email || "").toLowerCase() === adminEmail;
+    state.playedGameIds = [...new Set((state.playedGameIds || []).map(canonicalGameId))];
+    state.challenges = (state.challenges || []).map(challenge => ({ ...challenge, gameId: canonicalGameId(challenge.gameId) }));
+    save();
 
     const games = [
-      { id: "chess1", title: "Chess Mate 1", category: "Strategy", difficulty: "Easy", difficultyRank: 1, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: 0 }, renderer: ChessMate },
+      { id: "ch1", title: "Chess Mate 1", category: "Strategy", difficulty: "Easy", difficultyRank: 1, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: 0 }, renderer: ChessMate },
       { id: "wordle1", title: "Wordle 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: ["BRAIN", "LOGIC", "FOCUS", "MATCH", "GRASP"] }, renderer: WordGrid },
       { id: "con1", title: "Connections 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Mental Flexibility", "Verbal Reasoning"], renderer: Connections },
       { id: "cw1", title: "Mini Crossword 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Verbal Reasoning", "Focus"], gameSpec: { crosswordIndex: 0 }, renderer: MiniCrossword },
@@ -798,7 +802,7 @@
       const number = index + 2;
       const difficulty = number <= 5 ? "Easy" : number <= 11 ? "Medium" : number <= 16 ? "Hard" : "Expert";
       return {
-        id: `chess${number}`,
+        id: `ch${number}`,
         title: `Chess Mate ${number}`,
         category: "Strategy",
         difficulty,
@@ -909,7 +913,7 @@
 
     function normalizeGame(row) {
       return {
-        id: row.slug || row.id,
+        id: canonicalGameId(row.game_key || row.slug || row.id),
         dbId: row.id,
         title: row.title,
         category: row.category,
@@ -2537,6 +2541,8 @@
         }
         const remoteRows = (data.games || []).map(game => ({
           ...game,
+          id: canonicalGameId(game.game_key || game.slug || game.id),
+          dbId: game.id,
           category: game.category || "Uncategorized",
           difficulty: game.difficulty || "Medium",
           difficultyRank: Number(game.difficultyRank || game.difficulty_rank || difficultyRanks[game.difficulty] || 2),
@@ -2559,7 +2565,7 @@
 
     function localAdminRows() {
       return games.map(game => ({
-        id: game.id,
+        id: canonicalGameId(game.id),
         title: game.title,
         category: game.category || "Uncategorized",
         difficulty: game.difficulty || "Medium",
@@ -2640,7 +2646,7 @@
 
     function adminFamilyName(game) {
       const text = `${game.id || ""} ${game.title || ""} ${game.game_type || ""}`.toLowerCase();
-      if (text.includes("chess")) return "Chess Mate";
+      if (text.includes("chess") || /^ch\d+/.test(text)) return "Chess Mate";
       if (text.includes("wordle")) return "Wordle";
       if (text.includes("connections") || /^con\d+/.test(text)) return "Connections";
       if (text.includes("crossword") || /^cw\d+/.test(text)) return "Crossword";
