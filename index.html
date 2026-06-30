@@ -604,7 +604,7 @@
     const isAdmin = () => (currentUser?.email || "").toLowerCase() === adminEmail;
 
     const games = [
-      { id: "chess1", title: "Chess Mate 1", category: "Strategy", difficulty: "Medium", difficultyRank: 2, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: 0 }, renderer: ChessMate },
+      { id: "chess1", title: "Chess Mate 1", category: "Strategy", difficulty: "Easy", difficultyRank: 1, version: 1, time: "30s", source: "Official", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: 0 }, renderer: ChessMate },
       { id: "wordle1", title: "Wordle 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Official", traits: ["Verbal Reasoning", "Pattern Recognition"], gameSpec: { answers: ["BRAIN", "LOGIC", "FOCUS", "MATCH", "GRASP"] }, renderer: WordGrid },
       { id: "con1", title: "Connections 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Mental Flexibility", "Verbal Reasoning"], renderer: Connections },
       { id: "cw1", title: "Mini Crossword 1", category: "Language", difficulty: "Medium", difficultyRank: 2, version: 1, time: "60s", source: "Community", traits: ["Verbal Reasoning", "Focus"], gameSpec: { crosswordIndex: 0 }, renderer: MiniCrossword },
@@ -763,8 +763,36 @@
       { pieces: { b8: "♚", d7: "♕", c6: "♔" }, q: "White to move. Find mate in one.", from: "d7", to: "b7", san: "Qb7#" },
       { pieces: { f8: "♚", h7: "♕", f6: "♔" }, q: "White to move. Find mate in one.", from: "h7", to: "h8", san: "Qh8#" },
       { pieces: { c8: "♚", e7: "♕", c6: "♔" }, q: "White to move. Find mate in one.", from: "e7", to: "c7", san: "Qc7#" },
-      { pieces: { a8: "♚", b6: "♕", c6: "♔" }, q: "White to move. Find mate in one.", from: "b6", to: "b8", san: "Qb8#" }
+      { pieces: { a8: "♚", b6: "♕", c6: "♔" }, q: "White to move. Find mate in one.", from: "b6", to: "b8", san: "Qb8#" },
+      { pieces: { d8: "♚", h4: "♕", f6: "♔" }, q: "White to move. Find mate in one.", from: "h4", to: "d8", san: "Qd8#" },
+      { pieces: { e8: "♚", a4: "♕", c6: "♔" }, q: "White to move. Find mate in one.", from: "a4", to: "e8", san: "Qe8#" },
+      { pieces: { h8: "♚", h5: "♕", f6: "♔" }, q: "White to move. Find mate in one.", from: "h5", to: "h8", san: "Qh8#" },
+      { pieces: { a8: "♚", d5: "♕", c6: "♔" }, q: "White to move. Find mate in one.", from: "d5", to: "a8", san: "Qa8#" },
+      { pieces: { f8: "♚", b4: "♕", d6: "♔" }, q: "White to move. Find mate in one.", from: "b4", to: "f8", san: "Qf8#" },
+      { pieces: { c8: "♚", c5: "♕", e6: "♔" }, q: "White to move. Find mate in one.", from: "c5", to: "c8", san: "Qc8#" },
+      { pieces: { g8: "♚", b3: "♕", d5: "♔" }, q: "White to move. Find mate in one.", from: "b3", to: "g8", san: "Qg8#" },
+      { pieces: { b8: "♚", b5: "♕", d6: "♔" }, q: "White to move. Find mate in one.", from: "b5", to: "b8", san: "Qb8#" },
+      { pieces: { e8: "♚", h8: "♕", f6: "♔" }, q: "White to move. Find mate in one.", from: "h8", to: "e8", san: "Qe8#" },
+      { pieces: { h8: "♚", d4: "♕", f6: "♔" }, q: "White to move. Find mate in one.", from: "d4", to: "h8", san: "Qh8#" },
+      { pieces: { a8: "♚", a5: "♕", c6: "♔" }, q: "White to move. Find mate in one.", from: "a5", to: "a8", san: "Qa8#" }
     ];
+    games.push(...chessVariants.slice(1).map((variant, index) => {
+      const number = index + 2;
+      const difficulty = number <= 5 ? "Easy" : number <= 11 ? "Medium" : number <= 16 ? "Hard" : "Expert";
+      return {
+        id: `chess${number}`,
+        title: `Chess Mate ${number}`,
+        category: "Strategy",
+        difficulty,
+        difficultyRank: difficultyRanks[difficulty],
+        version: 1,
+        time: `${difficulty === "Easy" ? 45 : difficulty === "Medium" ? 35 : 30}s`,
+        source: "Official",
+        traits: ["Strategy", "Spatial Reasoning"],
+        gameSpec: { ...variant, chessIndex: index + 1 },
+        renderer: ChessMate
+      };
+    }));
     const sudokuVariants = [
       { solution: [1,2,3,4,3,4,1,2,2,1,4,3,4,3,2,1], givens: [1,0,3,0,0,4,0,2,2,0,0,3,0,3,0,1] },
       { solution: [2,1,4,3,4,3,2,1,1,2,3,4,3,4,1,2], givens: [0,1,0,3,4,0,0,0,0,2,3,0,3,0,0,2] },
@@ -828,7 +856,7 @@
       if (type === 1) return { ...base, id: `con${n}`, title: `${seed} Connections`, category: "Language", time: "75s", traits: ["Mental Flexibility", "Verbal Reasoning"], gameSpec: { groups: connectionSets[index % connectionSets.length] }, renderer: Connections };
       if (type === 2) return { ...base, id: `cw${n}`, title: `${seed} Crossword`, category: "Language", time: "60s", traits: ["Verbal Reasoning", "Focus"], gameSpec: { crosswordIndex: index % crosswordVariants.length }, renderer: MiniCrossword };
       if (type === 3) return { ...base, id: `sd${n}`, title: `${seed} Sudoku`, category: "Logic", time: "70s", traits: ["Logical Reasoning", "Focus"], gameSpec: sudokuVariants[index % sudokuVariants.length], renderer: MiniSudoku };
-      if (type === 4) return { ...base, id: `chess${n}`, title: `${seed} Chess`, category: "Strategy", time: "45s", traits: ["Strategy", "Spatial Reasoning"], gameSpec: { chessIndex: index % chessVariants.length }, renderer: ChessMate };
+      if (type === 4) return { ...base, id: `strategy${n}`, title: `${seed} Strategy`, category: "Strategy", time: "35s", traits: ["Strategy", "Pattern Recognition"], gameSpec: { patterns: [patternVariants[(index + 1) % patternVariants.length], patternVariants[(index + 4) % patternVariants.length]] }, renderer: PatternNext };
       if (type === 5) return { ...base, id: `pat${n}`, title: `${seed} Pattern`, category: "Logic", time: "25s", traits: ["Pattern Recognition"], gameSpec: { patterns: [patternVariants[index % patternVariants.length], patternVariants[(index + 2) % patternVariants.length]] }, renderer: PatternNext };
       if (type === 6) return { ...base, id: `logic${n}`, title: `${seed} Logic`, category: "Logic", time: "35s", traits: ["Logical Reasoning"], gameSpec: { puzzles: [logicVariants[index % logicVariants.length], logicVariants[(index + 2) % logicVariants.length], logicVariants[(index + 4) % logicVariants.length]] }, renderer: MiniLogic };
       if (type === 7) return { ...base, id: `math${n}`, title: `${seed} Quick Math`, category: "Math", time: "45s", traits: ["Quantitative Reasoning"], gameSpec: { min: 2 + (index % 7), max: 14 + (index % 9), ops: index % 2 ? ["+", "x"] : ["+", "-", "x"] }, renderer: QuickMath };
@@ -2482,8 +2510,14 @@
           }
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || "Admin access failed");
-        adminRows = (data.games || []).map(game => ({
+        if (!response.ok) {
+          if (!isAdmin()) throw new Error(data.error || "Admin access failed");
+          adminRows = localAdminRows();
+          hydrateAdminControls();
+          renderAdminCatalog();
+          return;
+        }
+        const remoteRows = (data.games || []).map(game => ({
           ...game,
           category: game.category || "Uncategorized",
           difficulty: game.difficulty || "Medium",
@@ -2493,6 +2527,8 @@
           version: game.version || 1,
           traits: Array.isArray(game.traits) ? game.traits : []
         }));
+        const seen = new Set(remoteRows.map(row => gameUniqueKey(row)));
+        adminRows = [...remoteRows, ...localAdminRows().filter(row => !seen.has(gameUniqueKey(row)))];
         hydrateAdminControls();
         renderAdminCatalog();
       } catch (error) {
@@ -2501,6 +2537,21 @@
         $("#adminSummary").innerHTML = "";
         $("#adminPanel").innerHTML = `<div class="panel"><h3>Admin access required</h3><p class="muted">${esc(error.message || "This view is only available to " + adminEmail)}.</p></div>`;
       }
+    }
+
+    function localAdminRows() {
+      return games.map(game => ({
+        id: game.id,
+        title: game.title,
+        category: game.category || "Uncategorized",
+        difficulty: game.difficulty || "Medium",
+        difficultyRank: getDifficultyRank(game),
+        source: game.source || "Seeded",
+        status: "seeded",
+        version: game.version || 1,
+        traits: Array.isArray(game.traits) ? game.traits : [],
+        answer: game.gameSpec?.san || game.gameSpec?.answer || game.gameSpec?.a || game.gameSpec?.target || "See renderer"
+      }));
     }
 
     function hydrateAdminControls() {
@@ -2588,6 +2639,7 @@
         <div class="admin-row">
           <div class="admin-title">
             <b>${esc(game.title || "Untitled game")}</b>
+            <p class="muted">${esc(game.id || "no-id")}</p>
             <div class="admin-traits">${traits || `<span>${esc(game.category)}</span>`}</div>
           </div>
           <span><b>Rank ${esc(game.difficultyRank || 2)}</b><p class="muted">${esc(game.difficulty || "Medium")}</p></span>
