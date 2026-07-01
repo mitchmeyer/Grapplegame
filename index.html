@@ -329,7 +329,7 @@
     .rules-popover { position: absolute; top: 28px; right: 0; z-index: 2; width: min(270px, 82vw); display: none; padding: 10px 11px; border: 1px solid #E5E7EF; border-radius: 10px; background: white; box-shadow: 0 8px 20px rgba(15, 23, 42, .12); color: #4B5563; font-size: 12px; line-height: 1.35; text-align: left; }
     .rules-popover.show { display: block; }
     .rules-popover b { display: block; margin-bottom: 4px; color: var(--text); }
-    .scrabble-shell, .hexcells-shell, .flow-shell { width: min(100%, 360px); margin: 0 auto; display: grid; gap: 10px; justify-items: center; }
+    .scrabble-shell, .hexcells-shell, .flow-shell, .one-stroke-shell { width: min(100%, 360px); margin: 0 auto; display: grid; gap: 10px; justify-items: center; }
     .scrabble-board { display: grid; grid-template-columns: repeat(7, 38px); gap: 3px; padding: 8px; border: 1px solid #D6D3E8; border-radius: 10px; background: #FBFAFF; }
     .scrabble-cell, .rack-tile { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #D7C8A8; border-radius: 7px; background: #F5DDB0; color: #1F2937; font-size: 20px; font-weight: 950; box-shadow: 0 2px 0 #D0B17C; }
     .scrabble-cell.anchor { background: #C4B5FD; border-color: #9B7CF7; color: white; }
@@ -354,6 +354,14 @@
     .flow-cell.endpoint::after { content: ""; position: absolute; z-index: 3; inset: 9px; border-radius: 50%; background: var(--flow-color); box-shadow: 0 2px 5px rgba(15,23,42,.22); }
     .flow-cell.selected { outline: 3px solid rgba(108,59,255,.28); outline-offset: 1px; }
     .flow-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
+    .one-stroke-board { width: min(100%, 320px); aspect-ratio: 1; border: 1px solid #D6D3E8; border-radius: 14px; background: #FAFAFF; touch-action: none; }
+    .stroke-edge { stroke: #D7D3E8; stroke-width: 3.2; stroke-linecap: round; }
+    .stroke-edge.drawn { stroke: #6C3BFF; stroke-width: 5.5; filter: drop-shadow(0 2px 4px rgba(108,59,255,.22)); }
+    .stroke-node { fill: #FFFFFF; stroke: #9CA3AF; stroke-width: 2.4; }
+    .stroke-node.start { fill: #22C55E; stroke: #16A34A; }
+    .stroke-node.end { fill: #EF4444; stroke: #DC2626; }
+    .stroke-node.current { stroke: #6C3BFF; stroke-width: 4; }
+    .stroke-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .card-face { width: 46px; height: 64px; display: grid; place-items: center; border: 1px solid #D1D5DB; border-radius: 8px; background: white; box-shadow: 0 3px 8px rgba(15,23,42,.14); color: #111827; font-size: 17px; font-weight: 950; }
     .card-face.red { color: #EF4444; }
     .tetris-board { display: grid; grid-template-columns: repeat(10, 22px); grid-template-rows: repeat(18, 22px); border: 2px solid #CBD5E1; background: #F8FAFC; }
@@ -472,7 +480,7 @@
       .hard-sudoku-cell { width: 36px; height: 36px; font-size: 16px; }
       .hard-sudoku-pad { gap: 5px; }
       .hard-sudoku-pad button { min-height: 28px; }
-      .go-shell, .tetris-shell, .snake-shell, .arcade-shell, .scrabble-shell, .hexcells-shell, .flow-shell { width: min(100%, 300px); gap: 8px; }
+      .go-shell, .tetris-shell, .snake-shell, .arcade-shell, .scrabble-shell, .hexcells-shell, .flow-shell, .one-stroke-shell { width: min(100%, 300px); gap: 8px; }
       .go-board { grid-template-columns: repeat(7, 34px); grid-template-rows: repeat(7, 34px); padding: 6px; }
       .go-point { width: 34px; height: 34px; }
       .stone { width: 24px; height: 24px; margin: 5px; }
@@ -482,6 +490,7 @@
       .flow-grid { --flow-cell: 34px; gap: 3px; padding: 6px; }
       .flow-cell { border-radius: 7px; }
       .flow-cell.endpoint::after { inset: 7px; }
+      .one-stroke-board { width: min(100%, 292px); }
       .card-face { width: 36px; height: 50px; border-radius: 7px; font-size: 14px; }
       .tetris-board { grid-template-columns: repeat(10, 13px); grid-template-rows: repeat(18, 13px); }
       .tet-cell { width: 13px; height: 13px; }
@@ -744,6 +753,7 @@
       .replace(/^(?:scrabble|scrab)[-_\s]*(\d+)$/i, "scrab$1")
       .replace(/^(?:hexcells[-_\s]*infinite|hexcells|hex)[-_\s]*(\d+)$/i, "hex$1")
       .replace(/^(?:flow[-_\s]*link|path[-_\s]*fill|numberlink|flow)[-_\s]*(\d+)$/i, "flow$1")
+      .replace(/^(?:one[-_\s]*stroke|one[-_\s]*line|single[-_\s]*line|unicursal|stroke)[-_\s]*(\d+)$/i, "stroke$1")
       .replace(/^(?:memory[-_\s]*grid|mem)[-_\s]*(\d+)$/i, "mem$1")
       .replace(/^(?:number[-_\s]*tap|num)[-_\s]*(\d+)$/i, "num$1")
       .replace(/^(?:quick[-_\s]*math|math)[-_\s]*(\d+)$/i, "math$1")
@@ -767,6 +777,7 @@
       if (text.includes("scrabble") || /^scrab\d+/.test(text)) return "Scrabble";
       if (text.includes("hexcells") || /^hex\d+/.test(text)) return "Hexcells Infinite";
       if (text.includes("flow link") || text.includes("path fill") || text.includes("numberlink") || /^flow\d+/.test(text)) return "Flow Link";
+      if (text.includes("one stroke") || text.includes("one line") || text.includes("unicursal") || /^stroke\d+/.test(text)) return "One Stroke";
       if (text.includes("arcade") || text.includes("flappy") || text.includes("runner") || text.includes("dodger") || text.includes("catcher")) return "Arcade";
       if (text.includes("snake")) return "Snake";
       if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
@@ -826,10 +837,11 @@
       /^scrab(?:[1-9]|1\d|20)$/i,
       /^hex(?:[1-9]|1\d|20)$/i,
       /^flow(?:[1-9]|1\d|20)$/i,
+      /^stroke(?:[1-9]|1\d|20)$/i,
       /^mem(?:[1-9]|1\d|20)$/i,
       /^scr(?:[1-9]|1\d|20)$/i
     ];
-    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|tetris mini|scrabble|hexcells|flow link|path fill|numberlink|memory grid|scramble/i;
+    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|tetris mini|scrabble|hexcells|flow link|path fill|numberlink|one stroke|one line|unicursal|memory grid|scramble/i;
     const isCuratedCatalogGame = (game) => {
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const text = `${id} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`;
@@ -897,6 +909,7 @@
       scrabble: ScrabbleGame,
       hexcells: HexcellsGame,
       flow_link: FlowLinkGame,
+      one_stroke: OneStrokeGame,
       snake: SnakeGame,
       arcade_game: ArcadeGame,
       memory: MemoryGrid,
@@ -1509,6 +1522,57 @@
       return catalogBase(`flow${index + 1}`, `Flow Link ${index + 1}`, "Logic", difficulty, ["Spatial Reasoning", "Planning"], FlowLinkGame, makeFlowSpec(index), "");
     }));
 
+    const makeOneStrokeSpec = (index) => {
+      const columns = index < 5 ? 4 : index < 10 ? 5 : index < 15 ? 6 : 7;
+      const loopMode = index < 6 ? "triangle" : index < 13 ? "diamond" : "mixed";
+      const nodes = {};
+      const addNode = (id, x, y) => {
+        nodes[id] = [Math.round(x * 1000) / 10, Math.round(y * 1000) / 10];
+        return id;
+      };
+      const solution = [];
+      const spineY = 0.52;
+      for (let c = 0; c < columns; c++) {
+        addNode(`s${c}`, 0.1 + (0.8 * c) / (columns - 1), spineY);
+      }
+      solution.push("s0");
+      const addLoop = (anchor, c, variant, dir, tag = "") => {
+        const [x, y] = nodes[anchor].map(n => n / 100);
+        const spread = 0.8 / (columns - 1);
+        const y1 = clamp(y + dir * (variant === "diamond" ? 0.22 : 0.2), 0.08, 0.92);
+        const y2 = clamp(y + dir * (variant === "diamond" ? 0.34 : 0.28), 0.08, 0.92);
+        const left = clamp(x - spread * 0.34, 0.06, 0.94);
+        const right = clamp(x + spread * 0.34, 0.06, 0.94);
+        const middle = clamp(x + spread * 0.05 * dir, 0.06, 0.94);
+        const prefix = `${anchor}_${variant}_${dir > 0 ? "b" : "t"}_${c}${tag}`;
+        if (variant === "triangle") {
+          const a = addNode(`${prefix}_a`, middle, y2);
+          const b = addNode(`${prefix}_b`, right, y1);
+          solution.push(a, b, anchor);
+        } else {
+          const a = addNode(`${prefix}_a`, middle, y2);
+          const b = addNode(`${prefix}_b`, right, y1);
+          const cNode = addNode(`${prefix}_c`, left, y1);
+          solution.push(a, b, cNode, anchor);
+        }
+      };
+      for (let c = 1; c < columns; c++) {
+        const anchor = `s${c}`;
+        solution.push(anchor);
+        if (c >= columns - 1) continue;
+        const dir = (index + c) % 2 ? -1 : 1;
+        const variant = loopMode === "mixed" ? ((index + c) % 3 === 0 ? "triangle" : "diamond") : loopMode;
+        addLoop(anchor, c, variant, dir);
+        if (index > 10 && c % 2 === 0) addLoop(anchor, c, "triangle", -dir);
+        if (index > 16 && c % 3 === 0) addLoop(anchor, c, "diamond", -dir, "_x");
+      }
+      return { nodes, solution, start: "s0", end: `s${columns - 1}` };
+    };
+    games.push(...Array.from({ length: 20 }, (_, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`stroke${index + 1}`, `One Stroke ${index + 1}`, "Logic", difficulty, ["Spatial Reasoning", "Planning"], OneStrokeGame, makeOneStrokeSpec(index), "");
+    }));
+
     const goCatalog = [
       { name: "Net the Runner", difficulty: "Easy", black: ["c4","d3","e4","e5"], white: ["d4"], line: ["c5","d5","d6"], tactic: "Net" },
       { name: "Mirror Net", difficulty: "Easy", black: ["e4","d3","c4","c5"], white: ["d4"], line: ["e5","d5","d6"], tactic: "Net" },
@@ -1788,6 +1852,7 @@
       if (/scrabble/i.test(name)) return "Start with the high-value letters, then check whether the word passes through the purple anchor.";
       if (/hexcells/i.test(name)) return "Use the numbered hexes first: a 0 clears all neighbors, while a high number forces most adjacent hidden cells blue.";
       if (/flow link|path fill|numberlink/i.test(name)) return "Start with the shortest-looking pair first. Every move must stay adjacent, avoid other colors, and leave room for the remaining paths.";
+      if (/one stroke|one line|unicursal/i.test(name)) return "Look for the green start and red end first. Any branching point usually needs a loop traced before you continue down the main path.";
       if (/connections/i.test(name)) return "Say the possible category out loud before submitting four words.";
       return directionsForGame(game);
     }
@@ -1842,6 +1907,7 @@
       if (/timeline/i.test(name)) return "Tap the events from earliest to latest.";
       if (/go/i.test(name)) return "Place one black stone to capture the marked white group.";
       if (/tetris/i.test(name)) return "Move and rotate the falling piece to clear lines before the stack fills.";
+      if (/one stroke|one line|unicursal/i.test(name)) return "Start on the green dot and trace every line exactly once without retracing or lifting before the shape is complete.";
       if (/shape/i.test(name)) return "Choose the shape that exactly matches the target rotation.";
       if (/pattern|strategy/i.test(name)) return "Study the sequence and choose what comes next.";
       return "Play the puzzle on the card. Correct answers add points automatically.";
@@ -3778,6 +3844,140 @@
       draw();
     }
 
+    function OneStrokeGame(root, game, done) {
+      const spec = game.gameSpec || {};
+      const nodes = spec.nodes || {};
+      const solution = Array.isArray(spec.solution) ? spec.solution.filter(id => nodes[id]) : [];
+      const start = spec.start || solution[0];
+      const end = spec.end || solution[solution.length - 1];
+      const edgeKey = (a, b) => [a, b].sort().join("|");
+      const edges = [];
+      const edgeMap = new Map();
+      for (let i = 0; i < solution.length - 1; i++) {
+        const a = solution[i];
+        const b = solution[i + 1];
+        if (!a || !b || a === b) continue;
+        const key = edgeKey(a, b);
+        if (edgeMap.has(key)) continue;
+        const edge = { a, b, key };
+        edges.push(edge);
+        edgeMap.set(key, edge);
+      }
+      const used = new Set();
+      let current = null;
+      let dragging = false;
+      let completed = false;
+      let errors = 0;
+      root.innerHTML = `
+        <div class="one-stroke-shell rules-shell">
+          <button class="rules-btn" type="button" aria-label="One Stroke rules">?</button>
+          <div class="rules-popover"><b>How to play</b>Start on the green dot. Draw every line exactly once without retracing or lifting your finger before the shape is complete.</div>
+          <div class="stroke-status">Start at the green dot and trace every line once.</div>
+          <svg class="one-stroke-board" viewBox="0 0 100 100" role="img" aria-label="One Stroke puzzle"></svg>
+          <button class="btn ghost reset">Reset</button>
+        </div>`;
+      wireRules(root);
+      const board = $(".one-stroke-board", root);
+      const setStatus = msg => $(".stroke-status", root).textContent = msg;
+      const svg = (tag, attrs = {}) => {
+        const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+        Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+        return el;
+      };
+      const render = () => {
+        board.innerHTML = "";
+        edges.forEach(edge => {
+          const [x1, y1] = nodes[edge.a];
+          const [x2, y2] = nodes[edge.b];
+          board.appendChild(svg("line", {
+            x1, y1, x2, y2,
+            class: `stroke-edge ${used.has(edge.key) ? "drawn" : ""}`
+          }));
+        });
+        Object.entries(nodes).forEach(([id, [cx, cy]]) => {
+          const classes = [
+            "stroke-node",
+            id === start ? "start" : "",
+            id === end ? "end" : "",
+            id === current ? "current" : ""
+          ].filter(Boolean).join(" ");
+          board.appendChild(svg("circle", { cx, cy, r: id === start || id === end ? 3.8 : 3.2, class: classes }));
+        });
+      };
+      const nearestNode = event => {
+        const rect = board.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * 100;
+        const y = ((event.clientY - rect.top) / rect.height) * 100;
+        let best = null;
+        let bestDist = Infinity;
+        Object.entries(nodes).forEach(([id, [nx, ny]]) => {
+          const dist = Math.hypot(nx - x, ny - y);
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = id;
+          }
+        });
+        return bestDist <= 8 ? best : null;
+      };
+      const resetPath = (message = "Start at the green dot and trace every line once.") => {
+        used.clear();
+        current = null;
+        dragging = false;
+        setStatus(message);
+        render();
+      };
+      const fail = message => {
+        errors += 1;
+        setStatus(message);
+        window.setTimeout(() => {
+          if (!completed) resetPath("Try again from the green dot.");
+        }, 520);
+      };
+      const moveTo = next => {
+        if (!dragging || !next || next === current || completed) return;
+        const key = edgeKey(current, next);
+        if (!edgeMap.has(key)) return;
+        if (used.has(key)) return fail("No retracing.");
+        used.add(key);
+        current = next;
+        render();
+        if (used.size === edges.length) {
+          completed = true;
+          dragging = false;
+          setStatus("One stroke complete.");
+          done(Math.max(250, 900 + edges.length * 35 - errors * 120), "One stroke complete.");
+        }
+      };
+      board.onpointerdown = event => {
+        event.preventDefault();
+        if (completed) return;
+        const node = nearestNode(event);
+        if (node !== start) return setStatus("Start on the green dot.");
+        used.clear();
+        current = start;
+        dragging = true;
+        board.setPointerCapture?.(event.pointerId);
+        setStatus("Keep going. Do not lift until every line is traced.");
+        render();
+      };
+      board.onpointermove = event => {
+        if (!dragging) return;
+        event.preventDefault();
+        moveTo(nearestNode(event));
+      };
+      const lift = event => {
+        if (!dragging) return;
+        moveTo(nearestNode(event));
+        board.releasePointerCapture?.(event.pointerId);
+        dragging = false;
+        if (!completed && used.size > 0) fail("Do not lift until the whole shape is complete.");
+      };
+      board.onpointerup = lift;
+      board.onpointercancel = lift;
+      $(".reset", root).onclick = () => resetPath();
+      render();
+    }
+
     function CountryBigger(root, game, done) {
       const data = Array.isArray(game.gameSpec?.countries) && game.gameSpec.countries.length >= 2
         ? game.gameSpec.countries
@@ -4704,6 +4904,7 @@
       if (Array.isArray(spec.patterns)) return spec.patterns.map(pattern => `${(pattern.seq || []).join(", ")} -> ${pattern.ans}`).join(" / ");
       if (Array.isArray(spec.puzzles)) return spec.puzzles.map(puzzle => `${puzzle.q} -> ${puzzle.a}`).join(" / ");
       if (Array.isArray(spec.mines)) return `Blue hexes: ${spec.mines.map(n => Number(n) + 1).join(", ")}`;
+      if (Array.isArray(spec.solution) && spec.nodes) return `Trace: ${spec.solution.join(" -> ")}`;
       if (Array.isArray(spec.paths)) return spec.paths.map((path, index) => `Path ${index + 1}: ${path.map(([r, c]) => `${r + 1},${c + 1}`).join(" -> ")}`).join(" / ");
       if (Array.isArray(spec.words)) return spec.words.join(", ");
       if (Array.isArray(spec.groups)) return spec.groups.map(group => `${group.name}: ${(group.words || []).join(", ")}`).join(" / ");
@@ -4806,6 +5007,7 @@
       if (text.includes("scrabble") || /^scrab\d+/.test(text)) return "Scrabble";
       if (text.includes("hexcells") || /^hex\d+/.test(text)) return "Hexcells Infinite";
       if (text.includes("flow link") || text.includes("path fill") || text.includes("numberlink") || /^flow\d+/.test(text)) return "Flow Link";
+      if (text.includes("one stroke") || text.includes("one line") || text.includes("unicursal") || /^stroke\d+/.test(text)) return "One Stroke";
       if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
       if (text.includes("scramble") || /^scr\d+/.test(text)) return "Word Scramble";
       if (text.includes("country") || /^cb\d+/.test(text)) return "Country Bigger";
