@@ -83,8 +83,12 @@
     #draftList .mini-card { overflow: visible; }
     #draftList .create-preview { overflow: visible; }
     .create-builder { display: grid; gap: 12px; margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #FBFAFF; }
-    .idea-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
-    .idea-chip { min-height: 38px; padding: 8px 10px; border: 1px solid #D8CCFF; border-radius: 8px; background: white; color: var(--dark-purple); font-size: 12px; font-weight: 900; text-align: left; }
+    .idea-grid, .format-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+    .idea-chip, .format-chip { min-height: 38px; padding: 8px 10px; border: 1px solid #D8CCFF; border-radius: 8px; background: white; color: var(--dark-purple); font-size: 12px; font-weight: 900; text-align: left; }
+    .format-chip { display: grid; gap: 3px; min-height: 62px; }
+    .format-chip small { color: var(--muted); font-size: 11px; font-weight: 750; text-transform: none; }
+    .format-chip.active { color: white; background: var(--primary); border-color: var(--primary); box-shadow: 0 10px 20px rgba(108, 59, 255, .16); }
+    .format-chip.active small { color: rgba(255,255,255,.8); }
     .question-list { display: grid; gap: 7px; color: var(--muted); font-size: 13px; font-weight: 750; }
     .question-list div { display: flex; gap: 8px; align-items: flex-start; }
     .question-list span { color: var(--primary); font-weight: 950; }
@@ -367,6 +371,13 @@
     .memory-board { width: min(100%, 310px); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 12px; border-radius: 16px; background: #1E1E2F; }
     .memory-board .tile { background: #2D2D44; border: 0; border-radius: 10px; }
     .memory-board .tile.flash, .memory-board .tile.selected { background: var(--primary); box-shadow: 0 0 0 3px rgba(255,255,255,.45) inset; }
+    .generated-board-game { --generated-board-size: 5; width: min(100%, 310px); margin: 0 auto; display: grid; grid-template-columns: repeat(var(--generated-board-size), minmax(0, 1fr)); gap: 5px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: #F8FAFC; }
+    .generated-board-cell { aspect-ratio: 1; display: grid; place-items: center; border: 1px solid #CBD5E1; border-radius: 8px; background: white; color: var(--text); font-size: 15px; font-weight: 950; }
+    .generated-board-cell.wall { background: #111827; border-color: #111827; color: white; }
+    .generated-board-cell.goal { background: #DCFCE7; border-color: #86EFAC; color: #166534; }
+    .generated-board-cell.path { background: #F5F3FF; border-color: #C4B5FD; color: var(--dark-purple); }
+    .generated-board-cell.player { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 0 0 3px rgba(108,59,255,.18); }
+    .generated-board-cell.bad { background: #FEF2F2; border-color: #FCA5A5; }
     .number-field::before { content: ""; position: absolute; inset: 50% auto auto 50%; width: 1px; height: 1px; box-shadow: 0 0 0 110px rgba(108,59,255,.04), 0 0 0 180px rgba(108,59,255,.03); border-radius: 50%; transform: translate(-50%, -50%); }
     .country .country-name { font-size: 28px; font-weight: 950; }
     .country .country-sub { color: var(--muted); font-size: 13px; }
@@ -507,9 +518,9 @@
               <p class="muted">Grapple uses your account to call the secure Create function and save the generated game.</p>
               <button class="btn primary auth-action">Continue with Google</button>
             </div>
-            <textarea id="createPrompt" placeholder="Example: a 4x4 logic puzzle about chess forks"></textarea>
+            <textarea id="createPrompt" placeholder="Example: a dodge-the-asteroids arcade game, or a board game about escaping a maze"></textarea>
             <div id="createGuide" class="create-builder"></div>
-            <textarea id="createNotes" placeholder="Answer the questions or add rules here before generating."></textarea>
+            <textarea id="createNotes" placeholder="Optional: answer the questions or add rules before generating."></textarea>
             <div class="action-row" style="margin-top:12px;">
               <button class="btn primary" id="generateDraft">Generate</button>
               <button class="btn ghost" id="saveDraft">Save Blank</button>
@@ -629,6 +640,7 @@
       comments: {},
       streak: 2,
       points: 0,
+      createFormat: "",
       categoryAffinity: { Logic: 7, Language: 7, Strategy: 6, Math: 5, Memory: 4, Arcade: 5 }
     };
     let state = JSON.parse(localStorage.getItem(storeKey) || "null") || baseState;
@@ -638,6 +650,7 @@
     state.drafts ||= [];
     state.createdGames ||= [];
     state.comments ||= {};
+    state.createFormat ||= "";
     state.challenges ||= [];
     state.playedGameIds ||= [];
     state.likedGameIds ||= [];
@@ -3400,6 +3413,87 @@
       const rawGrid = Array.isArray(spec.grid) ? spec.grid : Array.isArray(spec.board) ? spec.board : Array.isArray(spec.cells) ? spec.cells : [];
       const instructions = spec.instructions || spec.prompt || spec.question || game.title || "Interact with the generated game.";
       const answer = String(spec.answer || spec.correct || spec.solution || spec.correctAnswer || "");
+      const boardRows = Array.isArray(spec.board) && Array.isArray(spec.board[0]) ? spec.board : [];
+      if (boardRows.length) {
+        const height = Math.min(7, boardRows.length);
+        const width = Math.min(7, Math.max(...boardRows.slice(0, height).map(row => Array.isArray(row) ? row.length : 0)));
+        const board = boardRows.slice(0, height).map(row => Array.from({ length: width }, (_, index) => String(row[index] ?? ".")));
+        const start = Array.isArray(spec.start) ? spec.start.map(Number) : null;
+        const goal = Array.isArray(spec.goal) ? spec.goal.map(Number) : null;
+        const findCell = (values) => {
+          for (let r = 0; r < height; r++) {
+            for (let c = 0; c < width; c++) {
+              if (values.includes(board[r][c].toUpperCase())) return [r, c];
+            }
+          }
+          return null;
+        };
+        const startCell = start && Number.isFinite(start[0]) && Number.isFinite(start[1]) ? start : findCell(["S", "P", "@"]) || [0, 0];
+        const goalCell = goal && Number.isFinite(goal[0]) && Number.isFinite(goal[1]) ? goal : findCell(["G", "T", "X"]) || [height - 1, width - 1];
+        const solution = Array.isArray(spec.solution)
+          ? spec.solution.map(step => Array.isArray(step) ? step.map(Number) : null).filter(step => step && Number.isFinite(step[0]) && Number.isFinite(step[1]))
+          : [];
+        if (solution.length && solution[0][0] === startCell[0] && solution[0][1] === startCell[1]) solution.shift();
+        let position = { r: Math.max(0, Math.min(height - 1, startCell[0])), c: Math.max(0, Math.min(width - 1, startCell[1])) };
+        let stepIndex = 0;
+        let errors = 0;
+        const key = (r, c) => `${r},${c}`;
+        const path = new Set([key(position.r, position.c)]);
+        root.innerHTML = `
+          <p class="muted">${esc(instructions)}</p>
+          <div class="game-stats" style="width:100%;"><span>Moves: <b class="visual-moves">0</b></span><span>Errors: <b class="visual-errors">0</b></span></div>
+          <div class="generated-board-game" style="--generated-board-size:${width};"></div>
+        `;
+        const isWall = (value, r, c) => ["#", "W", "X"].includes(String(value || "").toUpperCase()) && key(goalCell[0], goalCell[1]) !== key(r, c);
+        const isAdjacent = (r, c) => Math.abs(r - position.r) + Math.abs(c - position.c) === 1;
+        const paint = () => {
+          const boardEl = $(".generated-board-game", root);
+          boardEl.innerHTML = "";
+          for (let r = 0; r < height; r++) {
+            for (let c = 0; c < width; c++) {
+              const value = board[r][c];
+              const cell = document.createElement("button");
+              const at = key(r, c);
+              cell.className = [
+                "generated-board-cell",
+                isWall(value, r, c) ? "wall" : "",
+                at === key(goalCell[0], goalCell[1]) ? "goal" : "",
+                path.has(at) ? "path" : "",
+                r === position.r && c === position.c ? "player" : ""
+              ].filter(Boolean).join(" ");
+              cell.textContent = r === position.r && c === position.c ? "●" : at === key(goalCell[0], goalCell[1]) ? "★" : isWall(value, r, c) ? "" : value === "." ? "" : value;
+              cell.onclick = () => {
+                if (isWall(value, r, c) || !isAdjacent(r, c)) {
+                  errors += 1;
+                  $(".visual-errors", root).textContent = errors;
+                  cell.classList.add("bad");
+                  return;
+                }
+                if (solution.length) {
+                  const expected = solution[stepIndex];
+                  if (expected && (expected[0] !== r || expected[1] !== c)) {
+                    errors += 1;
+                    $(".visual-errors", root).textContent = errors;
+                    cell.classList.add("bad");
+                    return;
+                  }
+                  stepIndex += 1;
+                }
+                position = { r, c };
+                path.add(at);
+                $(".visual-moves", root).textContent = path.size - 1;
+                paint();
+                const reachedGoal = r === goalCell[0] && c === goalCell[1];
+                const finishedPath = solution.length && stepIndex >= solution.length;
+                if (reachedGoal || finishedPath) done(Math.max(250, 950 - errors * 120), errors ? "Solved with a few bumps." : "Clean solve.");
+              };
+              boardEl.appendChild(cell);
+            }
+          }
+        };
+        paint();
+        return;
+      }
       if (rawGrid.length) {
         const cells = rawGrid
           .map(item => typeof item === "string" ? { label: item } : item)
@@ -3491,21 +3585,49 @@
       return [...state.createdGames, ...localDrafts].filter(item => !isTicTacToeGame(item) && !isTicTacToeGame(item.game));
     }
 
-    const createIdeaTemplates = [
-      { label: "Word puzzle", text: "Make a Wordle-style word puzzle with a satisfying reveal and one clear answer.", questions: ["What is the theme of the answer word?", "Should it be easy, medium, or hard?", "Should guesses teach the player something?"] },
-      { label: "Logic grid", text: "Make a compact logic puzzle that fits on one phone screen with one correct solution.", questions: ["What facts should the player deduce?", "How many steps should it take?", "What clue should be withheld until a hint?"] },
-      { label: "Visual board", text: "Make a visual board puzzle with tappable pieces and a clear win condition.", questions: ["What should the player tap or move?", "What does a correct final board look like?", "What mistake should the game catch?"] },
-      { label: "Trivia twist", text: "Make a trivia puzzle that asks the player to compare or order things, not just recall a fact.", questions: ["What category should it cover?", "What makes the wrong answers tempting?", "Should it be quick or thoughtful?"] },
-      { label: "Friend challenge", text: "Make a game that produces a score so two friends can compete on the same prompt.", questions: ["Is speed or accuracy more important?", "How should ties be broken?", "What score should a strong player get?"] }
+    const createFormatOptions = [
+      {
+        id: "arcade",
+        label: "Arcade",
+        detail: "Movement, hazards, score",
+        questions: ["What does the player control?", "What moves automatically?", "What causes the player to lose?"],
+        instruction: "Selected format: ARCADE. Generate a live visual arcade game. Use moving pieces, keyboard/tap controls, collisions, score, and lose conditions. Do not make it multiple choice."
+      },
+      {
+        id: "board_game",
+        label: "Board game",
+        detail: "Board, pieces, moves",
+        questions: ["What pieces or spaces are on the board?", "What move should the player make?", "What should the computer or board do after a move?"],
+        instruction: "Selected format: BOARD GAME. Generate a visual board with tappable cells or pieces, a start state, legal moves, and a clear win condition. Do not make it multiple choice."
+      },
+      {
+        id: "multiple_choice",
+        label: "Multiple choice",
+        detail: "Only when you want answers",
+        questions: ["What question should be asked?", "What makes the wrong answers tempting?", "Should the answer be obvious or tricky?"],
+        instruction: "Selected format: MULTIPLE CHOICE. Multiple-choice answers are allowed. Still make the card visual and phone-sized."
+      },
+      {
+        id: "other",
+        label: "Other",
+        detail: "Visual custom game",
+        questions: ["What does the player physically tap, drag, type, or move?", "What visual state changes after each action?", "How does the player know they won?"],
+        instruction: "Selected format: OTHER VISUAL GAME. Generate a visual interactive game. Use a board, tiles, pieces, typed input, or movement. Do not make it multiple choice unless the user's prompt explicitly asks for multiple choice."
+      }
     ];
 
+    function createFormatById(id) {
+      return createFormatOptions.find(option => option.id === id) || null;
+    }
+
     function createQuestionsFor(prompt) {
+      const format = createFormatById(state.createFormat);
+      if (format) return format.questions;
       const text = prompt.toLowerCase();
-      if (/word|scramble|letter|wordle/.test(text)) return createIdeaTemplates[0].questions;
-      if (/logic|grid|sudoku|deduce|clue/.test(text)) return createIdeaTemplates[1].questions;
-      if (/board|move|piece|chess|go|tetris|visual/.test(text)) return createIdeaTemplates[2].questions;
-      if (/trivia|country|history|timeline|compare|bigger/.test(text)) return createIdeaTemplates[3].questions;
-      return ["What does the player actually do?", "What is the win condition?", "What should make it challenging but fair?"];
+      if (/arcade|video game|flappy|runner|snake|dodge|catch|platform/.test(text)) return createFormatOptions[0].questions;
+      if (/board|move|piece|chess|go|sudoku|grid|visual/.test(text)) return createFormatOptions[1].questions;
+      if (/multiple choice|quiz|answers|trivia/.test(text)) return createFormatOptions[2].questions;
+      return createFormatOptions[3].questions;
     }
 
     function renderCreateGuide() {
@@ -3513,13 +3635,23 @@
       const guide = $("#createGuide");
       if (!guide) return;
       const questions = createQuestionsFor(prompt);
+      const selected = createFormatById(state.createFormat);
       guide.innerHTML = `
         <div>
-          <b>Shape the game</b>
-          <p class="muted">${prompt ? "Answer one or two questions before generating." : "Start with an idea, or tap a format below."}</p>
+          <b>1. Pick the game format</b>
+          <p class="muted">${selected ? `${selected.label}: ${selected.detail}` : "Choose how this game should play before generating."}</p>
         </div>
-        <div class="idea-grid">
-          ${createIdeaTemplates.map((idea, index) => `<button class="idea-chip" type="button" onclick="applyCreateIdea(${index})">${esc(idea.label)}</button>`).join("")}
+        <div class="format-grid">
+          ${createFormatOptions.map(option => `
+            <button class="format-chip ${state.createFormat === option.id ? "active" : ""}" type="button" onclick="setCreateFormat('${escAttr(option.id)}')">
+              <span>${esc(option.label)}</span>
+              <small>${esc(option.detail)}</small>
+            </button>
+          `).join("")}
+        </div>
+        <div>
+          <b>2. Describe the game</b>
+          <p class="muted">${prompt ? "Answer one or two questions if it helps." : "Now type the actual game idea above."}</p>
         </div>
         <div class="question-list">
           ${questions.map((q, i) => `<div><span>${i + 1}</span><p>${esc(q)}</p></div>`).join("")}
@@ -3527,15 +3659,15 @@
       `;
     }
 
-    function applyCreateIdea(index) {
-      const idea = createIdeaTemplates[index];
-      if (!idea) return;
-      const promptBox = $("#createPrompt");
-      const notesBox = $("#createNotes");
-      promptBox.value = promptBox.value.trim() ? `${promptBox.value.trim()}\n${idea.text}` : idea.text;
-      notesBox.value = idea.questions.map(q => `${q} `).join("\n");
+    function setCreateFormat(formatId) {
+      state.createFormat = formatId;
+      save();
       renderCreateGuide();
-      promptBox.focus();
+      $("#createPrompt")?.focus();
+    }
+
+    function selectedCreateFormatInstruction() {
+      return createFormatById(state.createFormat)?.instruction || "";
     }
 
     function renderCreate() {
@@ -4445,7 +4577,16 @@
     async function generateDraft() {
       const basePrompt = $("#createPrompt").value.trim() || "A fresh puzzle for the Grapple feed";
       const notes = $("#createNotes").value.trim();
-      const prompt = [basePrompt, notes ? `Builder notes:\n${notes}` : ""].filter(Boolean).join("\n\n");
+      const selectedFormat = createFormatById(state.createFormat);
+      if (!selectedFormat) {
+        toast("Pick Arcade, Board game, Multiple choice, or Other first");
+        return;
+      }
+      const prompt = [
+        selectedFormat.instruction,
+        `User game request:\n${basePrompt}`,
+        notes ? `Builder notes:\n${notes}` : ""
+      ].filter(Boolean).join("\n\n");
       if (!supabaseClient || !currentUser) {
         showAuthModal("Sign in to create AI games.");
         return;
@@ -4466,7 +4607,7 @@
             "apikey": SUPABASE_PUBLISHABLE_KEY,
             "Authorization": `Bearer ${accessToken}`
           },
-          body: JSON.stringify({ prompt })
+          body: JSON.stringify({ prompt, format: selectedFormat.id })
         });
         const data = await response.json().catch(() => ({}));
         const createdGame = createGameFromResponse(data, prompt);
