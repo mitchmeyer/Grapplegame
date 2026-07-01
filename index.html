@@ -2071,6 +2071,21 @@
       return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
     }
 
+    function displayGameTitle(game) {
+      const raw = String(game?.title || "Untitled game").trim();
+      const vsTitle = raw.match(/^(.+?)\s+vs\s+(.+)$/i);
+      if (vsTitle) {
+        const base = displayGameTitle({ ...game, title: vsTitle[1] });
+        return `${base} vs ${vsTitle[2]}`;
+      }
+      const match = raw.match(/^(.+\D)\s+(\d+)$/);
+      if (!match) return raw;
+      const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
+      const idNumber = id.match(/(\d+)$/)?.[1];
+      const seededNumber = game?.source === "Official" || game?.status === "seeded" || idNumber === match[2];
+      return seededNumber ? match[1].trim() : raw;
+    }
+
     function finish(card, game, score, label) {
       if (card.dataset.completed === "true") return;
       card.dataset.completed = "true";
@@ -2110,6 +2125,7 @@
       const likeCount = baseLikeCount(game) + (liked ? 1 : 0);
       const timed = isTimedGame(game);
       const initialSeconds = gameSeconds(game);
+      const visibleTitle = displayGameTitle(game);
       card.innerHTML = `
         <div class="game-card-strip">
           <span class="category-chip">${esc(game.category || "Puzzle")}</span>
@@ -2119,7 +2135,7 @@
           </div>
         </div>
         <div class="game-body">
-          <div class="game-title-row"><h2>${esc(game.title)}</h2><span class="timer-pill ${timed ? "" : "hidden"}">${timeLabel(initialSeconds)}</span></div>
+          <div class="game-title-row"><h2>${esc(visibleTitle)}</h2><span class="timer-pill ${timed ? "" : "hidden"}">${timeLabel(initialSeconds)}</span></div>
           <div class="game-stats ${timed ? "" : "untimed"}">${timed ? `<span>Time: <b class="card-time">${timeLabel(initialSeconds)}</b></span>` : ""}<span>Score: <b class="card-score">0</b></span><span>Errors: <b class="card-errors">0</b></span></div>
           <div class="game-stage"></div>
           <div class="feedback-box"></div>
@@ -2161,7 +2177,7 @@
       };
       const showStartCover = () => {
         resetCard();
-        stage.innerHTML = `<div class="start-cover"><div class="start-cover-inner"><h3>${esc(game.title)}</h3><p>${esc(directionsForGame(game))}</p><button class="start-btn">Start Game</button></div></div>`;
+        stage.innerHTML = `<div class="start-cover"><div class="start-cover-inner"><h3>${esc(visibleTitle)}</h3><p>${esc(directionsForGame(game))}</p><button class="start-btn">Start Game</button></div></div>`;
         $(".start-btn", stage).onclick = mount;
       };
       $(".like-btn", card).onclick = () => {
