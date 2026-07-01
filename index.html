@@ -79,6 +79,9 @@
     .created-card-slot { display: grid; justify-items: center; }
     .created-card-slot .feed-card-wrap { width: 100%; min-height: 0; padding: 0; }
     .created-card-slot .game-card { width: min(100%, 520px); max-height: none; }
+    #draftList.library { grid-template-columns: 1fr; }
+    #draftList .mini-card { overflow: visible; }
+    #draftList .create-preview { overflow: visible; }
     .create-builder { display: grid; gap: 12px; margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #FBFAFF; }
     .idea-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
     .idea-chip { min-height: 38px; padding: 8px 10px; border: 1px solid #D8CCFF; border-radius: 8px; background: white; color: var(--dark-purple); font-size: 12px; font-weight: 900; text-align: left; }
@@ -708,8 +711,8 @@
       if (text.includes("timeline") || /^tl\d+/.test(text)) return "Timeline";
       if (text.includes("go capture") || /^go\d+/.test(text)) return "Go Capture";
       if (text.includes("tetris")) return "Tetris Mini";
-      if (text.includes("snake")) return "Snake";
       if (text.includes("arcade") || text.includes("flappy") || text.includes("runner") || text.includes("dodger") || text.includes("catcher")) return "Arcade";
+      if (text.includes("snake")) return "Snake";
       if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
       if (text.includes("scramble") || /^scr\d+/.test(text)) return "Word Scramble";
       if (text.includes("country") || /^cb\d+/.test(text)) return "Country Bigger";
@@ -1430,9 +1433,9 @@
       if (Array.isArray(spec.entries) || spec.across || spec.down || text.includes("crossword")) return "crossword";
       if (Array.isArray(spec.answers) || text.includes("wordle")) return "wordle";
       if (Array.isArray(spec.events) || text.includes("timeline")) return "timeline_challenge";
+      if (text.includes("flappy") || text.includes("video game") || text.includes("arcade") || text.includes("runner") || text.includes("dodger") || text.includes("catcher") || text.includes("platform")) return "arcade_game";
       if (Array.isArray(spec.words) || text.includes("scramble")) return "word_scramble";
       if (text.includes("snake")) return "snake";
-      if (text.includes("flappy") || text.includes("video game") || text.includes("arcade") || text.includes("runner") || text.includes("dodger") || text.includes("catcher") || text.includes("platform")) return "arcade_game";
       if (spec.board || spec.size || text.includes("sudoku")) return text.includes("hard") ? "sudoku_hard" : "sudoku_4x4";
       if (text.includes("go")) return "go";
       if (text.includes("tetris")) return "tetris";
@@ -1991,7 +1994,8 @@
       const mount = () => {
         stage.innerHTML = "";
         resetCard();
-        game.renderer(stage, game, (score, label) => finish(card, game, score, label));
+        const renderGame = options.playtest ? { ...game, playtestMode: true } : game;
+        renderGame.renderer(stage, renderGame, (score, label) => finish(card, renderGame, score, label));
         if (timed) startCountdown();
       };
       const showStartCover = () => {
@@ -2907,6 +2911,7 @@
       let started = false;
       let startedAt = Date.now();
       let timer = null;
+      let listening = false;
       const keyFor = (cell) => `${cell.x},${cell.y}`;
       const snakeSet = () => new Set(snake.map(keyFor));
       const placeApple = () => {
@@ -2956,6 +2961,7 @@
       const cleanup = () => {
         if (timer) clearInterval(timer);
         document.removeEventListener("keydown", keyHandler);
+        listening = false;
       };
       const endGame = () => {
         if (finished) return;
@@ -2984,25 +2990,38 @@
       function keyHandler(event) {
         if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
         event.preventDefault();
+        if (!started) startGame();
         if (event.key === "ArrowLeft") setDirection(-1, 0);
         if (event.key === "ArrowRight") setDirection(1, 0);
         if (event.key === "ArrowUp") setDirection(0, -1);
         if (event.key === "ArrowDown") setDirection(0, 1);
       }
-      $(".up", root).onclick = () => setDirection(0, -1);
-      $(".left", root).onclick = () => setDirection(-1, 0);
-      $(".down", root).onclick = () => setDirection(0, 1);
-      $(".right", root).onclick = () => setDirection(1, 0);
+      const listen = () => {
+        if (listening) return;
+        listening = true;
+        document.addEventListener("keydown", keyHandler);
+      };
+      const startThen = (fn) => {
+        if (!started) startGame();
+        fn();
+      };
+      $(".up", root).onclick = () => startThen(() => setDirection(0, -1));
+      $(".left", root).onclick = () => startThen(() => setDirection(-1, 0));
+      $(".down", root).onclick = () => startThen(() => setDirection(0, 1));
+      $(".right", root).onclick = () => startThen(() => setDirection(1, 0));
+      $(".snake-board", root).onclick = () => startThen(() => {});
       placeApple();
       render();
       const startGame = () => {
         if (started || finished) return;
         started = true;
         startedAt = Date.now();
-        document.addEventListener("keydown", keyHandler);
+        listen();
         timer = setInterval(tick, speed);
       };
-      if ("IntersectionObserver" in window) {
+      if (game.playtestMode) {
+        listen();
+      } else if ("IntersectionObserver" in window) {
         const observer = new IntersectionObserver(entries => {
           if (entries.some(entry => entry.isIntersecting && entry.intersectionRatio > 0.45)) {
             observer.disconnect();
@@ -3033,6 +3052,7 @@
       let scoreTimer = null;
       let player = { x: mode === "flappy" ? 24 : 50, y: mode === "runner" ? 82 : 55, vy: 0 };
       let things = [];
+      let listening = false;
       root.innerHTML = `
         <div class="arcade-shell">
           <div class="game-stats" style="width:100%;"><span>Score: <b class="arcade-score">0</b></span><span>Lives: <b class="arcade-lives">${lives}</b></span></div>
@@ -3071,6 +3091,7 @@
         if (spawnTimer) clearInterval(spawnTimer);
         if (scoreTimer) clearInterval(scoreTimer);
         document.removeEventListener("keydown", keyHandler);
+        listening = false;
       };
       const endGame = () => {
         if (finished) return;
@@ -3150,20 +3171,30 @@
       function keyHandler(event) {
         if (!["ArrowLeft", "ArrowRight", "ArrowUp", " ", "ArrowDown"].includes(event.key)) return;
         event.preventDefault();
+        if (!started) startGame();
         if (event.key === "ArrowLeft") moveLeft();
         if (event.key === "ArrowRight") moveRight();
         if (event.key === "ArrowUp" || event.key === " " || event.key === "ArrowDown") action();
       }
-      $(".arc-left", root).onclick = moveLeft;
-      $(".arc-right", root).onclick = moveRight;
-      $(".arc-action", root).onclick = action;
-      board.onclick = action;
+      const listen = () => {
+        if (listening) return;
+        listening = true;
+        document.addEventListener("keydown", keyHandler);
+      };
+      const startThen = (fn) => {
+        if (!started) startGame();
+        fn();
+      };
+      $(".arc-left", root).onclick = () => startThen(moveLeft);
+      $(".arc-right", root).onclick = () => startThen(moveRight);
+      $(".arc-action", root).onclick = () => startThen(action);
+      board.onclick = () => startThen(action);
       draw();
       const startGame = () => {
         if (started || finished) return;
         started = true;
         startedAt = Date.now();
-        document.addEventListener("keydown", keyHandler);
+        listen();
         spawnTimer = setInterval(spawn, mode === "flappy" ? 1350 : mode === "runner" ? 1150 : 620);
         scoreTimer = setInterval(() => {
           score += 8;
@@ -3172,7 +3203,9 @@
         spawn();
         frame();
       };
-      if ("IntersectionObserver" in window) {
+      if (game.playtestMode) {
+        listen();
+      } else if ("IntersectionObserver" in window) {
         const observer = new IntersectionObserver(entries => {
           if (entries.some(entry => entry.isIntersecting && entry.intersectionRatio > 0.45)) {
             observer.disconnect();
