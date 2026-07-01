@@ -345,9 +345,13 @@
     .hex-cell.bad { background: #FCA5A5; color: #7F1D1D; }
     .hex-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .flow-grid { --flow-size: 5; --flow-cell: 42px; display: grid; grid-template-columns: repeat(var(--flow-size), var(--flow-cell)); grid-template-rows: repeat(var(--flow-size), var(--flow-cell)); gap: 4px; padding: 7px; border: 1px solid #D6D3E8; border-radius: 12px; background: #F8FAFC; touch-action: none; }
-    .flow-cell { width: var(--flow-cell); height: var(--flow-cell); padding: 0; border-radius: 9px; border: 1px solid #E5E7EB; background: white; position: relative; cursor: pointer; }
-    .flow-cell.path { background: color-mix(in srgb, var(--flow-color) 26%, white); border-color: color-mix(in srgb, var(--flow-color) 58%, white); }
-    .flow-cell.endpoint::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--flow-color); box-shadow: 0 2px 5px rgba(15,23,42,.22); }
+    .flow-cell { width: var(--flow-cell); height: var(--flow-cell); padding: 0; border-radius: 9px; border: 1px solid #E5E7EB; background: white; position: relative; cursor: pointer; overflow: hidden; }
+    .flow-cell.path { border-color: color-mix(in srgb, var(--flow-color) 36%, #E5E7EB); }
+    .flow-line { position: absolute; z-index: 1; border-radius: 999px; background: var(--flow-color); pointer-events: none; box-shadow: 0 1px 3px rgba(15,23,42,.1); }
+    .flow-line.h { height: 8px; left: var(--flow-left, 50%); right: var(--flow-right, 50%); top: 50%; transform: translateY(-50%); }
+    .flow-line.v { width: 8px; top: var(--flow-top, 50%); bottom: var(--flow-bottom, 50%); left: 50%; transform: translateX(-50%); }
+    .flow-core { position: absolute; z-index: 2; width: 10px; height: 10px; left: 50%; top: 50%; border-radius: 50%; background: var(--flow-color); transform: translate(-50%, -50%); pointer-events: none; }
+    .flow-cell.endpoint::after { content: ""; position: absolute; z-index: 3; inset: 9px; border-radius: 50%; background: var(--flow-color); box-shadow: 0 2px 5px rgba(15,23,42,.22); }
     .flow-cell.selected { outline: 3px solid rgba(108,59,255,.28); outline-offset: 1px; }
     .flow-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .card-face { width: 46px; height: 64px; display: grid; place-items: center; border: 1px solid #D1D5DB; border-radius: 8px; background: white; box-shadow: 0 3px 8px rgba(15,23,42,.14); color: #111827; font-size: 17px; font-weight: 950; }
@@ -3599,8 +3603,36 @@
       };
       const solved = () => owners.every(owner => owner !== null) && Array.from({ length: pathCount }, (_, i) => connected(i)).every(Boolean);
       const setStatus = msg => $(".flow-status", root).textContent = msg;
+      const routeDirections = () => {
+        const directions = new Map();
+        const mark = (cellKey, dir) => {
+          if (!directions.has(cellKey)) directions.set(cellKey, new Set());
+          directions.get(cellKey).add(dir);
+        };
+        drawn.forEach(route => {
+          for (let i = 0; i < route.length - 1; i++) {
+            const [r1, c1] = parse(route[i]);
+            const [r2, c2] = parse(route[i + 1]);
+            if (r2 === r1 - 1) {
+              mark(route[i], "u");
+              mark(route[i + 1], "d");
+            } else if (r2 === r1 + 1) {
+              mark(route[i], "d");
+              mark(route[i + 1], "u");
+            } else if (c2 === c1 - 1) {
+              mark(route[i], "l");
+              mark(route[i + 1], "r");
+            } else if (c2 === c1 + 1) {
+              mark(route[i], "r");
+              mark(route[i + 1], "l");
+            }
+          }
+        });
+        return directions;
+      };
       const draw = () => {
         grid.innerHTML = "";
+        const directions = routeDirections();
         for (let r = 0; r < size; r++) {
           for (let c = 0; c < size; c++) {
             const k = key(r, c);
@@ -3617,6 +3649,12 @@
             b.type = "button";
             b.dataset.r = String(r);
             b.dataset.c = String(c);
+            const dirs = directions.get(k);
+            if (dirs?.has("l")) b.style.setProperty("--flow-left", "0");
+            if (dirs?.has("r")) b.style.setProperty("--flow-right", "0");
+            if (dirs?.has("u")) b.style.setProperty("--flow-top", "0");
+            if (dirs?.has("d")) b.style.setProperty("--flow-bottom", "0");
+            if (dirs?.size) b.innerHTML = `<span class="flow-line h"></span><span class="flow-line v"></span><span class="flow-core"></span>`;
             grid.appendChild(b);
           }
         }
