@@ -3039,12 +3039,37 @@
 
     function GeneratedVisualGame(root, game, done) {
       const spec = game.gameSpec || {};
+      const rawGrid = Array.isArray(spec.grid) ? spec.grid : Array.isArray(spec.board) ? spec.board : Array.isArray(spec.cells) ? spec.cells : [];
+      const instructions = spec.instructions || spec.prompt || spec.question || game.title || "Interact with the generated game.";
+      const answer = String(spec.answer || spec.correct || spec.solution || spec.correctAnswer || "");
+      if (rawGrid.length) {
+        const cells = rawGrid
+          .map(item => typeof item === "string" ? { label: item } : item)
+          .map((item, index) => ({
+            label: String(item?.label || item?.text || item?.value || item?.answer || index + 1),
+            correct: Boolean(item?.correct)
+          }))
+          .slice(0, 16);
+        const fallbackCorrect = answer || cells.find(cell => cell.correct)?.label || cells[0]?.label || "";
+        const columns = Math.max(2, Math.min(4, Number(spec.columns || Math.ceil(Math.sqrt(cells.length)))));
+        root.innerHTML = `<p class="muted">${esc(instructions)}</p><div class="connections-grid generated-grid" style="grid-template-columns: repeat(${columns}, minmax(0, 1fr));"></div>`;
+        cells.forEach(cell => {
+          const b = document.createElement("button");
+          b.className = "cell-btn";
+          b.textContent = cell.label;
+          b.onclick = () => {
+            const good = cell.correct || cell.label === fallbackCorrect;
+            done(good ? 900 : 180, good ? "Nice play." : `Answer: ${fallbackCorrect}`);
+          };
+          $(".generated-grid", root).appendChild(b);
+        });
+        return;
+      }
       const rawChoices = spec.cards || spec.choices || spec.options || spec.answers;
       const cards = Array.isArray(rawChoices) && rawChoices.length
         ? rawChoices.map(item => typeof item === "string" ? item : item?.label || item?.text || item?.answer || "").map(String).filter(Boolean).slice(0, 6)
         : ["Start", "Choose", "Solve"];
-      const correct = String(spec.correct || spec.answer || spec.solution || spec.correctAnswer || cards[0]);
-      const instructions = spec.instructions || spec.prompt || spec.question || game.title || "Interact with the generated game.";
+      const correct = answer || cards[0];
       root.innerHTML = `<p class="muted">${esc(instructions)}</p><div class="choices"></div>`;
       cards.forEach(label => {
         const b = document.createElement("button");
