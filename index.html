@@ -356,7 +356,8 @@
     .flow-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .one-stroke-board { width: min(100%, 320px); aspect-ratio: 1; border: 1px solid #D6D3E8; border-radius: 14px; background: #FAFAFF; touch-action: none; }
     .stroke-edge { stroke: #D7D3E8; stroke-width: 3.2; stroke-linecap: round; }
-    .stroke-edge.drawn { stroke: #6C3BFF; stroke-width: 5.5; filter: drop-shadow(0 2px 4px rgba(108,59,255,.22)); }
+    .stroke-edge.drawn { stroke: #6C3BFF; stroke-width: 6.4; filter: drop-shadow(0 2px 4px rgba(108,59,255,.22)); }
+    .stroke-live { stroke: rgba(108,59,255,.62); stroke-width: 6.2; stroke-linecap: round; stroke-dasharray: 2 7; pointer-events: none; }
     .stroke-node { fill: #FFFFFF; stroke: #9CA3AF; stroke-width: 2.4; }
     .stroke-node.start { fill: #22C55E; stroke: #16A34A; }
     .stroke-node.end { fill: #EF4444; stroke: #DC2626; }
@@ -1523,50 +1524,62 @@
     }));
 
     const makeOneStrokeSpec = (index) => {
-      const columns = index < 5 ? 4 : index < 10 ? 5 : index < 15 ? 6 : 7;
-      const loopMode = index < 6 ? "triangle" : index < 13 ? "diamond" : "mixed";
       const nodes = {};
       const addNode = (id, x, y) => {
         nodes[id] = [Math.round(x * 1000) / 10, Math.round(y * 1000) / 10];
         return id;
       };
-      const solution = [];
-      const spineY = 0.52;
-      for (let c = 0; c < columns; c++) {
-        addNode(`s${c}`, 0.1 + (0.8 * c) / (columns - 1), spineY);
+      const grid = index < 5 ? 4 : index < 11 ? 5 : 6;
+      const targetBackbone = index < 5 ? 8 + index : index < 11 ? 13 + index : index < 16 ? 20 + index : 28 + index;
+      const coords = [];
+      let top = 0;
+      let left = 0;
+      let bottom = grid - 1;
+      let right = grid - 1;
+      while (left <= right && top <= bottom) {
+        for (let c = left; c <= right; c++) coords.push([top, c]);
+        for (let r = top + 1; r <= bottom; r++) coords.push([r, right]);
+        if (top < bottom) for (let c = right - 1; c >= left; c--) coords.push([bottom, c]);
+        if (left < right) for (let r = bottom - 1; r > top; r--) coords.push([r, left]);
+        top += 1;
+        left += 1;
+        bottom -= 1;
+        right -= 1;
       }
-      solution.push("s0");
-      const addLoop = (anchor, c, variant, dir, tag = "") => {
+      const backbone = coords.slice(0, Math.min(coords.length, targetBackbone));
+      const pad = 0.1;
+      const span = 0.8;
+      backbone.forEach(([r, c], i) => addNode(`m${i}`, pad + (span * c) / (grid - 1), pad + (span * r) / (grid - 1)));
+      const solution = ["m0"];
+      const loopSize = index < 5 ? 0.07 : index < 12 ? 0.075 : 0.085;
+      const loopFor = (anchor, step, variant, side, tag = "") => {
         const [x, y] = nodes[anchor].map(n => n / 100);
-        const spread = 0.8 / (columns - 1);
-        const y1 = clamp(y + dir * (variant === "diamond" ? 0.22 : 0.2), 0.08, 0.92);
-        const y2 = clamp(y + dir * (variant === "diamond" ? 0.34 : 0.28), 0.08, 0.92);
-        const left = clamp(x - spread * 0.34, 0.06, 0.94);
-        const right = clamp(x + spread * 0.34, 0.06, 0.94);
-        const middle = clamp(x + spread * 0.05 * dir, 0.06, 0.94);
-        const prefix = `${anchor}_${variant}_${dir > 0 ? "b" : "t"}_${c}${tag}`;
+        const angle = ((step + index) % 4) * Math.PI / 2 + (side > 0 ? Math.PI / 5 : -Math.PI / 5);
+        const point = (radius, offset, suffix) => addNode(`${anchor}_${variant}_${step}_${tag}_${suffix}`,
+          clamp(x + Math.cos(angle + offset) * radius, 0.07, 0.93),
+          clamp(y + Math.sin(angle + offset) * radius, 0.07, 0.93)
+        );
         if (variant === "triangle") {
-          const a = addNode(`${prefix}_a`, middle, y2);
-          const b = addNode(`${prefix}_b`, right, y1);
-          solution.push(a, b, anchor);
+          solution.push(point(loopSize, -0.78, "a"), point(loopSize, 0.78, "b"), anchor);
+        } else if (variant === "diamond") {
+          solution.push(point(loopSize * 1.1, -1.1, "a"), point(loopSize * 1.32, 0, "b"), point(loopSize * 1.1, 1.1, "c"), anchor);
         } else {
-          const a = addNode(`${prefix}_a`, middle, y2);
-          const b = addNode(`${prefix}_b`, right, y1);
-          const cNode = addNode(`${prefix}_c`, left, y1);
-          solution.push(a, b, cNode, anchor);
+          solution.push(point(loopSize, -1.15, "a"), point(loopSize * 1.45, -0.38, "b"), point(loopSize * 1.45, 0.38, "c"), point(loopSize, 1.15, "d"), anchor);
         }
       };
-      for (let c = 1; c < columns; c++) {
-        const anchor = `s${c}`;
+      for (let i = 1; i < backbone.length; i++) {
+        const anchor = `m${i}`;
         solution.push(anchor);
-        if (c >= columns - 1) continue;
-        const dir = (index + c) % 2 ? -1 : 1;
-        const variant = loopMode === "mixed" ? ((index + c) % 3 === 0 ? "triangle" : "diamond") : loopMode;
-        addLoop(anchor, c, variant, dir);
-        if (index > 10 && c % 2 === 0) addLoop(anchor, c, "triangle", -dir);
-        if (index > 16 && c % 3 === 0) addLoop(anchor, c, "diamond", -dir, "_x");
+        if (i >= backbone.length - 1) continue;
+        const addFirstLoop = i % (index < 6 ? 3 : index < 13 ? 2 : 1) === 0;
+        if (addFirstLoop) {
+          const variant = index < 5 ? "triangle" : index < 12 ? (i % 3 ? "diamond" : "triangle") : (i % 3 === 0 ? "box" : "diamond");
+          loopFor(anchor, i, variant, 1);
+        }
+        if (index > 9 && i % 4 === 1) loopFor(anchor, i, "triangle", -1, "side");
+        if (index > 15 && i % 5 === 2) loopFor(anchor, i, "box", -1, "hard");
       }
-      return { nodes, solution, start: "s0", end: `s${columns - 1}` };
+      return { nodes, solution, start: "m0", end: `m${backbone.length - 1}` };
     };
     games.push(...Array.from({ length: 20 }, (_, index) => {
       const difficulty = catalogDifficulty(index);
@@ -3868,6 +3881,7 @@
       let dragging = false;
       let completed = false;
       let errors = 0;
+      let livePoint = null;
       root.innerHTML = `
         <div class="one-stroke-shell rules-shell">
           <button class="rules-btn" type="button" aria-label="One Stroke rules">?</button>
@@ -3884,6 +3898,13 @@
         Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
         return el;
       };
+      const pointerPoint = event => {
+        const rect = board.getBoundingClientRect();
+        return [
+          clamp(((event.clientX - rect.left) / rect.width) * 100, 0, 100),
+          clamp(((event.clientY - rect.top) / rect.height) * 100, 0, 100)
+        ];
+      };
       const render = () => {
         board.innerHTML = "";
         edges.forEach(edge => {
@@ -3894,6 +3915,10 @@
             class: `stroke-edge ${used.has(edge.key) ? "drawn" : ""}`
           }));
         });
+        if (dragging && current && livePoint) {
+          const [x1, y1] = nodes[current];
+          board.appendChild(svg("line", { x1, y1, x2: livePoint[0], y2: livePoint[1], class: "stroke-live" }));
+        }
         Object.entries(nodes).forEach(([id, [cx, cy]]) => {
           const classes = [
             "stroke-node",
@@ -3905,9 +3930,7 @@
         });
       };
       const nearestNode = event => {
-        const rect = board.getBoundingClientRect();
-        const x = ((event.clientX - rect.left) / rect.width) * 100;
-        const y = ((event.clientY - rect.top) / rect.height) * 100;
+        const [x, y] = pointerPoint(event);
         let best = null;
         let bestDist = Infinity;
         Object.entries(nodes).forEach(([id, [nx, ny]]) => {
@@ -3917,12 +3940,13 @@
             best = id;
           }
         });
-        return bestDist <= 8 ? best : null;
+        return bestDist <= 10.5 ? best : null;
       };
       const resetPath = (message = "Start at the green dot and trace every line once.") => {
         used.clear();
         current = null;
         dragging = false;
+        livePoint = null;
         setStatus(message);
         render();
       };
@@ -3934,10 +3958,13 @@
         }, 520);
       };
       const moveTo = next => {
-        if (!dragging || !next || next === current || completed) return;
+        if (!dragging || !next || next === current || completed) return false;
         const key = edgeKey(current, next);
-        if (!edgeMap.has(key)) return;
-        if (used.has(key)) return fail("No retracing.");
+        if (!edgeMap.has(key)) return false;
+        if (used.has(key)) {
+          fail("No retracing.");
+          return true;
+        }
         used.add(key);
         current = next;
         render();
@@ -3947,6 +3974,7 @@
           setStatus("One stroke complete.");
           done(Math.max(250, 900 + edges.length * 35 - errors * 120), "One stroke complete.");
         }
+        return true;
       };
       board.onpointerdown = event => {
         event.preventDefault();
@@ -3955,6 +3983,7 @@
         if (node !== start) return setStatus("Start on the green dot.");
         used.clear();
         current = start;
+        livePoint = pointerPoint(event);
         dragging = true;
         board.setPointerCapture?.(event.pointerId);
         setStatus("Keep going. Do not lift until every line is traced.");
@@ -3963,14 +3992,18 @@
       board.onpointermove = event => {
         if (!dragging) return;
         event.preventDefault();
-        moveTo(nearestNode(event));
+        livePoint = pointerPoint(event);
+        if (!moveTo(nearestNode(event))) render();
       };
       const lift = event => {
         if (!dragging) return;
+        livePoint = pointerPoint(event);
         moveTo(nearestNode(event));
+        livePoint = null;
         board.releasePointerCapture?.(event.pointerId);
         dragging = false;
         if (!completed && used.size > 0) fail("Do not lift until the whole shape is complete.");
+        else render();
       };
       board.onpointerup = lift;
       board.onpointercancel = lift;
