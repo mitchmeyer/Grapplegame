@@ -354,14 +354,14 @@
     .flow-cell.endpoint::after { content: ""; position: absolute; z-index: 3; inset: 9px; border-radius: 50%; background: var(--flow-color); box-shadow: 0 2px 5px rgba(15,23,42,.22); }
     .flow-cell.selected { outline: 3px solid rgba(108,59,255,.28); outline-offset: 1px; }
     .flow-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
-    .one-stroke-board { width: min(100%, 320px); aspect-ratio: 1; border: 1px solid #D6D3E8; border-radius: 14px; background: #FAFAFF; touch-action: none; }
-    .stroke-edge { stroke: #D7D3E8; stroke-width: 3.2; stroke-linecap: round; }
-    .stroke-edge.drawn { stroke: #6C3BFF; stroke-width: 6.4; filter: drop-shadow(0 2px 4px rgba(108,59,255,.22)); }
+    .one-stroke-board { width: min(100%, 320px); aspect-ratio: 1; border: 1px solid #D6D3E8; border-radius: 14px; background: #FFFFFF; touch-action: none; }
+    .stroke-edge { stroke: #8D95A3; stroke-width: 4.2; stroke-linecap: round; }
+    .stroke-edge.drawn { stroke: #6C3BFF; stroke-width: 6.6; filter: drop-shadow(0 2px 4px rgba(108,59,255,.22)); }
     .stroke-live { stroke: rgba(108,59,255,.62); stroke-width: 6.2; stroke-linecap: round; stroke-dasharray: 2 7; pointer-events: none; }
-    .stroke-node { fill: #FFFFFF; stroke: #9CA3AF; stroke-width: 2.4; }
+    .stroke-node { fill: #8D95A3; stroke: #FFFFFF; stroke-width: 1.2; }
     .stroke-node.start { fill: #22C55E; stroke: #16A34A; }
     .stroke-node.end { fill: #EF4444; stroke: #DC2626; }
-    .stroke-node.current { stroke: #6C3BFF; stroke-width: 4; }
+    .stroke-node.current { fill: #6C3BFF; stroke: #FFFFFF; stroke-width: 2.2; }
     .stroke-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .card-face { width: 46px; height: 64px; display: grid; place-items: center; border: 1px solid #D1D5DB; border-radius: 8px; background: white; box-shadow: 0 3px 8px rgba(15,23,42,.14); color: #111827; font-size: 17px; font-weight: 950; }
     .card-face.red { color: #EF4444; }
@@ -1529,8 +1529,8 @@
         nodes[id] = [Math.round(x * 1000) / 10, Math.round(y * 1000) / 10];
         return id;
       };
-      const grid = index < 5 ? 4 : index < 11 ? 5 : 6;
-      const targetBackbone = index < 5 ? 8 + index : index < 11 ? 13 + index : index < 16 ? 20 + index : 28 + index;
+      const grid = index < 5 ? 4 : index < 11 ? 5 : index < 16 ? 6 : 7;
+      const targetBackbone = index < 5 ? 8 + index : index < 11 ? 14 + index : index < 16 ? 24 + index : grid * grid;
       const coords = [];
       let top = 0;
       let left = 0;
@@ -1551,33 +1551,34 @@
       const span = 0.8;
       backbone.forEach(([r, c], i) => addNode(`m${i}`, pad + (span * c) / (grid - 1), pad + (span * r) / (grid - 1)));
       const solution = ["m0"];
-      const loopSize = index < 5 ? 0.07 : index < 12 ? 0.075 : 0.085;
-      const loopFor = (anchor, step, variant, side, tag = "") => {
+      const loopEvery = index < 4 ? 0 : index < 9 ? 5 : index < 15 ? 4 : 3;
+      const spacing = span / (grid - 1);
+      const loopSize = spacing * (index < 10 ? 0.36 : 0.42);
+      const loopFor = (anchor, step, variant, tag = "") => {
         const [x, y] = nodes[anchor].map(n => n / 100);
-        const angle = ((step + index) % 4) * Math.PI / 2 + (side > 0 ? Math.PI / 5 : -Math.PI / 5);
+        const boardCenter = [0.5, 0.5];
+        const inward = Math.atan2(boardCenter[1] - y, boardCenter[0] - x);
+        const angle = (Number.isFinite(inward) ? inward : 0) + ((step + index) % 2 ? 0.26 : -0.26);
         const point = (radius, offset, suffix) => addNode(`${anchor}_${variant}_${step}_${tag}_${suffix}`,
-          clamp(x + Math.cos(angle + offset) * radius, 0.07, 0.93),
-          clamp(y + Math.sin(angle + offset) * radius, 0.07, 0.93)
+          clamp(x + Math.cos(angle + offset) * radius, 0.08, 0.92),
+          clamp(y + Math.sin(angle + offset) * radius, 0.08, 0.92)
         );
         if (variant === "triangle") {
-          solution.push(point(loopSize, -0.78, "a"), point(loopSize, 0.78, "b"), anchor);
+          solution.push(point(loopSize, -0.82, "a"), point(loopSize, 0.82, "b"), anchor);
         } else if (variant === "diamond") {
-          solution.push(point(loopSize * 1.1, -1.1, "a"), point(loopSize * 1.32, 0, "b"), point(loopSize * 1.1, 1.1, "c"), anchor);
+          solution.push(point(loopSize * 1.05, -1.05, "a"), point(loopSize * 1.45, 0, "b"), point(loopSize * 1.05, 1.05, "c"), anchor);
         } else {
-          solution.push(point(loopSize, -1.15, "a"), point(loopSize * 1.45, -0.38, "b"), point(loopSize * 1.45, 0.38, "c"), point(loopSize, 1.15, "d"), anchor);
+          solution.push(point(loopSize, -1.2, "a"), point(loopSize * 1.55, -0.4, "b"), point(loopSize * 1.55, 0.4, "c"), point(loopSize, 1.2, "d"), anchor);
         }
       };
       for (let i = 1; i < backbone.length; i++) {
         const anchor = `m${i}`;
         solution.push(anchor);
         if (i >= backbone.length - 1) continue;
-        const addFirstLoop = i % (index < 6 ? 3 : index < 13 ? 2 : 1) === 0;
-        if (addFirstLoop) {
+        if (loopEvery && i % loopEvery === 0) {
           const variant = index < 5 ? "triangle" : index < 12 ? (i % 3 ? "diamond" : "triangle") : (i % 3 === 0 ? "box" : "diamond");
-          loopFor(anchor, i, variant, 1);
+          loopFor(anchor, i, variant);
         }
-        if (index > 9 && i % 4 === 1) loopFor(anchor, i, "triangle", -1, "side");
-        if (index > 15 && i % 5 === 2) loopFor(anchor, i, "box", -1, "hard");
       }
       return { nodes, solution, start: "m0", end: `m${backbone.length - 1}` };
     };
@@ -3926,7 +3927,7 @@
             id === end ? "end" : "",
             id === current ? "current" : ""
           ].filter(Boolean).join(" ");
-          board.appendChild(svg("circle", { cx, cy, r: id === start || id === end ? 3.8 : 3.2, class: classes }));
+          board.appendChild(svg("circle", { cx, cy, r: id === start || id === end ? 4.4 : id === current ? 3.1 : 1.7, class: classes }));
         });
       };
       const nearestNode = event => {
