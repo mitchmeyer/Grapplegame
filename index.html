@@ -297,7 +297,7 @@
     .hard-sudoku-cell.given { background: #F3F4F6; font-weight: 900; }
     .hard-sudoku-pad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; width: 100%; }
     .hard-sudoku-pad button { min-height: 36px; border-radius: 8px; background: #C9B8FF; color: white; font-weight: 950; }
-    .go-shell, .tetris-shell, .snake-shell { width: min(100%, 420px); margin: 0 auto; display: grid; gap: 12px; justify-items: center; }
+    .go-shell, .tetris-shell, .snake-shell, .arcade-shell { width: min(100%, 420px); margin: 0 auto; display: grid; gap: 12px; justify-items: center; }
     .go-shell { position: relative; padding-top: 2px; }
     .go-rules-btn { position: absolute; top: 0; right: 0; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; color: #6B7280; background: white; border: 1px solid #E5E7EF; font-size: 13px; font-weight: 900; line-height: 1; }
     .go-rules-btn.active { color: white; background: var(--primary); border-color: var(--primary); }
@@ -335,6 +335,15 @@
     .snake-controls .left { grid-column: 1; grid-row: 2; }
     .snake-controls .down { grid-column: 2; grid-row: 2; }
     .snake-controls .right { grid-column: 3; grid-row: 2; }
+    .arcade-board { position: relative; width: min(100%, 300px); height: 330px; overflow: hidden; border: 2px solid #CBD5E1; border-radius: 10px; background: linear-gradient(#E0F2FE, #F8FAFC); touch-action: none; }
+    .arcade-player, .arcade-thing { position: absolute; display: grid; place-items: center; border-radius: 8px; font-weight: 950; transform: translate(-50%, -50%); }
+    .arcade-player { width: 28px; height: 28px; background: #6C3BFF; color: white; box-shadow: 0 4px 10px rgba(74, 31, 168, .25); }
+    .arcade-thing { width: 24px; height: 24px; background: #EF4444; color: white; }
+    .arcade-thing.good { background: #22C55E; }
+    .arcade-thing.wall { width: 42px; border-radius: 5px; background: #334155; }
+    .arcade-ground { position: absolute; left: 0; right: 0; bottom: 0; height: 28px; background: #DCFCE7; border-top: 1px solid #BBF7D0; }
+    .arcade-controls { display: grid; grid-template-columns: repeat(3, 54px); gap: 7px; justify-content: center; }
+    .arcade-controls button { min-height: 40px; border-radius: 8px; background: white; border: 1px solid #E5E7EF; font-size: 19px; font-weight: 950; }
     .chess-shell { display: grid; gap: 10px; justify-items: center; }
     .chess-board { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); width: min(100%, 360px); border: 2px solid #4B3621; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
     .sq { position: relative; aspect-ratio: 1; display: grid; place-items: center; font-size: clamp(22px, 7vw, 34px); line-height: 1; color: #111; }
@@ -418,7 +427,7 @@
       .hard-sudoku-cell { width: 36px; height: 36px; font-size: 16px; }
       .hard-sudoku-pad { gap: 5px; }
       .hard-sudoku-pad button { min-height: 28px; }
-      .go-shell, .tetris-shell, .snake-shell { width: min(100%, 300px); gap: 8px; }
+      .go-shell, .tetris-shell, .snake-shell, .arcade-shell { width: min(100%, 300px); gap: 8px; }
       .go-board { grid-template-columns: repeat(7, 34px); grid-template-rows: repeat(7, 34px); padding: 6px; }
       .go-point { width: 34px; height: 34px; }
       .stone { width: 24px; height: 24px; margin: 5px; }
@@ -430,6 +439,9 @@
       .snake-board { --snake-cell: 18px; }
       .snake-controls { grid-template-columns: repeat(3, 48px); gap: 6px; }
       .snake-controls button { min-height: 36px; font-size: 18px; }
+      .arcade-board { height: 300px; }
+      .arcade-controls { grid-template-columns: repeat(3, 48px); gap: 6px; }
+      .arcade-controls button { min-height: 36px; font-size: 18px; }
       .chess-board, .chess-status { width: min(100%, 292px); }
       .sq { font-size: 24px; }
       .math-card { padding: 12px; }
@@ -697,6 +709,7 @@
       if (text.includes("go capture") || /^go\d+/.test(text)) return "Go Capture";
       if (text.includes("tetris")) return "Tetris Mini";
       if (text.includes("snake")) return "Snake";
+      if (text.includes("arcade") || text.includes("flappy") || text.includes("runner") || text.includes("dodger") || text.includes("catcher")) return "Arcade";
       if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
       if (text.includes("scramble") || /^scr\d+/.test(text)) return "Word Scramble";
       if (text.includes("country") || /^cb\d+/.test(text)) return "Country Bigger";
@@ -812,6 +825,7 @@
       go: GoCapture,
       tetris: TetrisMini,
       snake: SnakeGame,
+      arcade_game: ArcadeGame,
       memory: MemoryGrid,
       word_scramble: WordScramble,
       country_bigger: CountryBigger,
@@ -1418,6 +1432,7 @@
       if (Array.isArray(spec.events) || text.includes("timeline")) return "timeline_challenge";
       if (Array.isArray(spec.words) || text.includes("scramble")) return "word_scramble";
       if (text.includes("snake")) return "snake";
+      if (text.includes("flappy") || text.includes("video game") || text.includes("arcade") || text.includes("runner") || text.includes("dodger") || text.includes("catcher") || text.includes("platform")) return "arcade_game";
       if (spec.board || spec.size || text.includes("sudoku")) return text.includes("hard") ? "sudoku_hard" : "sudoku_4x4";
       if (text.includes("go")) return "go";
       if (text.includes("tetris")) return "tetris";
@@ -2986,6 +3001,176 @@
         startedAt = Date.now();
         document.addEventListener("keydown", keyHandler);
         timer = setInterval(tick, speed);
+      };
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(entries => {
+          if (entries.some(entry => entry.isIntersecting && entry.intersectionRatio > 0.45)) {
+            observer.disconnect();
+            startGame();
+          }
+        }, { threshold: [0.45, 0.65] });
+        observer.observe(root);
+      } else {
+        startGame();
+      }
+    }
+
+    function ArcadeGame(root, game, done) {
+      const spec = game.gameSpec || {};
+      const text = `${game.title || ""} ${spec.mode || ""} ${spec.theme || ""}`.toLowerCase();
+      const mode = /flappy|bird/.test(text) ? "flappy" : /catch/.test(text) ? "catcher" : /runner|jump|platform/.test(text) ? "runner" : String(spec.mode || "dodger").toLowerCase();
+      const difficulty = clamp(getDifficultyRank(game), 1, 4);
+      const playerIcon = String(spec.player || (mode === "flappy" ? "●" : mode === "runner" ? "◆" : "■")).slice(0, 2);
+      const goodIcon = String(spec.good || spec.collectible || "★").slice(0, 2);
+      const badIcon = String(spec.bad || spec.hazard || "■").slice(0, 2);
+      let finished = false;
+      let started = false;
+      let startedAt = Date.now();
+      let score = 0;
+      let lives = mode === "flappy" || mode === "runner" ? 1 : 3;
+      let raf = null;
+      let spawnTimer = null;
+      let scoreTimer = null;
+      let player = { x: mode === "flappy" ? 24 : 50, y: mode === "runner" ? 82 : 55, vy: 0 };
+      let things = [];
+      root.innerHTML = `
+        <div class="arcade-shell">
+          <div class="game-stats" style="width:100%;"><span>Score: <b class="arcade-score">0</b></span><span>Lives: <b class="arcade-lives">${lives}</b></span></div>
+          <div class="arcade-board"><div class="arcade-ground"></div><div class="arcade-player">${esc(playerIcon)}</div></div>
+          <div class="arcade-controls">
+            <button class="arc-left" aria-label="Left">←</button>
+            <button class="arc-action" aria-label="Action">${mode === "flappy" || mode === "runner" ? "↑" : "●"}</button>
+            <button class="arc-right" aria-label="Right">→</button>
+          </div>
+        </div>
+      `;
+      const board = $(".arcade-board", root);
+      const playerEl = $(".arcade-player", root);
+      const setStats = () => {
+        $(".arcade-score", root).textContent = String(Math.max(0, Math.round(score)));
+        $(".arcade-lives", root).textContent = String(lives);
+      };
+      const overlaps = (a, b, size = 7) => Math.abs(a.x - b.x) < size && Math.abs(a.y - b.y) < size;
+      const draw = () => {
+        playerEl.style.left = `${player.x}%`;
+        playerEl.style.top = `${player.y}%`;
+        $$(".arcade-thing", board).forEach(el => el.remove());
+        things.forEach(t => {
+          const el = document.createElement("div");
+          el.className = `arcade-thing ${t.kind === "good" ? "good" : ""} ${t.kind === "wall" ? "wall" : ""}`;
+          el.textContent = t.kind === "good" ? goodIcon : t.kind === "wall" ? "" : badIcon;
+          el.style.left = `${t.x}%`;
+          el.style.top = `${t.y}%`;
+          if (t.h) el.style.height = `${t.h}%`;
+          board.appendChild(el);
+        });
+        setStats();
+      };
+      const cleanup = () => {
+        if (raf) cancelAnimationFrame(raf);
+        if (spawnTimer) clearInterval(spawnTimer);
+        if (scoreTimer) clearInterval(scoreTimer);
+        document.removeEventListener("keydown", keyHandler);
+      };
+      const endGame = () => {
+        if (finished) return;
+        finished = true;
+        cleanup();
+        draw();
+        done(Math.max(700, score + 700), `${game.title || "Arcade"} score: ${Math.round(score)}.`);
+      };
+      const hurt = () => {
+        lives--;
+        if (lives <= 0) endGame();
+      };
+      const spawn = () => {
+        if (mode === "flappy") {
+          const gap = 24;
+          const center = 25 + Math.random() * 45;
+          things.push({ kind: "wall", x: 104, y: center - gap / 2 - 28, h: Math.max(12, center - gap / 2), scored: false });
+          things.push({ kind: "wall", x: 104, y: center + gap / 2 + 28, h: Math.max(12, 100 - center - gap / 2), scored: true });
+          return;
+        }
+        if (mode === "runner") {
+          things.push({ kind: "bad", x: 104, y: 82, scored: false });
+          return;
+        }
+        const isGood = mode === "catcher" ? Math.random() > 0.22 : Math.random() > 0.72;
+        things.push({ kind: isGood ? "good" : "bad", x: 10 + Math.random() * 80, y: -4, scored: false });
+      };
+      const moveLeft = () => { player.x = clamp(player.x - 8, 7, 93); draw(); };
+      const moveRight = () => { player.x = clamp(player.x + 8, 7, 93); draw(); };
+      const action = () => {
+        if (mode === "flappy") player.vy = -2.8;
+        else if (mode === "runner" && player.y >= 81) player.vy = -4.8;
+      };
+      const frame = () => {
+        if (finished || !root.isConnected) return cleanup();
+        if (mode === "flappy") {
+          player.vy += 0.18;
+          player.y = clamp(player.y + player.vy, 4, 92);
+          if (player.y >= 91 || player.y <= 4) hurt();
+          things.forEach(t => {
+            t.x -= 0.9 + difficulty * 0.12;
+            if (!t.scored && t.x < player.x) {
+              t.scored = true;
+              score += 90;
+            }
+            if (overlaps(player, t, 8)) hurt();
+          });
+        } else if (mode === "runner") {
+          player.vy += 0.28;
+          player.y = clamp(player.y + player.vy, 22, 82);
+          if (player.y >= 82) player.vy = 0;
+          things.forEach(t => {
+            t.x -= 1.25 + difficulty * 0.16;
+            if (!t.scored && t.x < player.x) {
+              t.scored = true;
+              score += 70;
+            }
+            if (overlaps(player, t, 8)) hurt();
+          });
+        } else {
+          things.forEach(t => {
+            t.y += 1.1 + difficulty * 0.18;
+            if (overlaps(player, t, 8)) {
+              t.hit = true;
+              if (t.kind === "good") score += mode === "catcher" ? 120 : 80;
+              else hurt();
+            } else if (mode === "catcher" && t.kind === "good" && t.y > 104) {
+              t.hit = true;
+              hurt();
+            }
+          });
+        }
+        things = things.filter(t => !t.hit && t.x > -8 && t.x < 112 && t.y < 112);
+        draw();
+        raf = requestAnimationFrame(frame);
+      };
+      function keyHandler(event) {
+        if (!["ArrowLeft", "ArrowRight", "ArrowUp", " ", "ArrowDown"].includes(event.key)) return;
+        event.preventDefault();
+        if (event.key === "ArrowLeft") moveLeft();
+        if (event.key === "ArrowRight") moveRight();
+        if (event.key === "ArrowUp" || event.key === " " || event.key === "ArrowDown") action();
+      }
+      $(".arc-left", root).onclick = moveLeft;
+      $(".arc-right", root).onclick = moveRight;
+      $(".arc-action", root).onclick = action;
+      board.onclick = action;
+      draw();
+      const startGame = () => {
+        if (started || finished) return;
+        started = true;
+        startedAt = Date.now();
+        document.addEventListener("keydown", keyHandler);
+        spawnTimer = setInterval(spawn, mode === "flappy" ? 1350 : mode === "runner" ? 1150 : 620);
+        scoreTimer = setInterval(() => {
+          score += 8;
+          if (score > Number(spec.target_score || 900) && mode !== "flappy" && mode !== "runner") endGame();
+        }, 1000);
+        spawn();
+        frame();
       };
       if ("IntersectionObserver" in window) {
         const observer = new IntersectionObserver(entries => {
