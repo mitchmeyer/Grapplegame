@@ -323,6 +323,27 @@
     .go-point.last .stone { outline: 3px solid rgba(108, 59, 255, .45); outline-offset: 2px; }
     .go-point.wrong::after { box-shadow: 0 0 0 5px rgba(239, 68, 68, .25); }
     .go-status { min-height: 34px; display: grid; place-items: center; padding: 8px 10px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
+    .rules-shell { position: relative; }
+    .rules-btn { position: absolute; top: 0; right: 0; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; color: #6B7280; background: white; border: 1px solid #E5E7EF; font-size: 13px; font-weight: 900; line-height: 1; }
+    .rules-btn.active { color: white; background: var(--primary); border-color: var(--primary); }
+    .rules-popover { position: absolute; top: 28px; right: 0; z-index: 2; width: min(270px, 82vw); display: none; padding: 10px 11px; border: 1px solid #E5E7EF; border-radius: 10px; background: white; box-shadow: 0 8px 20px rgba(15, 23, 42, .12); color: #4B5563; font-size: 12px; line-height: 1.35; text-align: left; }
+    .rules-popover.show { display: block; }
+    .rules-popover b { display: block; margin-bottom: 4px; color: var(--text); }
+    .scrabble-shell, .hexcells-shell { width: min(100%, 360px); margin: 0 auto; display: grid; gap: 10px; justify-items: center; }
+    .scrabble-board { display: grid; grid-template-columns: repeat(7, 38px); gap: 3px; padding: 8px; border: 1px solid #D6D3E8; border-radius: 10px; background: #FBFAFF; }
+    .scrabble-cell, .rack-tile { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #D7C8A8; border-radius: 7px; background: #F5DDB0; color: #1F2937; font-size: 20px; font-weight: 950; box-shadow: 0 2px 0 #D0B17C; }
+    .scrabble-cell.anchor { background: #C4B5FD; border-color: #9B7CF7; color: white; }
+    .scrabble-rack { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+    .rack-tile { position: relative; }
+    .rack-tile small { position: absolute; right: 3px; bottom: 1px; font-size: 8px; font-weight: 900; }
+    .scrabble-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; width: 100%; }
+    .hexcells-grid { --hex-size: 38px; width: min(100%, 320px); display: grid; grid-template-columns: repeat(5, var(--hex-size)); justify-content: center; gap: 4px 2px; }
+    .hex-cell { width: var(--hex-size); height: calc(var(--hex-size) * .9); display: grid; place-items: center; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); border: 0; background: #E5E7EB; color: #111827; font-size: 16px; font-weight: 950; }
+    .hex-cell:nth-child(10n+6), .hex-cell:nth-child(10n+7), .hex-cell:nth-child(10n+8), .hex-cell:nth-child(10n+9), .hex-cell:nth-child(10n+10) { transform: translateX(calc(var(--hex-size) / 2)); }
+    .hex-cell.clue { background: #F8FAFC; box-shadow: inset 0 0 0 2px #CBD5E1; }
+    .hex-cell.selected { background: #2563EB; color: white; }
+    .hex-cell.bad { background: #FCA5A5; color: #7F1D1D; }
+    .hex-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .card-face { width: 46px; height: 64px; display: grid; place-items: center; border: 1px solid #D1D5DB; border-radius: 8px; background: white; box-shadow: 0 3px 8px rgba(15,23,42,.14); color: #111827; font-size: 17px; font-weight: 950; }
     .card-face.red { color: #EF4444; }
     .tetris-board { display: grid; grid-template-columns: repeat(10, 22px); grid-template-rows: repeat(18, 22px); border: 2px solid #CBD5E1; background: #F8FAFC; }
@@ -441,10 +462,13 @@
       .hard-sudoku-cell { width: 36px; height: 36px; font-size: 16px; }
       .hard-sudoku-pad { gap: 5px; }
       .hard-sudoku-pad button { min-height: 28px; }
-      .go-shell, .tetris-shell, .snake-shell, .arcade-shell { width: min(100%, 300px); gap: 8px; }
+      .go-shell, .tetris-shell, .snake-shell, .arcade-shell, .scrabble-shell, .hexcells-shell { width: min(100%, 300px); gap: 8px; }
       .go-board { grid-template-columns: repeat(7, 34px); grid-template-rows: repeat(7, 34px); padding: 6px; }
       .go-point { width: 34px; height: 34px; }
       .stone { width: 24px; height: 24px; margin: 5px; }
+      .scrabble-board { grid-template-columns: repeat(7, 32px); padding: 6px; }
+      .scrabble-cell, .rack-tile { width: 32px; height: 32px; border-radius: 6px; font-size: 17px; }
+      .hexcells-grid { --hex-size: 31px; }
       .card-face { width: 36px; height: 50px; border-radius: 7px; font-size: 14px; }
       .tetris-board { grid-template-columns: repeat(10, 13px); grid-template-rows: repeat(18, 13px); }
       .tet-cell { width: 13px; height: 13px; }
@@ -704,6 +728,8 @@
       .replace(/^(?:go[-_\s]*capture|go)[-_\s]*(\d+)$/i, "go$1")
       .replace(/^(?:poker[-_\s]*read|poker)[-_\s]*(\d+)$/i, "poker$1")
       .replace(/^(?:tetris[-_\s]*mini|tetris)[-_\s]*(\d+)$/i, "tetris$1")
+      .replace(/^(?:scrabble|scrab)[-_\s]*(\d+)$/i, "scrab$1")
+      .replace(/^(?:hexcells[-_\s]*infinite|hexcells|hex)[-_\s]*(\d+)$/i, "hex$1")
       .replace(/^(?:memory[-_\s]*grid|mem)[-_\s]*(\d+)$/i, "mem$1")
       .replace(/^(?:number[-_\s]*tap|num)[-_\s]*(\d+)$/i, "num$1")
       .replace(/^(?:quick[-_\s]*math|math)[-_\s]*(\d+)$/i, "math$1")
@@ -724,6 +750,8 @@
       if (text.includes("timeline") || /^tl\d+/.test(text)) return "Timeline";
       if (text.includes("go capture") || /^go\d+/.test(text)) return "Go Capture";
       if (text.includes("tetris")) return "Tetris Mini";
+      if (text.includes("scrabble") || /^scrab\d+/.test(text)) return "Scrabble";
+      if (text.includes("hexcells") || /^hex\d+/.test(text)) return "Hexcells Infinite";
       if (text.includes("arcade") || text.includes("flappy") || text.includes("runner") || text.includes("dodger") || text.includes("catcher")) return "Arcade";
       if (text.includes("snake")) return "Snake";
       if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
@@ -780,10 +808,12 @@
       /^tl(?:[1-9]|1\d|20)$/i,
       /^go(?:[1-9]|10)$/i,
       /^tetris(?:[1-9]|1\d|20)$/i,
+      /^scrab(?:[1-9]|1\d|20)$/i,
+      /^hex(?:[1-9]|1\d|20)$/i,
       /^mem(?:[1-9]|1\d|20)$/i,
       /^scr(?:[1-9]|1\d|20)$/i
     ];
-    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|tetris mini|memory grid|scramble/i;
+    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|tetris mini|scrabble|hexcells|memory grid|scramble/i;
     const isCuratedCatalogGame = (game) => {
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const text = `${id} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`;
@@ -848,6 +878,8 @@
       timeline_challenge: TimelineSort,
       go: GoCapture,
       tetris: TetrisMini,
+      scrabble: ScrabbleGame,
+      hexcells: HexcellsGame,
       snake: SnakeGame,
       arcade_game: ArcadeGame,
       memory: MemoryGrid,
@@ -1372,6 +1404,66 @@
       return catalogBase(`tl${index + 1}`, `Timeline ${index + 1}`, "History", difficulty, ["Sequencing", "Knowledge"], TimelineSort, { events }, "50s");
     }));
 
+    const scrabbleCatalog = [
+      { rack: "NASTIER", anchor: "T", answer: "NASTIER", prompt: "Use the T anchor to make the strongest 7-letter word." },
+      { rack: "PLANETS", anchor: "S", answer: "PLANETS", prompt: "Use every rack tile for a clean bingo." },
+      { rack: "ORBITAL", anchor: "B", answer: "ORBITAL", prompt: "Build the space word through the B anchor." },
+      { rack: "CANDLE?", anchor: "L", answer: "CANDLE", prompt: "The blank can be any letter, but you may not need it." },
+      { rack: "GRAPPLE", anchor: "P", answer: "GRAPPLE", prompt: "Play the full rack through the middle P." },
+      { rack: "QUARTZX", anchor: "A", answer: "QUARTZ", prompt: "Use the high-value Q/Z word. Leave one tile." },
+      { rack: "VECTOR?", anchor: "T", answer: "VECTOR", prompt: "Find the 6-letter tech word through T." },
+      { rack: "JIGSAWS", anchor: "G", answer: "JIGSAW", prompt: "Use J and W efficiently around the G." },
+      { rack: "BRAINED", anchor: "A", answer: "BRAINED", prompt: "Use all tiles to make the highest-scoring word." },
+      { rack: "MATRIX?", anchor: "R", answer: "MATRIX", prompt: "Place a 6-letter word through the R anchor." },
+      { rack: "ZEPHYRS", anchor: "Y", answer: "ZEPHYRS", prompt: "A windy bingo using the Y anchor." },
+      { rack: "KNIGHTS", anchor: "G", answer: "KNIGHTS", prompt: "A chess word using all seven tiles." },
+      { rack: "CIPHERS", anchor: "P", answer: "CIPHERS", prompt: "Decode the best full-rack play." },
+      { rack: "VOYAGER", anchor: "Y", answer: "VOYAGER", prompt: "A space-travel bingo through Y." },
+      { rack: "OXIDIZE", anchor: "I", answer: "OXIDIZE", prompt: "Use both high-value letters in one play." },
+      { rack: "JAZZILY", anchor: "Z", answer: "JAZZILY", prompt: "Expert rack: the Z anchor is the key." },
+      { rack: "QUIVERS", anchor: "V", answer: "QUIVERS", prompt: "Use the Q without needing a U problem." },
+      { rack: "PHOENIX", anchor: "E", answer: "PHOENIX", prompt: "A mythical high-value 7-letter play." },
+      { rack: "SQUEAKY", anchor: "U", answer: "SQUEAKY", prompt: "Use Q and K in the same full-rack answer." },
+      { rack: "JUKEBOX", anchor: "E", answer: "JUKEBOX", prompt: "Hard rack: land the classic high-score word." }
+    ];
+    games.push(...scrabbleCatalog.map((spec, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`scrab${index + 1}`, `Scrabble ${index + 1}`, "Language", difficulty, ["Vocabulary", "Word Strategy"], ScrabbleGame, spec, "");
+    }));
+
+    const hexNeighbors = (index) => {
+      const row = Math.floor(index / 5);
+      const col = index % 5;
+      const offsets = row % 2
+        ? [[-1,0],[-1,1],[0,-1],[0,1],[1,0],[1,1]]
+        : [[-1,-1],[-1,0],[0,-1],[0,1],[1,-1],[1,0]];
+      return offsets
+        .map(([dr, dc]) => [row + dr, col + dc])
+        .filter(([r, c]) => r >= 0 && r < 5 && c >= 0 && c < 5)
+        .map(([r, c]) => r * 5 + c);
+    };
+    const hexMineSets = [
+      [6, 8, 16, 18], [2, 7, 13, 17], [1, 9, 15, 21], [3, 11, 14, 22], [5, 12, 18, 24],
+      [0, 8, 10, 16, 23], [4, 6, 14, 20, 22], [2, 10, 12, 18, 24], [1, 7, 15, 19, 23], [3, 5, 13, 17, 21],
+      [0, 6, 8, 16, 18, 24], [2, 4, 10, 12, 20, 22], [1, 7, 9, 15, 17, 23], [3, 5, 11, 13, 19, 21], [0, 8, 12, 16, 18, 24],
+      [1, 3, 6, 14, 17, 21, 23], [0, 4, 7, 12, 15, 19, 24], [2, 5, 9, 11, 13, 20, 22], [1, 6, 8, 10, 16, 18, 23], [0, 3, 7, 12, 17, 21, 24]
+    ];
+    const makeHexSpec = (index) => {
+      const mines = hexMineSets[index];
+      const mineSet = new Set(mines);
+      const candidates = Array.from({ length: 25 }, (_, i) => i).filter(i => !mineSet.has(i));
+      const clueCount = index < 5 ? 10 : index < 10 ? 9 : index < 15 ? 8 : 7;
+      const clues = candidates
+        .sort((a, b) => Math.abs(12 - a) - Math.abs(12 - b) || a - b)
+        .slice(0, clueCount)
+        .map(i => ({ i, n: hexNeighbors(i).filter(n => mineSet.has(n)).length }));
+      return { mines, clues, size: 5 };
+    };
+    games.push(...Array.from({ length: 20 }, (_, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`hex${index + 1}`, `Hexcells Infinite ${index + 1}`, "Logic", difficulty, ["Logic", "Deduction"], HexcellsGame, makeHexSpec(index), "");
+    }));
+
     const goCatalog = [
       { name: "Net the Runner", difficulty: "Easy", black: ["c4","d3","e4","e5"], white: ["d4"], line: ["c5","d5","d6"], tactic: "Net" },
       { name: "Mirror Net", difficulty: "Easy", black: ["e4","d3","c4","c5"], white: ["d4"], line: ["e5","d5","d6"], tactic: "Net" },
@@ -1648,6 +1740,8 @@
       if (/timeline/i.test(name)) return "Look for anchor events: inventions usually come after ancient history but before modern web events.";
       if (/go/i.test(name)) return "Capture stones by filling their last liberty.";
       if (/tetris/i.test(name)) return "Keep the stack low and move the falling piece toward the deepest gap.";
+      if (/scrabble/i.test(name)) return "Start with the high-value letters, then check whether the word passes through the purple anchor.";
+      if (/hexcells/i.test(name)) return "Use the numbered hexes first: a 0 clears all neighbors, while a high number forces most adjacent hidden cells blue.";
       if (/connections/i.test(name)) return "Say the possible category out loud before submitting four words.";
       return directionsForGame(game);
     }
@@ -3310,6 +3404,104 @@
       $(".scramble-answer", root).onkeydown = (e) => { if (e.key === "Enter") submit(); };
     }
 
+    function wireRules(root) {
+      const btn = $(".rules-btn", root);
+      const popover = $(".rules-popover", root);
+      if (!btn || !popover) return;
+      btn.onclick = () => {
+        btn.classList.toggle("active");
+        popover.classList.toggle("show");
+      };
+    }
+
+    function ScrabbleGame(root, game, done) {
+      const spec = game.gameSpec || {};
+      const rack = String(spec.rack || "GRAPPLE").toUpperCase().replace(/[^A-Z?]/g, "").slice(0, 7);
+      const answer = String(spec.answer || "GRAPPLE").toUpperCase().replace(/[^A-Z]/g, "");
+      const anchor = String(spec.anchor || answer[Math.floor(answer.length / 2)] || rack[0] || "A").toUpperCase()[0];
+      const prompt = spec.prompt || "Use the rack and center anchor to play the best word.";
+      const scores = { A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10 };
+      const wordScore = word => [...word].reduce((sum, ch) => sum + (scores[ch] || 0), 0);
+      root.innerHTML = `
+        <div class="scrabble-shell rules-shell">
+          <button class="rules-btn" type="button" aria-label="Scrabble rules">?</button>
+          <div class="rules-popover"><b>How to play</b>Use your rack tiles plus the purple anchor tile to type the strongest valid word. A blank tile (?) can stand for any letter.</div>
+          <p class="muted">${esc(prompt)}</p>
+          <div class="scrabble-board">${Array.from({ length: 7 }, (_, i) => `<div class="scrabble-cell ${i === 3 ? "anchor" : ""}">${i === 3 ? esc(anchor) : ""}</div>`).join("")}</div>
+          <div class="scrabble-rack">${[...rack].map(ch => `<div class="rack-tile">${esc(ch)}<small>${ch === "?" ? "0" : scores[ch] || 0}</small></div>`).join("")}</div>
+          <div class="scrabble-input-row"><input class="input scrabble-answer" placeholder="Type word" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="btn primary submit">Play</button></div>
+          <span class="pill">Target score ${wordScore(answer)}</span>
+        </div>`;
+      wireRules(root);
+      const canBuild = (word) => {
+        if (!word.includes(anchor)) return false;
+        const bank = [...rack];
+        for (const ch of word.replace(anchor, "")) {
+          let index = bank.indexOf(ch);
+          if (index < 0) index = bank.indexOf("?");
+          if (index < 0) return false;
+          bank.splice(index, 1);
+        }
+        return true;
+      };
+      const submit = () => {
+        const guess = $(".scrabble-answer", root).value.toUpperCase().replace(/[^A-Z]/g, "");
+        const correct = guess === answer && canBuild(guess);
+        done(correct ? 1050 : 180, correct ? `Nice word: ${answer}.` : `Best play: ${answer}`);
+      };
+      $(".submit", root).onclick = submit;
+      $(".scrabble-answer", root).onkeydown = (e) => { if (e.key === "Enter") submit(); };
+    }
+
+    function HexcellsGame(root, game, done) {
+      const spec = game.gameSpec || {};
+      const mines = new Set((Array.isArray(spec.mines) ? spec.mines : [6, 8, 16, 18]).map(Number));
+      const clues = new Map((Array.isArray(spec.clues) ? spec.clues : []).map(clue => [Number(clue.i), Number(clue.n)]));
+      const selected = new Set();
+      let finished = false;
+      root.innerHTML = `
+        <div class="hexcells-shell rules-shell">
+          <button class="rules-btn" type="button" aria-label="Hexcells rules">?</button>
+          <div class="rules-popover"><b>How to play</b>Numbers show how many adjacent hidden hexes are blue. Tap every blue hex, then submit. Wrong blue marks cost points.</div>
+          <div class="hex-status">Find ${mines.size} blue hexes.</div>
+          <div class="hexcells-grid"></div>
+          <button class="btn primary check">Submit</button>
+        </div>`;
+      wireRules(root);
+      const draw = () => {
+        const grid = $(".hexcells-grid", root);
+        grid.innerHTML = "";
+        for (let i = 0; i < 25; i++) {
+          const b = document.createElement("button");
+          const isClue = clues.has(i);
+          b.className = `hex-cell ${isClue ? "clue" : ""} ${selected.has(i) ? "selected" : ""}`;
+          b.textContent = isClue ? clues.get(i) : "";
+          b.disabled = isClue || finished;
+          b.onclick = () => {
+            selected.has(i) ? selected.delete(i) : selected.add(i);
+            $(".hex-status", root).textContent = `${Math.max(0, mines.size - selected.size)} blue hexes left.`;
+            draw();
+          };
+          grid.appendChild(b);
+        }
+      };
+      $(".check", root).onclick = () => {
+        const hits = [...mines].filter(i => selected.has(i)).length;
+        const wrong = [...selected].filter(i => !mines.has(i)).length;
+        if (hits === mines.size && wrong === 0) {
+          finished = true;
+          draw();
+          done(1100, "Hex grid solved.");
+          return;
+        }
+        $$(".hex-cell", root).forEach((cell, index) => {
+          if (selected.has(index) && !mines.has(index)) cell.classList.add("bad");
+        });
+        done(Math.max(120, hits * 150 - wrong * 80), `${hits}/${mines.size} blue hexes found.`);
+      };
+      draw();
+    }
+
     function CountryBigger(root, game, done) {
       const data = Array.isArray(game.gameSpec?.countries) && game.gameSpec.countries.length >= 2
         ? game.gameSpec.countries
@@ -4235,6 +4427,7 @@
       if (Array.isArray(spec.rounds)) return spec.rounds.map(round => round.answer || "Round answer").join(" / ");
       if (Array.isArray(spec.patterns)) return spec.patterns.map(pattern => `${(pattern.seq || []).join(", ")} -> ${pattern.ans}`).join(" / ");
       if (Array.isArray(spec.puzzles)) return spec.puzzles.map(puzzle => `${puzzle.q} -> ${puzzle.a}`).join(" / ");
+      if (Array.isArray(spec.mines)) return `Blue hexes: ${spec.mines.map(n => Number(n) + 1).join(", ")}`;
       if (Array.isArray(spec.words)) return spec.words.join(", ");
       if (Array.isArray(spec.groups)) return spec.groups.map(group => `${group.name}: ${(group.words || []).join(", ")}`).join(" / ");
       if (Array.isArray(spec.countries)) return spec.countries.map(country => `${country[0]} pop ${country[1]}m area ${country[2]}k`).join(" / ");
@@ -4333,6 +4526,8 @@
       if (text.includes("timeline") || /^tl\d+/.test(text)) return "Timeline";
       if (text.includes("go capture") || /^go\d+/.test(text)) return "Go Capture";
       if (text.includes("tetris")) return "Tetris Mini";
+      if (text.includes("scrabble") || /^scrab\d+/.test(text)) return "Scrabble";
+      if (text.includes("hexcells") || /^hex\d+/.test(text)) return "Hexcells Infinite";
       if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
       if (text.includes("scramble") || /^scr\d+/.test(text)) return "Word Scramble";
       if (text.includes("country") || /^cb\d+/.test(text)) return "Country Bigger";
