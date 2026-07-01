@@ -329,7 +329,7 @@
     .rules-popover { position: absolute; top: 28px; right: 0; z-index: 2; width: min(270px, 82vw); display: none; padding: 10px 11px; border: 1px solid #E5E7EF; border-radius: 10px; background: white; box-shadow: 0 8px 20px rgba(15, 23, 42, .12); color: #4B5563; font-size: 12px; line-height: 1.35; text-align: left; }
     .rules-popover.show { display: block; }
     .rules-popover b { display: block; margin-bottom: 4px; color: var(--text); }
-    .scrabble-shell, .hexcells-shell { width: min(100%, 360px); margin: 0 auto; display: grid; gap: 10px; justify-items: center; }
+    .scrabble-shell, .hexcells-shell, .flow-shell { width: min(100%, 360px); margin: 0 auto; display: grid; gap: 10px; justify-items: center; }
     .scrabble-board { display: grid; grid-template-columns: repeat(7, 38px); gap: 3px; padding: 8px; border: 1px solid #D6D3E8; border-radius: 10px; background: #FBFAFF; }
     .scrabble-cell, .rack-tile { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #D7C8A8; border-radius: 7px; background: #F5DDB0; color: #1F2937; font-size: 20px; font-weight: 950; box-shadow: 0 2px 0 #D0B17C; }
     .scrabble-cell.anchor { background: #C4B5FD; border-color: #9B7CF7; color: white; }
@@ -344,6 +344,12 @@
     .hex-cell.selected { background: #2563EB; color: white; }
     .hex-cell.bad { background: #FCA5A5; color: #7F1D1D; }
     .hex-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
+    .flow-grid { --flow-size: 5; --flow-cell: 42px; display: grid; grid-template-columns: repeat(var(--flow-size), var(--flow-cell)); grid-template-rows: repeat(var(--flow-size), var(--flow-cell)); gap: 4px; padding: 7px; border: 1px solid #D6D3E8; border-radius: 12px; background: #F8FAFC; touch-action: none; }
+    .flow-cell { width: var(--flow-cell); height: var(--flow-cell); border-radius: 9px; border: 1px solid #E5E7EB; background: white; position: relative; }
+    .flow-cell.path { background: color-mix(in srgb, var(--flow-color) 26%, white); border-color: color-mix(in srgb, var(--flow-color) 58%, white); }
+    .flow-cell.endpoint::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--flow-color); box-shadow: 0 2px 5px rgba(15,23,42,.22); }
+    .flow-cell.selected { outline: 3px solid rgba(108,59,255,.28); outline-offset: 1px; }
+    .flow-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .card-face { width: 46px; height: 64px; display: grid; place-items: center; border: 1px solid #D1D5DB; border-radius: 8px; background: white; box-shadow: 0 3px 8px rgba(15,23,42,.14); color: #111827; font-size: 17px; font-weight: 950; }
     .card-face.red { color: #EF4444; }
     .tetris-board { display: grid; grid-template-columns: repeat(10, 22px); grid-template-rows: repeat(18, 22px); border: 2px solid #CBD5E1; background: #F8FAFC; }
@@ -462,13 +468,16 @@
       .hard-sudoku-cell { width: 36px; height: 36px; font-size: 16px; }
       .hard-sudoku-pad { gap: 5px; }
       .hard-sudoku-pad button { min-height: 28px; }
-      .go-shell, .tetris-shell, .snake-shell, .arcade-shell, .scrabble-shell, .hexcells-shell { width: min(100%, 300px); gap: 8px; }
+      .go-shell, .tetris-shell, .snake-shell, .arcade-shell, .scrabble-shell, .hexcells-shell, .flow-shell { width: min(100%, 300px); gap: 8px; }
       .go-board { grid-template-columns: repeat(7, 34px); grid-template-rows: repeat(7, 34px); padding: 6px; }
       .go-point { width: 34px; height: 34px; }
       .stone { width: 24px; height: 24px; margin: 5px; }
       .scrabble-board { grid-template-columns: repeat(7, 32px); padding: 6px; }
       .scrabble-cell, .rack-tile { width: 32px; height: 32px; border-radius: 6px; font-size: 17px; }
       .hexcells-grid { --hex-size: 31px; }
+      .flow-grid { --flow-cell: 34px; gap: 3px; padding: 6px; }
+      .flow-cell { border-radius: 7px; }
+      .flow-cell.endpoint::after { inset: 7px; }
       .card-face { width: 36px; height: 50px; border-radius: 7px; font-size: 14px; }
       .tetris-board { grid-template-columns: repeat(10, 13px); grid-template-rows: repeat(18, 13px); }
       .tet-cell { width: 13px; height: 13px; }
@@ -730,6 +739,7 @@
       .replace(/^(?:tetris[-_\s]*mini|tetris)[-_\s]*(\d+)$/i, "tetris$1")
       .replace(/^(?:scrabble|scrab)[-_\s]*(\d+)$/i, "scrab$1")
       .replace(/^(?:hexcells[-_\s]*infinite|hexcells|hex)[-_\s]*(\d+)$/i, "hex$1")
+      .replace(/^(?:flow[-_\s]*link|path[-_\s]*fill|numberlink|flow)[-_\s]*(\d+)$/i, "flow$1")
       .replace(/^(?:memory[-_\s]*grid|mem)[-_\s]*(\d+)$/i, "mem$1")
       .replace(/^(?:number[-_\s]*tap|num)[-_\s]*(\d+)$/i, "num$1")
       .replace(/^(?:quick[-_\s]*math|math)[-_\s]*(\d+)$/i, "math$1")
@@ -752,6 +762,7 @@
       if (text.includes("tetris")) return "Tetris Mini";
       if (text.includes("scrabble") || /^scrab\d+/.test(text)) return "Scrabble";
       if (text.includes("hexcells") || /^hex\d+/.test(text)) return "Hexcells Infinite";
+      if (text.includes("flow link") || text.includes("path fill") || text.includes("numberlink") || /^flow\d+/.test(text)) return "Flow Link";
       if (text.includes("arcade") || text.includes("flappy") || text.includes("runner") || text.includes("dodger") || text.includes("catcher")) return "Arcade";
       if (text.includes("snake")) return "Snake";
       if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
@@ -810,10 +821,11 @@
       /^tetris(?:[1-9]|1\d|20)$/i,
       /^scrab(?:[1-9]|1\d|20)$/i,
       /^hex(?:[1-9]|1\d|20)$/i,
+      /^flow(?:[1-9]|1\d|20)$/i,
       /^mem(?:[1-9]|1\d|20)$/i,
       /^scr(?:[1-9]|1\d|20)$/i
     ];
-    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|tetris mini|scrabble|hexcells|memory grid|scramble/i;
+    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|tetris mini|scrabble|hexcells|flow link|path fill|numberlink|memory grid|scramble/i;
     const isCuratedCatalogGame = (game) => {
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const text = `${id} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`;
@@ -880,6 +892,7 @@
       tetris: TetrisMini,
       scrabble: ScrabbleGame,
       hexcells: HexcellsGame,
+      flow_link: FlowLinkGame,
       snake: SnakeGame,
       arcade_game: ArcadeGame,
       memory: MemoryGrid,
@@ -1464,6 +1477,34 @@
       return catalogBase(`hex${index + 1}`, `Hexcells Infinite ${index + 1}`, "Logic", difficulty, ["Logic", "Deduction"], HexcellsGame, makeHexSpec(index), "");
     }));
 
+    const flowColors = ["#EF4444", "#3B82F6", "#22C55E", "#F59E0B", "#A855F7", "#06B6D4", "#EC4899", "#84CC16"];
+    const makeFlowSpec = (index) => {
+      const size = index < 6 ? 5 : index < 14 ? 6 : 7;
+      const pathCount = index < 4 ? 4 : index < 9 ? 5 : index < 15 ? 6 : 7;
+      const order = [];
+      for (let r = 0; r < size; r++) {
+        const cols = Array.from({ length: size }, (_, c) => c);
+        if (r % 2) cols.reverse();
+        cols.forEach(c => order.push([r, c]));
+      }
+      const paths = [];
+      let cursor = 0;
+      for (let p = 0; p < pathCount; p++) {
+        const remaining = order.length - cursor;
+        const left = pathCount - p;
+        const length = p === pathCount - 1
+          ? remaining
+          : Math.max(2, Math.floor(remaining / left) + ((index + p) % 2));
+        paths.push(order.slice(cursor, cursor + length));
+        cursor += length;
+      }
+      return { size, colors: flowColors.slice(0, pathCount), paths };
+    };
+    games.push(...Array.from({ length: 20 }, (_, index) => {
+      const difficulty = catalogDifficulty(index);
+      return catalogBase(`flow${index + 1}`, `Flow Link ${index + 1}`, "Logic", difficulty, ["Spatial Reasoning", "Planning"], FlowLinkGame, makeFlowSpec(index), "");
+    }));
+
     const goCatalog = [
       { name: "Net the Runner", difficulty: "Easy", black: ["c4","d3","e4","e5"], white: ["d4"], line: ["c5","d5","d6"], tactic: "Net" },
       { name: "Mirror Net", difficulty: "Easy", black: ["e4","d3","c4","c5"], white: ["d4"], line: ["e5","d5","d6"], tactic: "Net" },
@@ -1742,6 +1783,7 @@
       if (/tetris/i.test(name)) return "Keep the stack low and move the falling piece toward the deepest gap.";
       if (/scrabble/i.test(name)) return "Start with the high-value letters, then check whether the word passes through the purple anchor.";
       if (/hexcells/i.test(name)) return "Use the numbered hexes first: a 0 clears all neighbors, while a high number forces most adjacent hidden cells blue.";
+      if (/flow link|path fill|numberlink/i.test(name)) return "Start with the shortest-looking pair first. Every move must stay adjacent, avoid other colors, and leave room for the remaining paths.";
       if (/connections/i.test(name)) return "Say the possible category out loud before submitting four words.";
       return directionsForGame(game);
     }
@@ -3502,6 +3544,144 @@
       draw();
     }
 
+    function FlowLinkGame(root, game, done) {
+      const spec = game.gameSpec || {};
+      const size = Math.max(5, Math.min(7, Number(spec.size || 5)));
+      const paths = Array.isArray(spec.paths) ? spec.paths.filter(path => Array.isArray(path) && path.length >= 2) : [];
+      const colors = Array.isArray(spec.colors) ? spec.colors : flowColors;
+      const pathCount = Math.min(paths.length, colors.length);
+      const key = (r, c) => `${r},${c}`;
+      const parse = k => k.split(",").map(Number);
+      const endpoints = new Map();
+      const owners = Array(size * size).fill(null);
+      const drawn = Array.from({ length: pathCount }, () => []);
+      let selected = null;
+      let finished = false;
+      paths.slice(0, pathCount).forEach((path, i) => {
+        const start = key(path[0][0], path[0][1]);
+        const endCell = path[path.length - 1];
+        const end = key(endCell[0], endCell[1]);
+        endpoints.set(start, { color: i, end: false });
+        endpoints.set(end, { color: i, end: true });
+        owners[path[0][0] * size + path[0][1]] = i;
+        owners[endCell[0] * size + endCell[1]] = i;
+      });
+      root.innerHTML = `
+        <div class="flow-shell rules-shell">
+          <button class="rules-btn" type="button" aria-label="Flow Link rules">?</button>
+          <div class="rules-popover"><b>How to play</b>Connect matching colored dots. Lines cannot overlap, and every square must be filled before the puzzle is complete.</div>
+          <div class="flow-status">Tap a colored dot to start a path.</div>
+          <div class="flow-grid" style="--flow-size:${size};"></div>
+          <button class="btn ghost reset">Reset</button>
+        </div>`;
+      wireRules(root);
+      const indexFor = (r, c) => r * size + c;
+      const isEndpoint = k => endpoints.has(k);
+      const clearColor = (color, startKey = null) => {
+        drawn[color].forEach(k => {
+          if (!isEndpoint(k)) {
+            const [r, c] = parse(k);
+            owners[indexFor(r, c)] = null;
+          }
+        });
+        paths[color].forEach((cell, idx) => {
+          if (idx === 0 || idx === paths[color].length - 1) owners[indexFor(cell[0], cell[1])] = color;
+        });
+        drawn[color] = startKey ? [startKey] : [];
+      };
+      const connected = color => {
+        const route = drawn[color];
+        if (route.length < 2) return false;
+        const first = endpoints.get(route[0]);
+        const last = endpoints.get(route[route.length - 1]);
+        return first?.color === color && last?.color === color && first.end !== last.end;
+      };
+      const solved = () => owners.every(owner => owner !== null) && Array.from({ length: pathCount }, (_, i) => connected(i)).every(Boolean);
+      const setStatus = msg => $(".flow-status", root).textContent = msg;
+      const draw = () => {
+        const grid = $(".flow-grid", root);
+        grid.innerHTML = "";
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            const k = key(r, c);
+            const owner = owners[indexFor(r, c)];
+            const endpoint = endpoints.get(k);
+            const b = document.createElement("button");
+            b.className = [
+              "flow-cell",
+              owner !== null ? "path" : "",
+              endpoint ? "endpoint" : "",
+              selected !== null && owner === selected ? "selected" : ""
+            ].filter(Boolean).join(" ");
+            if (owner !== null) b.style.setProperty("--flow-color", colors[owner]);
+            b.onclick = () => tap(r, c);
+            grid.appendChild(b);
+          }
+        }
+      };
+      const tap = (r, c) => {
+        if (finished) return;
+        const k = key(r, c);
+        const endpoint = endpoints.get(k);
+        const owner = owners[indexFor(r, c)];
+        if (endpoint) {
+          const route = selected === null ? [] : drawn[selected];
+          const last = route[route.length - 1];
+          const adjacent = last ? Math.abs(parse(last)[0] - r) + Math.abs(parse(last)[1] - c) === 1 : false;
+          if (endpoint.color === selected && adjacent && route[0] !== k) {
+            route.push(k);
+            owners[indexFor(r, c)] = selected;
+            draw();
+            if (solved()) {
+              finished = true;
+              setStatus("Board filled.");
+              done(1200, "All paths connected.");
+            }
+            return;
+          }
+          selected = endpoint.color;
+          clearColor(selected, k);
+          setStatus("Draw to the matching dot.");
+          draw();
+          return;
+        }
+        if (selected === null) return setStatus("Start by tapping a colored dot.");
+        const route = drawn[selected];
+        const last = route[route.length - 1];
+        if (!last) return;
+        const [lr, lc] = parse(last);
+        if (Math.abs(lr - r) + Math.abs(lc - c) !== 1) return setStatus("Paths move one square at a time.");
+        if (owner !== null && owner !== selected) return setStatus("Lines cannot overlap.");
+        const existingIndex = route.indexOf(k);
+        if (existingIndex >= 0) {
+          route.slice(existingIndex + 1).forEach(cellKey => {
+            if (!isEndpoint(cellKey)) {
+              const [cr, cc] = parse(cellKey);
+              owners[indexFor(cr, cc)] = null;
+            }
+          });
+          drawn[selected] = route.slice(0, existingIndex + 1);
+        } else {
+          owners[indexFor(r, c)] = selected;
+          route.push(k);
+        }
+        draw();
+        if (solved()) {
+          finished = true;
+          setStatus("Board filled.");
+          done(1200, "All paths connected.");
+        }
+      };
+      $(".reset", root).onclick = () => {
+        owners.fill(null);
+        drawn.forEach((_, i) => clearColor(i));
+        selected = null;
+        setStatus("Tap a colored dot to start a path.");
+        draw();
+      };
+      draw();
+    }
+
     function CountryBigger(root, game, done) {
       const data = Array.isArray(game.gameSpec?.countries) && game.gameSpec.countries.length >= 2
         ? game.gameSpec.countries
@@ -4428,6 +4608,7 @@
       if (Array.isArray(spec.patterns)) return spec.patterns.map(pattern => `${(pattern.seq || []).join(", ")} -> ${pattern.ans}`).join(" / ");
       if (Array.isArray(spec.puzzles)) return spec.puzzles.map(puzzle => `${puzzle.q} -> ${puzzle.a}`).join(" / ");
       if (Array.isArray(spec.mines)) return `Blue hexes: ${spec.mines.map(n => Number(n) + 1).join(", ")}`;
+      if (Array.isArray(spec.paths)) return spec.paths.map((path, index) => `Path ${index + 1}: ${path.map(([r, c]) => `${r + 1},${c + 1}`).join(" -> ")}`).join(" / ");
       if (Array.isArray(spec.words)) return spec.words.join(", ");
       if (Array.isArray(spec.groups)) return spec.groups.map(group => `${group.name}: ${(group.words || []).join(", ")}`).join(" / ");
       if (Array.isArray(spec.countries)) return spec.countries.map(country => `${country[0]} pop ${country[1]}m area ${country[2]}k`).join(" / ");
@@ -4528,6 +4709,7 @@
       if (text.includes("tetris")) return "Tetris Mini";
       if (text.includes("scrabble") || /^scrab\d+/.test(text)) return "Scrabble";
       if (text.includes("hexcells") || /^hex\d+/.test(text)) return "Hexcells Infinite";
+      if (text.includes("flow link") || text.includes("path fill") || text.includes("numberlink") || /^flow\d+/.test(text)) return "Flow Link";
       if (text.includes("memory") || /^mem\d+/.test(text)) return "Memory Grid";
       if (text.includes("scramble") || /^scr\d+/.test(text)) return "Word Scramble";
       if (text.includes("country") || /^cb\d+/.test(text)) return "Country Bigger";
