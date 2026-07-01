@@ -808,6 +808,14 @@
       const title = String(game?.title || "").toLowerCase();
       return /^logic\d+$/i.test(id) || title.includes("mini logic") || type === "logic";
     };
+    const isGoFeedGame = (game) => {
+      const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "").toLowerCase();
+      const type = String(game?.game_type || game?.type || game?.kind || "").toLowerCase();
+      const title = String(game?.title || "").toLowerCase();
+      return /^go\d+$/.test(id) ||
+        ["go", "go_capture"].includes(type) ||
+        title.includes("go capture");
+    };
     const isRemovedCatalogGame = (game) => {
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const type = String(game?.game_type || game?.type || "").toLowerCase();
@@ -2077,7 +2085,7 @@
     function renderFeed() {
       const feed = $("#feed");
       state.playedGameIds ||= [];
-      feedPool = rankedGames().filter(game => !state.playedGameIds.includes(gameUniqueKey(game)));
+      feedPool = rankedGames().filter(game => !isGoFeedGame(game) && !state.playedGameIds.includes(gameUniqueKey(game)));
       feedCursor = 0;
       feedShownIds = new Set();
       feedLastFamily = "";
@@ -2091,7 +2099,7 @@
     function appendFeedBatch(count = 18) {
       const feed = $("#feed");
       state.playedGameIds ||= [];
-      if (!feedPool.length) feedPool = rankedGames().filter(game => !state.playedGameIds.includes(gameUniqueKey(game)));
+      if (!feedPool.length) feedPool = rankedGames().filter(game => !isGoFeedGame(game) && !state.playedGameIds.includes(gameUniqueKey(game)));
       let added = 0;
       while (added < count && feedCursor < feedPool.length) {
         if (gameFamilyName(feedPool[feedCursor]) === feedLastFamily) {
