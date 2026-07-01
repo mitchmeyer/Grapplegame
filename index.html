@@ -345,7 +345,7 @@
     .hex-cell.bad { background: #FCA5A5; color: #7F1D1D; }
     .hex-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .flow-grid { --flow-size: 5; --flow-cell: 42px; display: grid; grid-template-columns: repeat(var(--flow-size), var(--flow-cell)); grid-template-rows: repeat(var(--flow-size), var(--flow-cell)); gap: 4px; padding: 7px; border: 1px solid #D6D3E8; border-radius: 12px; background: #F8FAFC; touch-action: none; }
-    .flow-cell { width: var(--flow-cell); height: var(--flow-cell); border-radius: 9px; border: 1px solid #E5E7EB; background: white; position: relative; }
+    .flow-cell { width: var(--flow-cell); height: var(--flow-cell); padding: 0; border-radius: 9px; border: 1px solid #E5E7EB; background: white; position: relative; cursor: pointer; }
     .flow-cell.path { background: color-mix(in srgb, var(--flow-color) 26%, white); border-color: color-mix(in srgb, var(--flow-color) 58%, white); }
     .flow-cell.endpoint::after { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--flow-color); box-shadow: 0 2px 5px rgba(15,23,42,.22); }
     .flow-cell.selected { outline: 3px solid rgba(108,59,255,.28); outline-offset: 1px; }
@@ -3570,11 +3570,12 @@
         <div class="flow-shell rules-shell">
           <button class="rules-btn" type="button" aria-label="Flow Link rules">?</button>
           <div class="rules-popover"><b>How to play</b>Connect matching colored dots. Lines cannot overlap, and every square must be filled before the puzzle is complete.</div>
-          <div class="flow-status">Tap a colored dot to start a path.</div>
+          <div class="flow-status">Drag from a colored dot to its match.</div>
           <div class="flow-grid" style="--flow-size:${size};"></div>
           <button class="btn ghost reset">Reset</button>
         </div>`;
       wireRules(root);
+      const grid = $(".flow-grid", root);
       const indexFor = (r, c) => r * size + c;
       const isEndpoint = k => endpoints.has(k);
       const clearColor = (color, startKey = null) => {
@@ -3599,7 +3600,6 @@
       const solved = () => owners.every(owner => owner !== null) && Array.from({ length: pathCount }, (_, i) => connected(i)).every(Boolean);
       const setStatus = msg => $(".flow-status", root).textContent = msg;
       const draw = () => {
-        const grid = $(".flow-grid", root);
         grid.innerHTML = "";
         for (let r = 0; r < size; r++) {
           for (let c = 0; c < size; c++) {
@@ -3614,7 +3614,9 @@
               selected !== null && owner === selected ? "selected" : ""
             ].filter(Boolean).join(" ");
             if (owner !== null) b.style.setProperty("--flow-color", colors[owner]);
-            b.onclick = () => tap(r, c);
+            b.type = "button";
+            b.dataset.r = String(r);
+            b.dataset.c = String(c);
             grid.appendChild(b);
           }
         }
@@ -3641,7 +3643,7 @@
           }
           selected = endpoint.color;
           clearColor(selected, k);
-          setStatus("Draw to the matching dot.");
+          setStatus("Drag to the matching dot.");
           draw();
           return;
         }
@@ -3672,11 +3674,51 @@
           done(1200, "All paths connected.");
         }
       };
+      let dragging = false;
+      let lastDragKey = null;
+      const cellFromPointer = event => {
+        const hit = document.elementFromPoint(event.clientX, event.clientY);
+        const cell = hit?.closest?.(".flow-cell");
+        return cell && grid.contains(cell) ? cell : null;
+      };
+      const dragTo = event => {
+        const cell = cellFromPointer(event);
+        if (!cell) return;
+        const r = Number(cell.dataset.r);
+        const c = Number(cell.dataset.c);
+        const cellKey = key(r, c);
+        if (cellKey === lastDragKey) return;
+        lastDragKey = cellKey;
+        tap(r, c);
+      };
+      grid.onpointerdown = event => {
+        event.preventDefault();
+        dragging = true;
+        lastDragKey = null;
+        grid.setPointerCapture?.(event.pointerId);
+        dragTo(event);
+      };
+      grid.onpointermove = event => {
+        if (!dragging) return;
+        event.preventDefault();
+        dragTo(event);
+      };
+      const endDrag = event => {
+        dragging = false;
+        lastDragKey = null;
+        grid.releasePointerCapture?.(event.pointerId);
+      };
+      grid.onpointerup = endDrag;
+      grid.onpointercancel = endDrag;
+      grid.onpointerleave = () => {
+        dragging = false;
+        lastDragKey = null;
+      };
       $(".reset", root).onclick = () => {
         owners.fill(null);
         drawn.forEach((_, i) => clearColor(i));
         selected = null;
-        setStatus("Tap a colored dot to start a path.");
+        setStatus("Drag from a colored dot to its match.");
         draw();
       };
       draw();
