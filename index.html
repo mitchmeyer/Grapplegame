@@ -354,14 +354,15 @@
     .flow-cell.endpoint::after { content: ""; position: absolute; z-index: 3; inset: 9px; border-radius: 50%; background: var(--flow-color); box-shadow: 0 2px 5px rgba(15,23,42,.22); }
     .flow-cell.selected { outline: 3px solid rgba(108,59,255,.28); outline-offset: 1px; }
     .flow-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
-    .one-stroke-board { width: min(100%, 320px); aspect-ratio: 1; border: 1px solid #D6D3E8; border-radius: 14px; background: #FFFFFF; touch-action: none; }
-    .stroke-edge { stroke: #8D95A3; stroke-width: 4.2; stroke-linecap: round; }
-    .stroke-edge.drawn { stroke: #6C3BFF; stroke-width: 6.6; filter: drop-shadow(0 2px 4px rgba(108,59,255,.22)); }
-    .stroke-live { stroke: rgba(108,59,255,.62); stroke-width: 6.2; stroke-linecap: round; stroke-dasharray: 2 7; pointer-events: none; }
-    .stroke-node { fill: #8D95A3; stroke: #FFFFFF; stroke-width: 1.2; }
-    .stroke-node.start { fill: #22C55E; stroke: #16A34A; }
-    .stroke-node.end { fill: #EF4444; stroke: #DC2626; }
-    .stroke-node.current { fill: #6C3BFF; stroke: #FFFFFF; stroke-width: 2.2; }
+    .one-stroke-board { width: min(100%, 320px); aspect-ratio: 1; border: 1px solid #D6D3E8; border-radius: 18px; background: linear-gradient(180deg, #FFFFFF 0%, #FBFAFF 100%); touch-action: none; box-shadow: inset 0 0 0 1px rgba(124, 58, 237, .05); }
+    .stroke-edge { stroke: #B9B7C8; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+    .stroke-edge.drawn { stroke: #6C3BFF; stroke-width: 7.4; filter: drop-shadow(0 3px 5px rgba(108,59,255,.2)); }
+    .stroke-live { stroke: rgba(108,59,255,.58); stroke-width: 7; stroke-linecap: round; pointer-events: none; }
+    .stroke-node { fill: #FFFFFF; stroke: #B9B7C8; stroke-width: 1.4; opacity: .45; }
+    .stroke-node.start { fill: #22C55E; stroke: #16A34A; opacity: 1; }
+    .stroke-node.end { fill: #EF4444; stroke: #DC2626; opacity: 1; }
+    .stroke-node.current { fill: #6C3BFF; stroke: #FFFFFF; stroke-width: 2.2; opacity: 1; }
+    .stroke-node.loop-start { fill: #22C55E; stroke: #EF4444; stroke-width: 1.9; opacity: 1; }
     .stroke-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .card-face { width: 46px; height: 64px; display: grid; place-items: center; border: 1px solid #D1D5DB; border-radius: 8px; background: white; box-shadow: 0 3px 8px rgba(15,23,42,.14); color: #111827; font-size: 17px; font-weight: 950; }
     .card-face.red { color: #EF4444; }
@@ -1523,64 +1524,48 @@
       return catalogBase(`flow${index + 1}`, `Flow Link ${index + 1}`, "Logic", difficulty, ["Spatial Reasoning", "Planning"], FlowLinkGame, makeFlowSpec(index), "");
     }));
 
+    const oneStrokeTemplates = [
+      [[20,72],[50,35],[80,72],[20,72],[20,50],[80,50],[80,72]],
+      [[50,14],[72,82],[15,40],[85,40],[28,82]],
+      [[16,30],[84,30],[50,56],[16,30],[16,72],[50,56],[84,72],[84,30]],
+      [[38,12],[22,50],[44,50],[30,88],[78,36],[52,36],[64,12]],
+      [[18,72],[80,72],[66,84],[34,84],[18,72],[44,72],[44,24],[70,62],[44,62]],
+      [[22,24],[50,50],[18,55],[22,76],[50,66],[78,76],[82,55],[50,50],[78,24]],
+      [[14,76],[24,36],[40,66],[50,24],[60,66],[76,36],[86,76]],
+      [[24,35],[52,20],[78,35],[78,65],[52,82],[24,65],[24,35],[52,50],[78,65],[52,20]],
+      [[50,12],[72,50],[62,84],[50,72],[38,84],[28,50],[50,12],[50,72],[28,50]],
+      [[22,48],[32,36],[46,36],[56,48],[46,60],[32,60],[22,48],[56,48],[84,48],[84,38],[92,38],[92,48],[84,48],[84,58]],
+      [[16,50],[34,30],[70,30],[88,50],[70,70],[34,70],[16,50],[34,50],[16,30],[16,70],[34,50]],
+      [[10,80],[28,50],[42,68],[58,34],[86,80],[10,80],[42,68],[58,80],[28,50],[58,34]],
+      [[15,78],[15,36],[28,36],[28,24],[42,24],[42,36],[58,36],[58,24],[72,24],[72,36],[85,36],[85,78],[15,78]],
+      [[25,18],[75,18],[50,50],[25,18],[25,82],[50,50],[75,82],[75,18]],
+      [[18,18],[82,18],[82,82],[18,82],[18,32],[68,32],[68,68],[32,68],[32,46],[54,46],[54,58],[44,58]],
+      [[15,15],[85,15],[85,30],[25,30],[25,45],[85,45],[85,60],[25,60],[25,75],[85,75],[85,85],[15,85],[15,15]],
+      [[50,50],[50,18],[68,32],[50,50],[82,50],[68,68],[50,50],[50,82],[32,68],[50,50],[18,50],[32,32],[50,50]],
+      [[12,78],[22,30],[36,60],[50,20],[64,60],[78,30],[88,78],[64,78],[64,60],[50,78],[36,60],[36,78],[12,78]],
+      [[28,78],[28,42],[40,26],[50,42],[60,26],[72,42],[72,78],[28,78],[42,62],[50,70],[58,62],[72,78]],
+      [[12,50],[28,22],[50,50],[72,22],[88,50],[72,78],[50,50],[28,78],[12,50],[50,12],[88,50],[50,88],[12,50],[72,78]]
+    ];
     const makeOneStrokeSpec = (index) => {
       const nodes = {};
-      const addNode = (id, x, y) => {
-        nodes[id] = [Math.round(x * 1000) / 10, Math.round(y * 1000) / 10];
-        return id;
-      };
-      const grid = index < 5 ? 4 : index < 11 ? 5 : index < 16 ? 6 : 7;
-      const targetBackbone = index < 5 ? 8 + index : index < 11 ? 14 + index : index < 16 ? 24 + index : grid * grid;
-      const coords = [];
-      let top = 0;
-      let left = 0;
-      let bottom = grid - 1;
-      let right = grid - 1;
-      while (left <= right && top <= bottom) {
-        for (let c = left; c <= right; c++) coords.push([top, c]);
-        for (let r = top + 1; r <= bottom; r++) coords.push([r, right]);
-        if (top < bottom) for (let c = right - 1; c >= left; c--) coords.push([bottom, c]);
-        if (left < right) for (let r = bottom - 1; r > top; r--) coords.push([r, left]);
-        top += 1;
-        left += 1;
-        bottom -= 1;
-        right -= 1;
-      }
-      const backbone = coords.slice(0, Math.min(coords.length, targetBackbone));
-      const pad = 0.1;
-      const span = 0.8;
-      backbone.forEach(([r, c], i) => addNode(`m${i}`, pad + (span * c) / (grid - 1), pad + (span * r) / (grid - 1)));
-      const solution = ["m0"];
-      const loopEvery = index < 4 ? 0 : index < 9 ? 5 : index < 15 ? 4 : 3;
-      const spacing = span / (grid - 1);
-      const loopSize = spacing * (index < 10 ? 0.36 : 0.42);
-      const loopFor = (anchor, step, variant, tag = "") => {
-        const [x, y] = nodes[anchor].map(n => n / 100);
-        const boardCenter = [0.5, 0.5];
-        const inward = Math.atan2(boardCenter[1] - y, boardCenter[0] - x);
-        const angle = (Number.isFinite(inward) ? inward : 0) + ((step + index) % 2 ? 0.26 : -0.26);
-        const point = (radius, offset, suffix) => addNode(`${anchor}_${variant}_${step}_${tag}_${suffix}`,
-          clamp(x + Math.cos(angle + offset) * radius, 0.08, 0.92),
-          clamp(y + Math.sin(angle + offset) * radius, 0.08, 0.92)
-        );
-        if (variant === "triangle") {
-          solution.push(point(loopSize, -0.82, "a"), point(loopSize, 0.82, "b"), anchor);
-        } else if (variant === "diamond") {
-          solution.push(point(loopSize * 1.05, -1.05, "a"), point(loopSize * 1.45, 0, "b"), point(loopSize * 1.05, 1.05, "c"), anchor);
-        } else {
-          solution.push(point(loopSize, -1.2, "a"), point(loopSize * 1.55, -0.4, "b"), point(loopSize * 1.55, 0.4, "c"), point(loopSize, 1.2, "d"), anchor);
+      const idsByPoint = new Map();
+      const addNode = ([x, y]) => {
+        const key = `${x},${y}`;
+        if (!idsByPoint.has(key)) {
+          const id = `p${idsByPoint.size}`;
+          idsByPoint.set(key, id);
+          nodes[id] = [x, y];
         }
+        return idsByPoint.get(key);
       };
-      for (let i = 1; i < backbone.length; i++) {
-        const anchor = `m${i}`;
-        solution.push(anchor);
-        if (i >= backbone.length - 1) continue;
-        if (loopEvery && i % loopEvery === 0) {
-          const variant = index < 5 ? "triangle" : index < 12 ? (i % 3 ? "diamond" : "triangle") : (i % 3 === 0 ? "box" : "diamond");
-          loopFor(anchor, i, variant);
-        }
-      }
-      return { nodes, solution, start: "m0", end: `m${backbone.length - 1}` };
+      const solution = oneStrokeTemplates[index % oneStrokeTemplates.length].map(addNode);
+      return {
+        nodes,
+        solution,
+        start: solution[0],
+        end: solution[solution.length - 1],
+        showNodes: false
+      };
     };
     games.push(...Array.from({ length: 20 }, (_, index) => {
       const difficulty = catalogDifficulty(index);
@@ -3864,6 +3849,7 @@
       const solution = Array.isArray(spec.solution) ? spec.solution.filter(id => nodes[id]) : [];
       const start = spec.start || solution[0];
       const end = spec.end || solution[solution.length - 1];
+      const showNodes = spec.showNodes !== false;
       const edgeKey = (a, b) => [a, b].sort().join("|");
       const edges = [];
       const edgeMap = new Map();
@@ -3921,13 +3907,18 @@
           board.appendChild(svg("line", { x1, y1, x2: livePoint[0], y2: livePoint[1], class: "stroke-live" }));
         }
         Object.entries(nodes).forEach(([id, [cx, cy]]) => {
+          const isLoopStart = id === start && id === end;
+          const isPrimary = isLoopStart || id === start || id === end || id === current;
+          if (!showNodes && !isPrimary) return;
           const classes = [
             "stroke-node",
+            isLoopStart ? "loop-start" : "",
             id === start ? "start" : "",
             id === end ? "end" : "",
             id === current ? "current" : ""
           ].filter(Boolean).join(" ");
-          board.appendChild(svg("circle", { cx, cy, r: id === start || id === end ? 4.4 : id === current ? 3.1 : 1.7, class: classes }));
+          const radius = isPrimary ? (isLoopStart ? 5.3 : id === current ? 4.2 : 4.8) : 1.15;
+          board.appendChild(svg("circle", { cx, cy, r: radius, class: classes }));
         });
       };
       const nearestNode = event => {
