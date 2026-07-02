@@ -11,9 +11,9 @@
   "icons": [
     {
       "src": "/favicon.png",
-      "sizes": "425x535",
+      "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }

@@ -12,8 +12,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Grapple</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/png" sizes="425x535" href="/favicon.png">
-  <link rel="apple-touch-icon" sizes="425x535" href="/favicon.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="/favicon.png">
   <style>
     :root {
       --primary: #6C3BFF;
@@ -37,6 +37,7 @@
       --hairline: #ECE8F6;
       --shadow: 0 18px 42px rgba(31, 20, 74, .09);
       --soft-shadow: 0 8px 22px rgba(31, 20, 74, .07);
+      --nav-total-height: calc(84px + env(safe-area-inset-bottom));
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -45,12 +46,12 @@
     button, input, textarea, select { font: inherit; font-size: 16px; }
     button { border: 0; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
     input, textarea, select { touch-action: manipulation; }
-    .app { height: 100vh; height: 100svh; display: grid; grid-template-rows: minmax(0, 1fr) auto; background: white; }
+    .app { min-height: 100vh; min-height: 100svh; display: block; background: white; }
     @supports (height: 100dvh) {
-      .app { height: 100dvh; }
+      .app { min-height: 100dvh; }
     }
-    .screen { overflow: hidden; min-height: 0; }
-    .view { height: 100%; overflow: auto; display: none; padding: 18px 16px 104px; }
+    .screen { position: fixed; inset: 0 0 var(--nav-total-height) 0; overflow: hidden; min-height: 0; background: white; }
+    .view { height: 100%; overflow: auto; display: none; padding: 18px 16px 24px; }
     .view:not(.active) { display: none !important; }
     .view.active { display: block; }
     .feed { height: 100%; overflow-y: auto; scroll-snap-type: y proximity; padding: 0 10px 18px; background: white; -webkit-overflow-scrolling: touch; }
@@ -535,7 +536,11 @@
     }
 
     .nav {
-      position: relative;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
       min-height: 84px;
       gap: 0;
       padding: 7px max(10px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right));
@@ -897,11 +902,12 @@
     .bar span { background: linear-gradient(90deg, var(--primary), var(--mint)); }
 
     @media (max-width: 760px) {
+      :root { --nav-total-height: calc(78px + env(safe-area-inset-bottom)); }
       .grid.two, .grid.three { grid-template-columns: 1fr; }
       .admin-summary, .admin-toolbar, .admin-detail-grid { grid-template-columns: 1fr; }
       .admin-family-grid { grid-template-columns: 1fr; }
       .admin-version-card { grid-template-columns: 1fr; }
-      .feed { padding: calc(50px + env(safe-area-inset-top)) 6px calc(72px + env(safe-area-inset-bottom)); }
+      .feed { padding: calc(50px + env(safe-area-inset-top)) 6px 12px; }
       .feed-card-wrap { min-height: 0; padding: 6px 0; }
       .game-card { width: 100%; height: auto; max-height: calc(100svh - 138px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); border-radius: 10px; }
       .auth-bar { max-width: 52vw; min-height: 34px; gap: 5px; padding: 0 7px; overflow: hidden; }
@@ -1000,7 +1006,7 @@
       .friend-name { font-size: 18px; }
       .friend-meta { font-size: 14px; }
       .admin-summary, .admin-toolbar { grid-template-columns: 1fr; }
-      .view:not(#feedView):not(#challengesView) { padding: 14px 12px 104px; }
+      .view:not(#feedView):not(#challengesView) { padding: 14px 12px 24px; }
       .topbar {
         min-height: 64px;
         margin-bottom: 12px;
@@ -1104,7 +1110,7 @@
         </div>
       </section>
 
-      <section id="challengesView" class="view" style="padding:0 0 104px;">
+      <section id="challengesView" class="view" style="padding:0;">
         <div class="challenge-shell">
           <div class="challenge-header">
             <h1>Challenge</h1>
