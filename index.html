@@ -389,15 +389,14 @@
     .hex-cell.selected { background: #2563EB; color: white; }
     .hex-cell.bad { background: #FCA5A5; color: #7F1D1D; }
     .hex-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
-    .flow-grid { --flow-size: 5; --flow-cell: 42px; display: grid; grid-template-columns: repeat(var(--flow-size), var(--flow-cell)); grid-template-rows: repeat(var(--flow-size), var(--flow-cell)); gap: 4px; padding: 7px; border: 1px solid #D6D3E8; border-radius: 12px; background: #F8FAFC; touch-action: none; }
-    .flow-cell { width: var(--flow-cell); height: var(--flow-cell); padding: 0; border-radius: 9px; border: 1px solid #E5E7EB; background: white; position: relative; cursor: pointer; overflow: hidden; }
-    .flow-cell.path { border-color: color-mix(in srgb, var(--flow-color) 36%, #E5E7EB); }
-    .flow-line { position: absolute; z-index: 1; border-radius: 999px; background: var(--flow-color); pointer-events: none; box-shadow: 0 1px 3px rgba(15,23,42,.1); }
-    .flow-line.h { height: 8px; left: var(--flow-left, 50%); right: var(--flow-right, 50%); top: 50%; transform: translateY(-50%); }
-    .flow-line.v { width: 8px; top: var(--flow-top, 50%); bottom: var(--flow-bottom, 50%); left: 50%; transform: translateX(-50%); }
-    .flow-core { position: absolute; z-index: 2; width: 10px; height: 10px; left: 50%; top: 50%; border-radius: 50%; background: var(--flow-color); transform: translate(-50%, -50%); pointer-events: none; }
-    .flow-cell.endpoint::after { content: ""; position: absolute; z-index: 3; inset: 9px; border-radius: 50%; background: var(--flow-color); box-shadow: 0 2px 5px rgba(15,23,42,.22); }
-    .flow-cell.selected { outline: 3px solid rgba(108,59,255,.28); outline-offset: 1px; }
+    .flow-grid { --flow-size: 5; --flow-cell: 42px; position: relative; display: grid; grid-template-columns: repeat(var(--flow-size), var(--flow-cell)); grid-template-rows: repeat(var(--flow-size), var(--flow-cell)); gap: 4px; padding: 7px; border: 1px solid #D6D3E8; border-radius: 16px; background: linear-gradient(180deg, #FFFFFF 0%, #FBFAFF 100%); touch-action: none; isolation: isolate; box-shadow: inset 0 0 0 1px rgba(124, 58, 237, .05); }
+    .flow-cell { position: relative; z-index: 2; width: var(--flow-cell); height: var(--flow-cell); padding: 0; border-radius: 11px; border: 1px solid #E5E7EB; background: rgba(255,255,255,.68); cursor: pointer; overflow: visible; }
+    .flow-cell.path { background: transparent; border-color: color-mix(in srgb, var(--flow-color) 32%, #E5E7EB); }
+    .flow-canvas { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+    .flow-svg-line { fill: none; stroke-width: 11; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 3px 6px rgba(15,23,42,.12)); }
+    .flow-svg-glow { fill: none; stroke-width: 17; stroke-linecap: round; stroke-linejoin: round; opacity: .16; }
+    .flow-cell.endpoint::after { content: ""; position: absolute; z-index: 3; inset: 7px; border-radius: 50%; background: var(--flow-color); box-shadow: 0 4px 10px rgba(15,23,42,.24), inset 0 0 0 2px rgba(255,255,255,.32); }
+    .flow-cell.selected { outline: 3px solid rgba(108,59,255,.24); outline-offset: 2px; }
     .flow-status { min-height: 32px; display: grid; place-items: center; padding: 7px 9px; border: 1px solid #E5E7EF; border-radius: 10px; color: #5B4E84; background: #FBFAFF; font-size: 13px; font-weight: 850; text-align: center; }
     .one-stroke-board { width: min(100%, 320px); aspect-ratio: 1; border: 1px solid #D6D3E8; border-radius: 18px; background: linear-gradient(180deg, #FFFFFF 0%, #FBFAFF 100%); touch-action: none; box-shadow: inset 0 0 0 1px rgba(124, 58, 237, .05); }
     .stroke-edge { stroke: #B9B7C8; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
@@ -988,6 +987,15 @@
       .cw-cell { font-size: 17px; padding-top: 6px; }
       .crossword-clues { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; font-size: 11px; }
       .crossword-clues li { margin: 2px 0; }
+      .feed .crossword-wrap { grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: start; }
+      .feed .crossword { --cw-cell: min(27px, calc((100vw - 178px) / var(--cw-size, 5))); border-width: 1.5px; }
+      .feed .cw-square { border-width: 1px; }
+      .feed .cw-cell { font-size: 14px; padding-top: 5px; }
+      .feed .cw-num { top: 1px; left: 2px; font-size: 7px; }
+      .feed .crossword-clues { grid-template-columns: 1fr; gap: 5px; max-height: 178px; overflow: hidden; font-size: 9px; line-height: 1.13; }
+      .feed .crossword-clues ol { margin: 2px 0 0 14px; }
+      .feed .crossword-clues li { margin: 1px 0; }
+      .feed .crossword-wrap + .btn.check { min-height: 36px; font-size: 13px; }
       .sudoku-shell { width: min(100%, 228px); gap: 8px; }
       .sudoku-grid { grid-template-columns: repeat(4, 50px); grid-template-rows: repeat(4, 50px); }
       .sudoku-cell { width: 50px; height: 50px; font-size: 22px; }
@@ -1006,10 +1014,15 @@
       .scrabble-cell, .rack-tile { width: 32px; height: 32px; border-radius: 6px; font-size: 17px; }
       .hexcells-grid { --hex-size: 31px; }
       .flow-grid { --flow-cell: 34px; gap: 3px; padding: 6px; }
-      .flow-cell { border-radius: 7px; }
-      .flow-cell.endpoint::after { inset: 7px; }
+      .flow-cell { border-radius: 9px; }
+      .flow-svg-line { stroke-width: 9; }
+      .flow-svg-glow { stroke-width: 15; }
+      .flow-cell.endpoint::after { inset: 6px; }
       .one-stroke-board { width: min(100%, 292px); }
-      .feed .one-stroke-board { width: min(100%, 280px); }
+      .feed .one-stroke-shell { gap: 6px; }
+      .feed .one-stroke-board { width: min(100%, 236px); }
+      .feed .stroke-status { min-height: 28px; padding: 5px 8px; font-size: 11px; line-height: 1.15; }
+      .feed .one-stroke-shell .btn.reset { min-height: 36px; padding: 0 18px; font-size: 13px; }
       .card-face { width: 36px; height: 50px; border-radius: 7px; font-size: 14px; }
       .tetris-board { grid-template-columns: repeat(10, 13px); grid-template-rows: repeat(18, 13px); }
       .tet-cell { width: 13px; height: 13px; }
@@ -1546,14 +1559,13 @@
       /^tl(?:[1-9]|1\d|20)$/i,
       /^go(?:[1-9]|10)$/i,
       /^tetris(?:[1-9]|1\d|20)$/i,
-      /^scrab(?:[1-9]|1\d|20)$/i,
       /^hex(?:[1-9]|1\d|20)$/i,
       /^flow(?:[1-9]|1\d|20)$/i,
       /^stroke(?:[1-9]|1\d|20)$/i,
       /^mem(?:[1-9]|1\d|20)$/i,
       /^scr(?:[1-9]|1\d|20)$/i
     ];
-    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|tetris mini|scrabble|hexcells|flow link|path fill|numberlink|one stroke|one line|unicursal|memory grid|scramble/i;
+    const curatedCatalogTypes = /wordle|word grid|word puzzle|sudoku|timeline|go capture|tetris mini|hexcells|flow link|path fill|numberlink|one stroke|one line|unicursal|memory grid|scramble/i;
     const isCuratedCatalogGame = (game) => {
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const text = `${id} ${game?.title || ""} ${game?.game_type || ""} ${game?.type || ""}`;
@@ -1601,12 +1613,13 @@
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const type = String(game?.game_type || game?.type || "").toLowerCase();
       const title = String(game?.title || "").toLowerCase();
-      return /^(num|pat|shape|math|poker)\d+$/i.test(id) ||
-        ["number_tap", "pattern", "shape_match", "quick_math", "poker"].includes(type) ||
+      return /^(num|pat|shape|math|poker|scrab)\d+$/i.test(id) ||
+        ["number_tap", "pattern", "shape_match", "quick_math", "poker", "scrabble"].includes(type) ||
         title.includes("number tap") ||
         title.includes("shape match") ||
         title.includes("quick math") ||
         title.includes("poker") ||
+        title.includes("scrabble") ||
         title.includes("pattern");
     };
     const isPlayableCatalogGame = (game) =>
@@ -3527,7 +3540,7 @@
       const size = Number(spec.size || Math.sqrt((spec.cells || []).length) || 5);
       const cells = spec.cells;
       const nums = spec.nums || {};
-      root.innerHTML = `<p class="muted">Fill the mini crossword.</p><div class="crossword-wrap"><div class="crossword"></div><div class="crossword-clues"><div><b>Across</b><ol>${(spec.across || []).map(clue => `<li>${esc(clue)}</li>`).join("")}</ol></div><div><b>Down</b><ol>${(spec.down || []).map(clue => `<li>${esc(clue)}</li>`).join("")}</ol></div></div></div><button class="btn primary check">Check</button>`;
+      root.innerHTML = `<div class="crossword-wrap"><div class="crossword"></div><div class="crossword-clues"><div><b>Across</b><ol>${(spec.across || []).map(clue => `<li>${esc(clue)}</li>`).join("")}</ol></div><div><b>Down</b><ol>${(spec.down || []).map(clue => `<li>${esc(clue)}</li>`).join("")}</ol></div></div></div><button class="btn primary check">Check</button>`;
       const grid = $(".crossword", root);
       grid.style.setProperty("--cw-size", size);
       grid.style.setProperty("--cw-cell", `${size >= 8 ? 30 : size === 7 ? 34 : size === 6 ? 38 : 42}px`);
@@ -4465,36 +4478,37 @@
       };
       const solved = () => owners.every(owner => owner !== null) && Array.from({ length: pathCount }, (_, i) => connected(i)).every(Boolean);
       const setStatus = msg => $(".flow-status", root).textContent = msg;
-      const routeDirections = () => {
-        const directions = new Map();
-        const mark = (cellKey, dir) => {
-          if (!directions.has(cellKey)) directions.set(cellKey, new Set());
-          directions.get(cellKey).add(dir);
+      const renderFlowLines = (svg) => {
+        const rect = grid.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        svg.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
+        svg.innerHTML = "";
+        const cells = $$(".flow-cell", grid);
+        const centerFor = cellKey => {
+          const [r, c] = parse(cellKey);
+          const cell = cells[indexFor(r, c)];
+          if (!cell) return null;
+          const box = cell.getBoundingClientRect();
+          return `${box.left - rect.left + box.width / 2},${box.top - rect.top + box.height / 2}`;
         };
-        drawn.forEach(route => {
-          for (let i = 0; i < route.length - 1; i++) {
-            const [r1, c1] = parse(route[i]);
-            const [r2, c2] = parse(route[i + 1]);
-            if (r2 === r1 - 1) {
-              mark(route[i], "u");
-              mark(route[i + 1], "d");
-            } else if (r2 === r1 + 1) {
-              mark(route[i], "d");
-              mark(route[i + 1], "u");
-            } else if (c2 === c1 - 1) {
-              mark(route[i], "l");
-              mark(route[i + 1], "r");
-            } else if (c2 === c1 + 1) {
-              mark(route[i], "r");
-              mark(route[i + 1], "l");
-            }
-          }
+        drawn.forEach((route, color) => {
+          if (route.length < 2) return;
+          const points = route.map(centerFor).filter(Boolean).join(" ");
+          if (!points.includes(" ")) return;
+          const glow = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+          glow.setAttribute("class", "flow-svg-glow");
+          glow.setAttribute("points", points);
+          glow.setAttribute("stroke", colors[color]);
+          svg.appendChild(glow);
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+          line.setAttribute("class", "flow-svg-line");
+          line.setAttribute("points", points);
+          line.setAttribute("stroke", colors[color]);
+          svg.appendChild(line);
         });
-        return directions;
       };
       const draw = () => {
         grid.innerHTML = "";
-        const directions = routeDirections();
         for (let r = 0; r < size; r++) {
           for (let c = 0; c < size; c++) {
             const k = key(r, c);
@@ -4511,15 +4525,14 @@
             b.type = "button";
             b.dataset.r = String(r);
             b.dataset.c = String(c);
-            const dirs = directions.get(k);
-            if (dirs?.has("l")) b.style.setProperty("--flow-left", "0");
-            if (dirs?.has("r")) b.style.setProperty("--flow-right", "0");
-            if (dirs?.has("u")) b.style.setProperty("--flow-top", "0");
-            if (dirs?.has("d")) b.style.setProperty("--flow-bottom", "0");
-            if (dirs?.size) b.innerHTML = `<span class="flow-line h"></span><span class="flow-line v"></span><span class="flow-core"></span>`;
             grid.appendChild(b);
           }
         }
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.classList.add("flow-canvas");
+        svg.setAttribute("aria-hidden", "true");
+        grid.appendChild(svg);
+        requestAnimationFrame(() => renderFlowLines(svg));
       };
       const tap = (r, c) => {
         if (finished) return;
@@ -4588,8 +4601,28 @@
         const c = Number(cell.dataset.c);
         const cellKey = key(r, c);
         if (cellKey === lastDragKey) return;
-        lastDragKey = cellKey;
-        tap(r, c);
+        const targets = [];
+        if (lastDragKey) {
+          const [lastR, lastC] = parse(lastDragKey);
+          if (lastR === r || lastC === c) {
+            const stepR = Math.sign(r - lastR);
+            const stepC = Math.sign(c - lastC);
+            let nextR = lastR + stepR;
+            let nextC = lastC + stepC;
+            while (nextR !== r || nextC !== c) {
+              targets.push(key(nextR, nextC));
+              nextR += stepR;
+              nextC += stepC;
+            }
+          }
+        }
+        targets.push(cellKey);
+        targets.forEach(target => {
+          if (target === lastDragKey) return;
+          const [targetR, targetC] = parse(target);
+          tap(targetR, targetC);
+          lastDragKey = target;
+        });
       };
       grid.onpointerdown = event => {
         event.preventDefault();
