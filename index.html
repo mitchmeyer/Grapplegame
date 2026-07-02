@@ -54,8 +54,8 @@
     .view { height: 100%; overflow: auto; display: none; padding: 18px 16px 24px; }
     .view:not(.active) { display: none !important; }
     .view.active { display: block; }
-    .feed { height: 100%; overflow-y: auto; scroll-snap-type: y proximity; padding: 0 10px 18px; background: white; -webkit-overflow-scrolling: touch; }
-    .feed-card-wrap { min-height: 0; display: grid; place-items: center; padding: 8px 0; scroll-snap-align: start; }
+    .feed { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-behavior-y: contain; padding: 0 10px 18px; background: white; -webkit-overflow-scrolling: touch; }
+    .feed-card-wrap { height: 100%; min-height: 100%; display: grid; place-items: center; padding: 8px 0; scroll-snap-align: start; scroll-snap-stop: always; }
     .game-card { position: relative; width: min(100%, 520px); height: auto; max-height: calc(100svh - 92px - env(safe-area-inset-bottom)); display: grid; grid-template-rows: auto auto; overflow: auto; border: 1px solid #E5E7EF; border-radius: 12px; background: white; box-shadow: 0 2px 8px rgba(15, 23, 42, .05); }
     .game-card-strip { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 20px; border-bottom: 1px solid #E7EAF1; background: white; }
     .category-chip { display: inline-flex; align-items: center; min-height: 32px; padding: 0 16px; border-radius: 999px; color: white; background: #9B7CF7; font-size: 14px; font-weight: 950; text-transform: uppercase; }
@@ -74,6 +74,11 @@
     .hint-output { min-height: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
     .hint-output.show { min-height: 18px; }
     .hint-btn { min-height: 48px; border-radius: 8px; color: #858995; background: white; border: 1px solid #E5E7EF; font-size: 17px; font-weight: 850; }
+    .feed .game-card { height: calc(100% - 16px); max-height: none; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+    .feed .game-body { min-height: 0; overflow: hidden; }
+    .feed .game-stage { flex: 1 1 auto; align-content: center; overflow: hidden; }
+    .feed .hint-output, .feed .feedback-box, .feed .hint-btn { flex: 0 0 auto; }
+    .feed .start-cover { min-height: 0; height: 100%; }
     .timer-pill.hidden { display: none; }
     .start-cover { min-height: 360px; display: grid; place-items: center; padding: 22px; border: 1px solid #E5E7EF; border-radius: 12px; background: #FBFAFF; }
     .start-cover-inner { display: grid; gap: 14px; max-width: 340px; text-align: center; }
@@ -907,9 +912,10 @@
       .admin-summary, .admin-toolbar, .admin-detail-grid { grid-template-columns: 1fr; }
       .admin-family-grid { grid-template-columns: 1fr; }
       .admin-version-card { grid-template-columns: 1fr; }
-      .feed { padding: calc(50px + env(safe-area-inset-top)) 6px 12px; }
-      .feed-card-wrap { min-height: 0; padding: 6px 0; }
+      .feed { padding: calc(50px + env(safe-area-inset-top)) 6px 10px; }
+      .feed-card-wrap { height: 100%; min-height: 100%; padding: 5px 0; }
       .game-card { width: 100%; height: auto; max-height: calc(100svh - 138px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); border-radius: 10px; }
+      .feed .game-card { height: calc(100% - 10px); max-height: none; overflow: hidden; }
       .auth-bar { max-width: 52vw; min-height: 34px; gap: 5px; padding: 0 7px; overflow: hidden; }
       #authStatus { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .auth-bar button { min-height: 26px; padding: 0 8px; }
@@ -926,6 +932,11 @@
       .game-stage { gap: 8px; padding: 0; }
       .hint-btn { min-height: 38px; font-size: 14px; }
       .feedback-box { min-height: 42px; padding: 9px 10px; border-radius: 10px; }
+      .feed .game-body { gap: 8px; padding: 10px 14px; overflow: hidden; }
+      .feed .game-stage { min-height: 0; align-content: center; overflow: hidden; }
+      .feed .hint-output.show { min-height: 16px; }
+      .feed .feedback-box.show { min-height: 38px; }
+      .feed .start-cover { min-height: 0; height: 100%; }
       .start-cover { min-height: 280px; height: auto; padding: 16px; }
       .start-cover h3 { font-size: 22px; }
       .start-cover p { font-size: 14px; }
@@ -934,6 +945,8 @@
       .topbar { align-items: flex-start; }
       .connections-grid { grid-template-columns: repeat(2, 1fr); }
       .conn { min-height: 42px; padding: 6px; font-size: 11px; }
+      .feed .connections-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+      .feed .conn { min-height: 38px; padding: 4px; font-size: 9px; border-radius: 6px; }
       .wordle-board { width: min(100%, 238px); gap: 4px; }
       .wordle-row { gap: 4px; }
       .wordle-cell { font-size: 18px; }
@@ -967,6 +980,7 @@
       .flow-cell { border-radius: 7px; }
       .flow-cell.endpoint::after { inset: 7px; }
       .one-stroke-board { width: min(100%, 292px); }
+      .feed .one-stroke-board { width: min(100%, 280px); }
       .card-face { width: 36px; height: 50px; border-radius: 7px; font-size: 14px; }
       .tetris-board { grid-template-columns: repeat(10, 13px); grid-template-rows: repeat(18, 13px); }
       .tet-cell { width: 13px; height: 13px; }
@@ -976,6 +990,7 @@
       .snake-controls { grid-template-columns: repeat(3, 48px); gap: 6px; }
       .snake-controls button { min-height: 36px; font-size: 18px; }
       .arcade-board { height: 300px; }
+      .feed .arcade-board { height: min(260px, 36svh); }
       .arcade-controls { grid-template-columns: repeat(3, 48px); gap: 6px; }
       .arcade-controls button { min-height: 36px; font-size: 18px; }
       .chess-board, .chess-status { width: min(100%, 292px); }
@@ -1332,6 +1347,7 @@
     let feedPool = [];
     let feedShownIds = new Set();
     let feedLastFamily = "";
+    let feedSnapTimer = null;
     let adminRows = [];
     let adminSelectedFamily = "";
     let adminSelectedGameId = "";
@@ -2998,7 +3014,26 @@
       appendFeedBatch(Number(cfg("feed.initialBatch", 24)));
       feed.onscroll = () => {
         if (feed.scrollTop + feed.clientHeight > feed.scrollHeight - Number(cfg("feed.refillDistancePx", 900))) appendFeedBatch(Number(cfg("feed.nextBatch", 18)));
+        scheduleFeedSnap(feed);
       };
+    }
+
+    function scheduleFeedSnap(feed) {
+      clearTimeout(feedSnapTimer);
+      feedSnapTimer = setTimeout(() => snapFeedToNearest(feed), 120);
+    }
+
+    function snapFeedToNearest(feed = $("#feed")) {
+      if (!feed || !$("#feedView")?.classList.contains("active")) return;
+      const cards = $$(".feed-card-wrap", feed);
+      if (!cards.length) return;
+      const nearest = cards.reduce((best, card) => {
+        const distance = Math.abs(card.offsetTop - feed.scrollTop);
+        return !best || distance < best.distance ? { card, distance } : best;
+      }, null)?.card;
+      if (!nearest) return;
+      const delta = Math.abs(nearest.offsetTop - feed.scrollTop);
+      if (delta > 3) feed.scrollTo({ top: nearest.offsetTop, behavior: "smooth" });
     }
 
     function appendFeedBatch(count = 18) {
