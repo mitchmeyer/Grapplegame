@@ -60,8 +60,10 @@
     .game-card-strip { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 20px; border-bottom: 1px solid #E7EAF1; background: white; }
     .category-chip { display: inline-flex; align-items: center; min-height: 32px; padding: 0 16px; border-radius: 999px; color: white; background: #9B7CF7; font-size: 14px; font-weight: 950; text-transform: uppercase; }
     .vote-controls { display: inline-flex; gap: 18px; align-items: center; }
-    .vote-btn { min-width: 26px; min-height: 30px; display: inline-flex; align-items: center; gap: 4px; color: #697386; background: transparent; font-size: 22px; line-height: 1; font-weight: 850; }
+    .vote-btn { min-width: 30px; min-height: 30px; display: inline-flex; align-items: center; gap: 5px; color: #697386; background: transparent; line-height: 1; font-weight: 850; }
     .vote-btn span { font-size: 13px; }
+    .thumb-icon { width: 24px; height: 24px; display: block; fill: none; stroke: currentColor; stroke-width: 2.15; stroke-linecap: round; stroke-linejoin: round; }
+    .thumb-icon.down { transform: rotate(180deg); }
     .vote-btn.liked { color: #22C55E; }
     .vote-btn.disliked { color: #EF4444; }
     .game-body { position: relative; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 18px 20px 16px; border: 1px solid #E5E7EF; border-top: 0; border-radius: 0 0 12px 12px; background: white; }
@@ -146,11 +148,15 @@
     .auth-modal.show { display: grid; }
     .create-gate { display: none; gap: 10px; margin-bottom: 14px; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
     .create-gate.show { display: grid; }
-    .feedback-box { display: none; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 12px 14px; border-radius: 12px; color: white; font-weight: 900; text-align: center; }
+    .feedback-box { position: absolute; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; border-radius: inherit; color: white; font-weight: 900; text-align: center; }
     .feedback-box.show { display: flex; animation: feedback-pop .26s ease; }
-    .feedback-box.good { background: var(--success); }
-    .feedback-box.bad { background: var(--error); }
-    .feedback-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.22); font-size: 20px; line-height: 1; flex: 0 0 auto; }
+    .feedback-box.good { background: linear-gradient(180deg, rgba(34,197,94,.98), #16A34A); }
+    .feedback-box.bad { background: linear-gradient(180deg, rgba(239,68,68,.98), #DC2626); }
+    .feedback-mark { width: 88px; height: 88px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.2); box-shadow: inset 0 0 0 2px rgba(255,255,255,.42); font-size: 56px; line-height: 1; flex: 0 0 auto; }
+    .feedback-title { font-size: 32px; line-height: 1; }
+    .feedback-points { font-size: 24px; line-height: 1; }
+    .feedback-detail { max-width: 320px; color: rgba(255,255,255,.9); font-size: 14px; line-height: 1.35; }
+    .feedback-percent { min-height: 34px; display: inline-flex; align-items: center; padding: 0 12px; border-radius: 999px; background: rgba(255,255,255,.18); font-size: 14px; }
     @keyframes feedback-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
     @keyframes points-pop { 50% { transform: scale(1.08); } }
     .score-big { font-size: 34px; font-weight: 950; line-height: 1; margin: 4px 0; }
@@ -213,35 +219,40 @@
     .admin-traits span { padding: 3px 6px; border-radius: 6px; background: var(--lavender); color: var(--dark-purple); font-size: 10px; font-weight: 850; text-transform: uppercase; }
     .admin-answer { color: var(--text); font-size: 13px; line-height: 1.35; }
     .admin-empty { padding: 18px; }
-    .challenge-shell { max-width: 560px; min-height: 100%; margin: 0 auto; display: grid; align-content: start; gap: 14px; padding-bottom: 18px; }
-    .challenge-header { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: env(safe-area-inset-top); border-bottom: 1px solid #EEF0F5; }
-    .challenge-header h1 { color: #9B7CF7; font-size: 29px; line-height: 1; text-transform: none; }
+    .challenge-shell { width: min(100%, 430px); min-height: 100%; margin: 0 auto; display: grid; align-content: start; gap: 12px; padding: 0 12px 18px; }
+    .challenge-header { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: env(safe-area-inset-top); border-bottom: 1px solid #EEF0F5; }
+    .challenge-header h1 { color: #9B7CF7; font-size: 27px; line-height: 1; text-transform: none; }
     .challenge-icons { display: inline-flex; align-items: center; gap: 12px; color: #111827; }
     .bell { position: relative; font-size: 24px; line-height: 1; }
     .badge { position: absolute; top: -12px; right: -12px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: white; background: #EF4444; border: 2px solid white; font-size: 14px; font-weight: 950; }
     .bot-avatar, .friend-avatar { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: #B9EEFF; font-size: 22px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.6); }
-    .challenge-tabs { display: grid; grid-template-columns: repeat(3, 1fr); min-height: 58px; padding: 8px; border-radius: 8px; background: #F7F7FA; }
-    .challenge-tabs button { border-radius: 8px; background: transparent; color: #687386; font-size: 17px; font-weight: 850; }
+    .challenge-tabs { display: grid; grid-template-columns: repeat(3, 1fr); min-height: 46px; padding: 5px; border-radius: 12px; background: #F7F7FA; }
+    .challenge-tabs button { border-radius: 9px; background: transparent; color: #687386; font-size: 14px; font-weight: 850; }
     .challenge-tabs button.active { color: #111827; background: white; box-shadow: 0 1px 4px rgba(15, 23, 42, .08); }
     .challenge-panel { display: none; gap: 12px; }
     .challenge-panel.active { display: grid; }
-    .challenge-title { margin-top: 24px; text-align: center; font-size: 26px; text-transform: none; }
-    .challenge-start { min-height: 58px; border-radius: 7px; color: white; background: #9B7CF7; font-size: 19px; font-weight: 900; }
-    .friend-list { display: grid; gap: 12px; }
-    .friend-card { min-height: 106px; display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid #E5EAF2; border-radius: 10px; background: white; box-shadow: 0 2px 7px rgba(15,23,42,.05); text-align: left; }
+    .challenge-title { margin-top: 6px; text-align: left; font-size: 21px; text-transform: none; }
+    .challenge-start { min-height: 48px; border-radius: 10px; color: white; background: #9B7CF7; font-size: 16px; font-weight: 900; }
+    .challenge-search-card { display: grid; gap: 10px; padding: 12px; border: 1px solid #E5EAF2; border-radius: 14px; background: white; box-shadow: 0 8px 22px rgba(15,23,42,.05); }
+    .challenge-search { width: 100%; min-height: 46px; border: 1px solid #E5EAF2; border-radius: 12px; padding: 0 13px; color: #111827; background: #FAFAFD; font-weight: 800; }
+    .challenge-search-caption { color: #697386; font-size: 12px; font-weight: 750; }
+    .challenge-section-label { color: #7C7692; font-size: 11px; font-weight: 950; letter-spacing: .06em; text-transform: uppercase; }
+    .friend-list { display: grid; gap: 9px; }
+    .friend-card { min-height: 76px; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #E5EAF2; border-radius: 13px; background: white; box-shadow: 0 2px 7px rgba(15,23,42,.04); text-align: left; }
     .friend-card > button:not(.btn) { background: transparent; text-align: left; }
-    .friend-avatar { width: 54px; height: 54px; border-radius: 16px; font-size: 27px; }
-    .friend-name { color: #111827; font-size: 20px; font-weight: 900; }
-    .friend-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; color: #697386; font-size: 16px; font-weight: 750; }
-    .active-pill { display: inline-flex; align-items: center; min-height: 30px; padding: 0 15px; border-radius: 999px; color: #168A43; background: #ECFDF5; border: 1px solid #BBF7D0; font-weight: 900; }
-    .challenge-empty { padding: 24px; border: 1px solid #E5EAF2; border-radius: 12px; text-align: center; color: var(--muted); }
-    .username-card { margin-bottom: 14px; }
+    .friend-avatar { width: 42px; height: 42px; border-radius: 13px; font-size: 22px; }
+    .friend-name { display: block; color: #111827; font-size: 16px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .friend-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 4px; color: #697386; font-size: 12px; font-weight: 750; }
+    .friend-source { color: #9B7CF7; }
+    .active-pill { display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: 999px; color: #168A43; background: #ECFDF5; border: 1px solid #BBF7D0; font-weight: 900; }
+    .challenge-empty { padding: 16px; border: 1px solid #E5EAF2; border-radius: 12px; text-align: center; color: var(--muted); font-size: 13px; }
+    .username-card { margin-bottom: 0; }
     .challenge-action-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .challenge-action-row .btn { min-height: 38px; padding: 0 14px; }
-    .challenge-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+    .challenge-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
     .challenge-detail-head .challenge-title { margin-top: 0; text-align: left; }
     .challenge-game-grid { display: grid; gap: 10px; }
-    .challenge-game-button { min-height: 72px; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 12px 14px; border: 1px solid #E5EAF2; border-radius: 10px; background: white; text-align: left; box-shadow: 0 2px 7px rgba(15,23,42,.05); }
+    .challenge-game-button { min-height: 64px; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid #E5EAF2; border-radius: 12px; background: white; text-align: left; box-shadow: 0 2px 7px rgba(15,23,42,.05); }
     .challenge-game-button b { display: block; color: #111827; font-size: 16px; }
     .challenge-scoreline { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; color: #697386; font-size: 14px; font-weight: 800; }
     .status-pill { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 999px; color: #5B4E84; background: #F3EEFF; border: 1px solid #DCD1FF; font-size: 13px; font-weight: 900; }
@@ -931,6 +942,7 @@
       .category-chip { min-height: 26px; padding: 0 12px; font-size: 12px; }
       .vote-controls { gap: 12px; }
       .vote-btn { min-height: 26px; font-size: 18px; }
+      .thumb-icon { width: 22px; height: 22px; }
       .game-body { gap: 9px; padding: 12px 14px 10px; }
       .game-card.has-rules .game-title-row { padding-right: 30px; }
       .game-card.has-rules .rules-btn,
@@ -944,6 +956,11 @@
       .game-stage { gap: 8px; padding: 0; }
       .hint-btn { min-height: 38px; font-size: 14px; }
       .feedback-box { min-height: 42px; padding: 9px 10px; border-radius: 10px; }
+      .feedback-box.show { gap: 9px; padding: 18px; }
+      .feedback-mark { width: 72px; height: 72px; font-size: 44px; }
+      .feedback-title { font-size: 26px; }
+      .feedback-points { font-size: 21px; }
+      .feedback-detail, .feedback-percent { font-size: 12px; }
       .feed .game-body { gap: 8px; padding: 10px 14px; overflow: hidden; }
       .feed .game-stage { min-height: 0; align-content: center; overflow: hidden; }
       .feed .hint-output.show { min-height: 16px; }
@@ -1006,7 +1023,13 @@
       .arcade-controls { grid-template-columns: repeat(3, 48px); gap: 6px; }
       .arcade-controls button { min-height: 36px; font-size: 18px; }
       .chess-board, .chess-status { width: min(100%, 292px); }
+      .feed .chess-shell { gap: 6px; }
+      .feed .chess-shell > p { width: min(100%, 252px); font-size: 14px; line-height: 1.15; text-align: center; }
+      .feed .chess-board, .feed .chess-status { width: min(100%, 252px); }
+      .feed .chess-status { min-height: 34px; padding: 7px 8px; font-size: 12px; line-height: 1.2; }
       .sq { font-size: 24px; }
+      .feed .sq { font-size: clamp(18px, 5.4vw, 24px); }
+      .feed .sq .coord { font-size: 7px; }
       .math-card { padding: 12px; }
       .big-text { font-size: 34px; }
       .scramble-rack { gap: 6px; }
@@ -1023,15 +1046,17 @@
       .sequence { grid-template-columns: repeat(6, minmax(0, 40px)); gap: 6px; }
       .seq-dot, .color-token { min-width: 40px; min-height: 40px; font-size: 18px; }
       .choice .color-token { min-width: 34px; min-height: 34px; }
-      .challenge-shell { padding: 0 0 14px; }
-      .challenge-header { min-height: 54px; padding-inline: 12px; }
-      .challenge-tabs { border-radius: 0; }
-      .challenge-title { margin-top: 18px; font-size: 25px; }
-      .friend-card { min-height: 92px; grid-template-columns: 52px minmax(0, 1fr); padding: 12px 14px; }
-      .friend-card .btn { grid-column: 1 / -1; min-height: 34px; }
-      .friend-avatar { width: 48px; height: 48px; }
-      .friend-name { font-size: 18px; }
-      .friend-meta { font-size: 14px; }
+      .challenge-shell { width: 100%; padding: 0 10px 14px; gap: 10px; }
+      .challenge-header { min-height: 50px; padding-inline: 0; }
+      .challenge-header h1 { font-size: 27px; }
+      .challenge-tabs { min-height: 44px; border-radius: 12px; }
+      .challenge-title { margin-top: 6px; font-size: 21px; }
+      .challenge-search-card { padding: 10px; border-radius: 13px; }
+      .friend-card { min-height: 72px; grid-template-columns: 42px minmax(0, 1fr) auto; padding: 10px; gap: 9px; }
+      .friend-card .btn { grid-column: auto; min-height: 32px; padding: 0 10px; font-size: 11px; }
+      .friend-avatar { width: 40px; height: 40px; font-size: 20px; }
+      .friend-name { font-size: 15px; }
+      .friend-meta { gap: 5px; font-size: 11px; }
       .admin-summary, .admin-toolbar { grid-template-columns: 1fr; }
       .view:not(#feedView):not(#challengesView) { padding: 14px 12px 24px; }
       .topbar {
@@ -1347,6 +1372,9 @@
     state.likedGameIds ||= [];
     state.dislikedGameIds ||= [];
     state.adminDeletedGameIds ||= [];
+    state.challengeSearchQuery ??= "";
+    state.challengeUserSearchResults ||= [];
+    state.challengeUserSearchLoading = false;
     state.usernamePrompted ||= false;
     state.drafts.forEach((draft, index) => {
       draft.id ||= `local-draft-${index}-${today}`;
@@ -1360,6 +1388,7 @@
     let feedShownIds = new Set();
     let feedLastFamily = "";
     let feedSnapTimer = null;
+    let challengeSearchTimer = null;
     let adminRows = [];
     let adminSelectedFamily = "";
     let adminSelectedGameId = "";
@@ -2547,6 +2576,21 @@
       return 8 + Math.abs([...gameUniqueKey(game)].reduce((sum, ch) => sum + ch.charCodeAt(0), 0)) % 93;
     }
 
+    function stableHash(value) {
+      return [...String(value || "")].reduce((hash, ch) => ((hash * 31) + ch.charCodeAt(0)) >>> 0, 7);
+    }
+
+    function solveRateForGame(game) {
+      if (Number.isFinite(Number(game.gameSpec?.solveRate))) return Math.round(Number(game.gameSpec.solveRate));
+      const base = { 1: 83, 2: 62, 3: 39, 4: 19 }[getDifficultyRank(game)] || 55;
+      const jitter = (stableHash(gameUniqueKey(game)) % 13) - 6;
+      return Math.max(8, Math.min(91, base + jitter));
+    }
+
+    function thumbIcon(direction = "up") {
+      return `<svg class="thumb-icon ${direction === "down" ? "down" : ""}" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v10H4.8A2.8 2.8 0 0 1 2 17.2v-4.4A2.8 2.8 0 0 1 4.8 10H7Z"></path><path d="M7 10 11.2 3c.8-1.3 2.8-.7 2.8.8V8h4.2a3 3 0 0 1 2.9 3.6l-1.2 5.6A3.5 3.5 0 0 1 16.5 20H7V10Z"></path></svg>`;
+    }
+
     function hintForGame(game) {
       const name = String(game.title || "");
       if (/chess/i.test(name)) return chessHintForGame(game);
@@ -2875,9 +2919,13 @@
       if (!isCorrect) $(".card-errors", card).textContent = String(Number($(".card-errors", card)?.textContent || 0) + 1);
       const box = $(".feedback-box", card);
       box.className = `feedback-box show ${isCorrect ? "good" : "bad"}`;
-      box.innerHTML = isCorrect
-        ? `<span class="feedback-mark">✓</span>`
-        : `<span class="feedback-mark">!</span><span>${label}</span>`;
+      box.innerHTML = `
+        <span class="feedback-mark">${isCorrect ? "✓" : "×"}</span>
+        <span class="feedback-title">${isCorrect ? "Correct" : "Not quite"}</span>
+        <span class="feedback-points">${isCorrect ? `+${points}` : "0"} pts</span>
+        <span class="feedback-percent">${solveRateForGame(game)}% of players get this right</span>
+        <span class="feedback-detail">${esc(label || (isCorrect ? "Clean solve." : "Try the next one."))}</span>
+      `;
       if (isPlaytest) {
         card._onFinish?.(score, label, isCorrect);
         return;
@@ -2906,18 +2954,18 @@
         <div class="game-card-strip">
           <span class="category-chip">${esc(game.category || "Puzzle")}</span>
           <div class="vote-controls">
-            <button class="vote-btn like-btn ${liked ? "liked" : ""}" aria-label="Like">👍 <span>${likeCount}</span></button>
-            <button class="vote-btn dislike-btn ${disliked ? "disliked" : ""}" aria-label="Dislike">👎</button>
+            <button class="vote-btn like-btn ${liked ? "liked" : ""}" aria-label="Like">${thumbIcon("up")} <span>${likeCount}</span></button>
+            <button class="vote-btn dislike-btn ${disliked ? "disliked" : ""}" aria-label="Dislike">${thumbIcon("down")}</button>
           </div>
         </div>
         <div class="game-body">
           <div class="game-title-row"><h2>${esc(visibleTitle)}</h2><span class="timer-pill ${timed ? "" : "hidden"}">${timeLabel(initialSeconds)}</span></div>
           <div class="game-stats ${timed ? "" : "untimed"}">${timed ? `<span>Time: <b class="card-time">${timeLabel(initialSeconds)}</b></span>` : ""}<span>Score: <b class="card-score">0</b></span><span>Errors: <b class="card-errors">0</b></span></div>
           <div class="game-stage"></div>
-          <div class="feedback-box"></div>
           <div class="hint-output"></div>
           <button class="hint-btn">Get Hint (-${Number(cfg("points.hintPenalty", 10))} pts)</button>
         </div>
+        <div class="feedback-box"></div>
       `;
       const stage = $(".game-stage", card);
       const resetCard = () => {
@@ -5300,12 +5348,19 @@
       { name: "Sawyer", avatar: "🤖", record: "1W-1L", active: 3 }
     ];
 
+    function challengeAvatar(name) {
+      const letter = String(name || "G").trim()[0] || "G";
+      return letter.toUpperCase();
+    }
+
     function challengeGameOptions() {
       return rankedGames().filter(game => !isTicTacToeGame(game) && isPlayableCatalogGame(game)).slice(0, 18);
     }
 
     function friendByName(name) {
-      return challengeFriends.find(friend => friend.name === name) || { name, avatar: "🤖", record: "0W-0L", active: 0 };
+      return challengeFriends.find(friend => friend.name === name)
+        || (state.challengeUserSearchResults || []).find(friend => friend.name === name)
+        || { name, avatar: challengeAvatar(name), record: "0W-0L", active: 0, source: "App user" };
     }
 
     function challengesForFriend(name) {
@@ -5338,6 +5393,96 @@
         .sort((a, b) => (b.stats.total - a.stats.total) || (b.stats.active - a.stats.active) || a.name.localeCompare(b.name));
     }
 
+    function challengeFriendMatches(query = state.challengeSearchQuery || "") {
+      const term = query.trim().toLowerCase();
+      const friends = sortedChallengeFriends();
+      if (!term) return friends;
+      return friends.filter(friend => friend.name.toLowerCase().includes(term));
+    }
+
+    function challengeSearchRowsMarkup() {
+      const query = (state.challengeSearchQuery || "").trim();
+      const localMatches = challengeFriendMatches(query);
+      const rows = query && !localMatches.length ? (state.challengeUserSearchResults || []) : localMatches;
+      const label = !query ? "Recent opponents" : localMatches.length ? "Friends" : "All users";
+      const helper = !query
+        ? "Tap a friend to see history, or challenge them directly."
+        : localMatches.length
+          ? "Found in your friends."
+          : query.length < 2
+            ? "Type at least 2 characters to search every Grapple profile."
+          : state.challengeUserSearchLoading
+            ? "Searching every Grapple profile..."
+            : "No friend match, showing app users.";
+      if (query && !localMatches.length && query.length < 2) {
+        return `
+          <div class="challenge-section-label">${esc(label)}</div>
+          <p class="challenge-search-caption">${esc(helper)}</p>
+        `;
+      }
+      if (!query || localMatches.length || state.challengeUserSearchLoading || rows.length) {
+        return `
+          <div class="challenge-section-label">${esc(label)}</div>
+          <p class="challenge-search-caption">${esc(helper)}</p>
+          <div class="friend-list">${rows.map(friendRow).join("") || `<div class="challenge-empty">Searching users...</div>`}</div>
+        `;
+      }
+      return `
+        <div class="challenge-section-label">All users</div>
+        <div class="challenge-empty">No Grapple users found for “${esc(query)}”.</div>
+      `;
+    }
+
+    function renderChallengeSearchResults() {
+      const target = $("#challengeSearchResults");
+      if (!target) return;
+      target.innerHTML = challengeSearchRowsMarkup();
+    }
+
+    function setChallengeSearch(value) {
+      state.challengeSearchQuery = value;
+      const query = value.trim();
+      const localMatches = challengeFriendMatches(query);
+      if (!query || localMatches.length || query.length < 2) {
+        state.challengeUserSearchLoading = false;
+        state.challengeUserSearchResults = [];
+        renderChallengeSearchResults();
+        save();
+        return;
+      }
+      state.challengeUserSearchLoading = true;
+      renderChallengeSearchResults();
+      clearTimeout(challengeSearchTimer);
+      challengeSearchTimer = setTimeout(() => searchChallengeUsers(query), 280);
+      save();
+    }
+
+    async function searchChallengeUsers(query) {
+      const activeQuery = (state.challengeSearchQuery || "").trim();
+      if (query !== activeQuery || challengeFriendMatches(activeQuery).length) return;
+      const safeQuery = activeQuery.replace(/[%,()]/g, "").slice(0, 40);
+      let rows = [];
+      if (supabaseClient && safeQuery.length >= 2) {
+        const pattern = `%${safeQuery}%`;
+        const { data, error } = await supabaseClient
+          .from("profiles")
+          .select("username, display_name, total_points")
+          .or(`username.ilike.${pattern},display_name.ilike.${pattern}`)
+          .limit(12);
+        if (!error && Array.isArray(data)) rows = data;
+      }
+      const me = (currentProfile?.username || "").toLowerCase();
+      state.challengeUserSearchResults = rows
+        .map(row => row.username || row.display_name || "")
+        .filter(Boolean)
+        .filter((name, index, arr) => arr.findIndex(other => other.toLowerCase() === name.toLowerCase()) === index)
+        .filter(name => name.toLowerCase() !== me)
+        .map(name => ({ name, avatar: challengeAvatar(name), record: "0W-0L", active: 0, source: "App user", stats: friendStats(name) }));
+      state.challengeUserSearchLoading = false;
+      save();
+      renderChallengeSearchResults();
+    }
+
     function startChallenge(friendName, gameId = "random") {
       const options = challengeGameOptions();
       const game = gameId === "random" ? choice(options) : options.find(item => item.id === gameId);
@@ -5357,6 +5502,9 @@
         answer: ""
       });
       state.challengePickerFriend = "";
+      state.challengeSearchQuery = "";
+      state.challengeUserSearchResults = [];
+      state.challengeUserSearchLoading = false;
       save();
       renderChallenges();
       toast(`Challenge sent to ${friendName}`);
@@ -5456,7 +5604,7 @@
           <button class="friend-avatar" onclick="openFriendChallenges('${escAttr(friend.name)}')">${friend.avatar}</button>
           <button onclick="openFriendChallenges('${escAttr(friend.name)}')">
             <span class="friend-name">${esc(friend.name)}</span>
-            <span class="friend-meta"><span>🏆 ${record}</span><span class="active-pill">${stats.active} Active</span><span>${stats.total} total</span></span>
+            <span class="friend-meta"><span>${record}</span><span class="active-pill">${stats.active} Active</span><span>${stats.total} total</span>${friend.source ? `<span class="friend-source">${esc(friend.source)}</span>` : ""}</span>
           </button>
           <button class="btn ghost" onclick="openChallengePicker('${escAttr(friend.name)}')">Challenge</button>
         </div>
@@ -5514,10 +5662,12 @@
         $("#friendsPanel").innerHTML = renderFriendDetail(state.selectedChallengeFriend);
       } else {
         $("#friendsPanel").innerHTML = `
-          <h2 class="challenge-title">Challenge Friends</h2>
-          <button class="challenge-start" onclick="toast('Pick a friend below')">Start New Challenge</button>
-          <div class="challenge-empty username-card">Your username: <b>${esc(me)}</b></div>
-          <div class="friend-list">${sortedChallengeFriends().map(friendRow).join("")}</div>
+          <h2 class="challenge-title">Challenge someone</h2>
+          <div class="challenge-search-card">
+            <input id="challengeSearch" class="challenge-search" value="${escAttr(state.challengeSearchQuery || "")}" placeholder="Search friends or users" oninput="setChallengeSearch(this.value)">
+            <p class="challenge-search-caption">Your username: <b>${esc(me)}</b></p>
+            <div id="challengeSearchResults">${challengeSearchRowsMarkup()}</div>
+          </div>
         `;
       }
       $("#activePanel").innerHTML = `
