@@ -64,7 +64,7 @@
     .vote-btn span { font-size: 13px; }
     .vote-btn.liked { color: #22C55E; }
     .vote-btn.disliked { color: #EF4444; }
-    .game-body { min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 18px 20px 16px; border: 1px solid #E5E7EF; border-top: 0; border-radius: 0 0 12px 12px; background: white; }
+    .game-body { position: relative; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 18px 20px 16px; border: 1px solid #E5E7EF; border-top: 0; border-radius: 0 0 12px 12px; background: white; }
     .game-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .game-title-row h2 { font-size: 24px; line-height: 1.1; text-transform: none; letter-spacing: 0; }
     .timer-pill { min-width: 86px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 999px; background: #F3F4F6; color: #1F2937; font-size: 19px; font-weight: 850; }
@@ -74,6 +74,13 @@
     .hint-output { min-height: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
     .hint-output.show { min-height: 18px; }
     .hint-btn { min-height: 48px; border-radius: 8px; color: #858995; background: white; border: 1px solid #E5E7EF; font-size: 17px; font-weight: 850; }
+    .game-card.has-rules .game-title-row { padding-right: 34px; }
+    .game-card.has-rules .rules-shell,
+    .game-card.has-rules .go-shell { position: static; }
+    .game-card.has-rules .rules-btn,
+    .game-card.has-rules .go-rules-btn { top: 16px; right: 20px; z-index: 4; }
+    .game-card.has-rules .rules-popover,
+    .game-card.has-rules .go-rules-popover { top: 44px; right: 20px; z-index: 5; }
     .feed .game-card { height: calc(100% - 16px); max-height: none; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
     .feed .game-body { min-height: 0; overflow: hidden; }
     .feed .game-stage { flex: 1 1 auto; align-content: center; overflow: hidden; }
@@ -925,6 +932,11 @@
       .vote-controls { gap: 12px; }
       .vote-btn { min-height: 26px; font-size: 18px; }
       .game-body { gap: 9px; padding: 12px 14px 10px; }
+      .game-card.has-rules .game-title-row { padding-right: 30px; }
+      .game-card.has-rules .rules-btn,
+      .game-card.has-rules .go-rules-btn { top: 10px; right: 14px; }
+      .game-card.has-rules .rules-popover,
+      .game-card.has-rules .go-rules-popover { top: 38px; right: 14px; width: min(250px, calc(100vw - 54px)); }
       .game-title-row h2 { font-size: 20px; }
       .timer-pill { min-width: 70px; min-height: 30px; padding: 0 10px; font-size: 16px; }
       .game-stats { font-size: 15px; gap: 8px; }
@@ -2911,6 +2923,7 @@
       const resetCard = () => {
         if (card._timer) clearInterval(card._timer);
         delete card.dataset.completed;
+        card.classList.remove("has-rules");
         card.dataset.hintPenalty = "0";
         $(".feedback-box", card).className = "feedback-box";
         $(".feedback-box", card).innerHTML = "";
@@ -2937,6 +2950,7 @@
         resetCard();
         const renderGame = options.playtest ? { ...game, playtestMode: true } : game;
         renderGame.renderer(stage, renderGame, (score, label) => finish(card, renderGame, score, label));
+        card.classList.toggle("has-rules", Boolean($(".rules-btn, .go-rules-btn", stage)));
         if (timed) startCountdown();
       };
       const showStartCover = () => {
