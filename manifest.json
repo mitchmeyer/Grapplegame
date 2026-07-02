@@ -1,0 +1,19 @@
+{
+  "name": "Grapple",
+  "short_name": "Grapple",
+  "description": "A mobile-first puzzle feed for fast, social brain games.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "425x535",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
