@@ -19,15 +19,24 @@
       --primary: #6C3BFF;
       --dark-purple: #32127A;
       --lavender: #EEE8FF;
-      --bg: #F7F4FF;
+      --bg: #FAF8FF;
       --white: #FFFFFF;
       --text: #1E1E2F;
       --muted: #77738A;
+      --ink: #10101C;
+      --soft-ink: #555165;
+      --paper: #FFFDF8;
+      --mint: #24D18B;
+      --amber: #FFB84D;
+      --aqua: #4CC9F0;
+      --rose: #FF4D6D;
       --success: #22C55E;
       --warning: #FACC15;
       --error: #EF4444;
-      --line: #DDD3FF;
-      --shadow: 0 14px 34px rgba(50, 18, 122, .1);
+      --line: #E5DFFF;
+      --hairline: #ECE8F6;
+      --shadow: 0 18px 42px rgba(31, 20, 74, .09);
+      --soft-shadow: 0 8px 22px rgba(31, 20, 74, .07);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -440,6 +449,453 @@
     .event-chip::before { content: ""; position: absolute; left: -17px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
     .toast { position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(120px); padding: 12px 16px; border-radius: 10px; color: white; background: var(--dark-purple); box-shadow: var(--shadow); z-index: 10; transition: transform .25s ease; font-weight: 850; text-transform: uppercase; }
     .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* Mobile app polish */
+    .view:not(#feedView):not(#challengesView) {
+      background:
+        linear-gradient(#FFFFFF, #FFFFFF) padding-box,
+        repeating-linear-gradient(0deg, rgba(108,59,255,.025) 0 1px, transparent 1px 8px);
+    }
+    .topbar {
+      position: relative;
+      max-width: 1040px;
+      min-height: 78px;
+      margin: 0 auto 16px;
+      padding: max(4px, env(safe-area-inset-top)) 2px 8px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .topbar h1 {
+      color: var(--ink);
+      font-size: clamp(30px, 7vw, 50px);
+      line-height: .92;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .topbar .tagline {
+      max-width: 520px;
+      color: var(--soft-ink);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .brand { gap: 12px; }
+    .logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 8px;
+      background: var(--ink);
+      color: var(--paper);
+      box-shadow: 4px 4px 0 #D8CCFF;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+    .panel, .mini-card {
+      border-color: var(--hairline);
+      border-radius: 8px;
+      box-shadow: var(--soft-shadow);
+    }
+    .panel { padding: 16px; }
+    .panel h3 {
+      color: var(--ink);
+      font-size: 14px;
+      letter-spacing: .04em;
+    }
+    .input, textarea, .admin-select {
+      border-color: var(--hairline);
+      border-radius: 8px;
+      background: #FFFFFF;
+      box-shadow: inset 0 1px 0 rgba(16,16,28,.03);
+    }
+    .input:focus, textarea:focus, select:focus {
+      border-color: #BCA9FF;
+      box-shadow: 0 0 0 4px rgba(108,59,255,.1);
+    }
+    .btn, .tab, .icon-btn {
+      border-radius: 8px;
+      letter-spacing: .01em;
+    }
+    .primary {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: white;
+      box-shadow: 0 8px 18px rgba(16,16,28,.16);
+    }
+    .ghost {
+      background: white;
+      color: var(--ink);
+      border-color: var(--hairline);
+    }
+    .pill {
+      min-height: 26px;
+      border-radius: 999px;
+      background: #F3EFFF;
+      color: var(--dark-purple);
+      border-color: #E2DAFF;
+      font-size: 10px;
+      letter-spacing: .03em;
+    }
+
+    .nav {
+      position: relative;
+      min-height: 84px;
+      gap: 0;
+      padding: 7px max(10px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right));
+      background: rgba(255,255,255,.94);
+      border-top: 1px solid rgba(229,223,255,.95);
+      box-shadow: 0 -14px 30px rgba(31, 20, 74, .08);
+      backdrop-filter: blur(18px);
+    }
+    .nav button {
+      position: relative;
+      min-width: 0;
+      gap: 4px;
+      border-radius: 8px;
+      color: #7A7589;
+      font-size: 10px;
+      letter-spacing: .01em;
+      text-transform: none;
+    }
+    .nav button::after {
+      content: "";
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: transparent;
+    }
+    .nav .active {
+      color: var(--primary);
+      background: transparent;
+    }
+    .nav .active::after { background: currentColor; }
+    .nav .ico {
+      width: 28px;
+      height: 26px;
+      border: 0;
+      border-radius: 0;
+      font-size: 0;
+    }
+    .nav svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.25;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .nav .create-tab {
+      transform: translateY(-12px);
+      color: var(--ink);
+      background: transparent;
+      box-shadow: none;
+    }
+    .nav .create-tab .ico {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      color: white;
+      background: linear-gradient(180deg, #7A4DFF 0%, #351584 100%);
+      box-shadow: 0 12px 24px rgba(74,31,168,.28), inset 0 1px 0 rgba(255,255,255,.35);
+      border: 1px solid rgba(255,255,255,.65);
+    }
+    .nav .create-tab svg { width: 26px; height: 26px; stroke-width: 2.6; }
+    .nav .create-tab.active { color: var(--primary); background: transparent; }
+
+    #createView, #rankingsView, #profileView { padding-inline: max(14px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-right)); }
+    #createView .grid.two {
+      max-width: 1040px;
+      grid-template-columns: minmax(300px, .86fr) minmax(330px, 1.14fr);
+      align-items: start;
+      gap: 16px;
+    }
+    #createView .panel:first-of-type {
+      position: sticky;
+      top: 12px;
+      display: grid;
+      gap: 12px;
+    }
+    #createView textarea#createPrompt {
+      min-height: 118px;
+      font-size: 18px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+    #createView textarea#createNotes {
+      min-height: 92px;
+      background: #FFFCF6;
+    }
+    .create-builder {
+      margin-top: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .create-step {
+      display: grid;
+      gap: 4px;
+    }
+    .create-step b {
+      color: var(--ink);
+      font-size: 13px;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+    .format-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .format-chip {
+      min-height: 76px;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 11px;
+      border-color: var(--hairline);
+      border-radius: 8px;
+      background: #FFFFFF;
+      box-shadow: 0 3px 0 #F1ECFF;
+    }
+    .format-chip span:not(.format-icon) { color: var(--ink); font-size: 14px; }
+    .format-icon {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #F3EFFF;
+      color: var(--primary);
+      font-size: 18px;
+      font-weight: 950;
+    }
+    .format-chip small { grid-column: 2; margin-top: -7px; line-height: 1.1; }
+    .format-chip.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      box-shadow: 0 10px 20px rgba(16,16,28,.15);
+    }
+    .format-chip.active span:not(.format-icon) { color: white; }
+    .format-chip.active .format-icon {
+      background: var(--mint);
+      color: var(--ink);
+    }
+    .question-list {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .question-list div {
+      min-height: 42px;
+      align-items: center;
+      padding: 8px 10px;
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+    .question-list span {
+      min-width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #F3EFFF;
+    }
+    #draftList.library { gap: 12px; }
+    .draft-card {
+      min-height: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #FFFFFF;
+    }
+    .draft-shell { display: grid; gap: 12px; width: 100%; padding: 14px; }
+    .draft-card-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 12px;
+    }
+    .draft-card h3 {
+      margin-top: 8px;
+      color: var(--ink);
+      font-size: 20px;
+      line-height: 1.08;
+      text-transform: none;
+    }
+    .draft-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .draft-fields {
+      grid-template-columns: minmax(0, 1fr) minmax(120px, 150px);
+      gap: 8px;
+    }
+    .create-preview {
+      border-color: var(--hairline);
+      border-radius: 8px;
+      background: #FBFAFF;
+    }
+    .preview-title b { color: var(--ink); }
+    .playtest-status { border-radius: 8px; }
+
+    .ranking-shell {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+    #rankingsPanel.grid.two {
+      max-width: 960px;
+      grid-template-columns: minmax(0, 1.18fr) minmax(280px, .82fr);
+      gap: 14px;
+    }
+    .ranking-panel {
+      position: relative;
+      overflow: hidden;
+      padding: 0;
+    }
+    .ranking-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 15px 15px 12px;
+      border-bottom: 1px solid var(--hairline);
+      background: #FFFCF6;
+    }
+    .eyebrow {
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .ranking-head h3 {
+      margin-top: 3px;
+      font-size: 21px;
+      text-transform: none;
+    }
+    .leader-list { display: grid; }
+    .leader-row {
+      grid-template-columns: 38px 42px minmax(0, 1fr) auto;
+      gap: 10px;
+      min-height: 68px;
+      padding: 12px 14px;
+      border-bottom-color: var(--hairline);
+    }
+    .leader-row:first-child {
+      background: linear-gradient(90deg, rgba(255,184,77,.16), transparent);
+    }
+    .rank-badge {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #F3EFFF;
+      color: var(--dark-purple);
+      font-size: 13px;
+      font-weight: 950;
+    }
+    .leader-score {
+      color: var(--ink);
+      font-size: 18px;
+      font-weight: 950;
+    }
+    .leader-row > div:nth-child(3),
+    .profile-row span:first-child,
+    .draft-card-head > div:first-child {
+      min-width: 0;
+    }
+    .leader-row b,
+    .profile-row b,
+    .draft-card h3,
+    .draft-card p {
+      overflow-wrap: anywhere;
+    }
+    .avatar {
+      border-radius: 8px;
+      background: var(--ink);
+      color: var(--paper);
+      box-shadow: 3px 3px 0 #D8CCFF;
+    }
+
+    .profile-hero {
+      max-width: 1040px;
+      min-height: 128px;
+      margin: 0 auto 14px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      background: #FFFFFF;
+      box-shadow: var(--soft-shadow);
+    }
+    .profile-avatar {
+      width: 68px;
+      height: 68px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: white;
+      background: var(--ink);
+      box-shadow: 5px 5px 0 #D8CCFF;
+      font-size: 28px;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+    .profile-hero h1 {
+      color: var(--ink);
+      font-size: clamp(28px, 7vw, 46px);
+      line-height: .95;
+      text-transform: none;
+    }
+    .profile-points {
+      min-width: 104px;
+      display: grid;
+      justify-items: end;
+      gap: 3px;
+    }
+    .profile-points #profileScorePill {
+      min-height: 40px;
+      padding: 0 14px;
+      background: var(--ink);
+      color: white;
+      border-color: var(--ink);
+      font-size: 16px;
+      box-shadow: 0 8px 18px rgba(16,16,28,.16);
+    }
+    .profile-points small {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+    #profileView .grid.three {
+      max-width: 1040px;
+      grid-template-columns: minmax(260px, .95fr) minmax(280px, 1fr) minmax(260px, .95fr);
+      gap: 12px;
+    }
+    .stat-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .stat-row:last-child { border-bottom: 0; }
+    .stat-row b { color: var(--ink); }
+    .stat-label { display: grid; gap: 5px; }
+    .stat-list { display: grid; gap: 2px; margin-top: 10px; }
+    .profile-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 58px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .profile-row:last-child { border-bottom: 0; }
+    .profile-row b { color: var(--ink); }
+    .profile-row .input { background: #FFFFFF; }
+    .bar { height: 8px; background: #F1ECFF; }
+    .bar span { background: linear-gradient(90deg, var(--primary), var(--mint)); }
+
     @media (max-width: 760px) {
       .grid.two, .grid.three { grid-template-columns: 1fr; }
       .admin-summary, .admin-toolbar, .admin-detail-grid { grid-template-columns: 1fr; }
@@ -544,6 +1000,64 @@
       .friend-name { font-size: 18px; }
       .friend-meta { font-size: 14px; }
       .admin-summary, .admin-toolbar { grid-template-columns: 1fr; }
+      .view:not(#feedView):not(#challengesView) { padding: 14px 12px 104px; }
+      .topbar {
+        min-height: 64px;
+        margin-bottom: 12px;
+        padding-top: max(2px, env(safe-area-inset-top));
+      }
+      .topbar h1 { font-size: 32px; }
+      .logo { width: 40px; height: 40px; }
+      .nav {
+        min-height: 78px;
+        padding-top: 5px;
+      }
+      .nav button { font-size: 10px; }
+      .nav .ico { width: 26px; height: 24px; }
+      .nav svg { width: 22px; height: 22px; }
+      .nav .create-tab { transform: translateY(-10px); }
+      .nav .create-tab .ico { width: 48px; height: 48px; }
+      #createView .grid.two,
+      #rankingsPanel.grid.two,
+      #profileView .grid.three {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      #createView .panel:first-of-type { position: static; }
+      #createView textarea#createPrompt { min-height: 104px; font-size: 17px; }
+      .format-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .format-chip { min-height: 72px; padding: 10px; }
+      .format-icon { width: 32px; height: 32px; }
+      .draft-fields { grid-template-columns: 1fr; }
+      .leader-row {
+        grid-template-columns: 34px 38px minmax(0, 1fr) auto;
+        min-height: 62px;
+        padding: 10px 12px;
+      }
+      .rank-badge { width: 30px; height: 30px; }
+      .profile-hero {
+        min-height: 112px;
+        grid-template-columns: auto minmax(0, 1fr);
+        padding: 14px;
+      }
+      .profile-avatar { width: 58px; height: 58px; font-size: 24px; }
+      .profile-points {
+        grid-column: 1 / -1;
+        justify-items: start;
+        grid-auto-flow: column;
+        align-items: center;
+        justify-content: start;
+      }
+      .profile-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        align-items: start;
+      }
+      .profile-row > span:last-child {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .profile-row .input { max-width: none !important; }
     }
   </style>
 </head>
@@ -619,9 +1133,17 @@
       </section>
 
       <section id="profileView" class="view">
-        <div class="topbar">
-          <div class="brand"><div class="logo">M</div><div><h1>Profile</h1><p class="tagline">Your stats, history, strengths, and created games.</p></div></div>
-          <span id="profileScorePill" class="pill">0 pts</span>
+        <div class="profile-hero">
+          <div class="profile-avatar" id="profileAvatar">M</div>
+          <div>
+            <p class="eyebrow">Player profile</p>
+            <h1 id="profileName">Profile</h1>
+            <p class="tagline" id="profileMeta">Stats, created games, and challenge identity.</p>
+          </div>
+          <div class="profile-points">
+            <span id="profileScorePill" class="pill">0 pts</span>
+            <small>Score</small>
+          </div>
         </div>
         <div id="adminEntry" class="panel" style="display:none; margin-bottom:14px;">
           <div class="metric"><span><b>Admin</b><p class="muted">Review games, versions, answers, categories, and difficulty ranks.</p></span><button class="btn primary" onclick="showView('adminView')">Open Admin</button></div>
@@ -651,12 +1173,12 @@
       </section>
     </main>
 
-    <nav class="nav" id="nav">
-      <button class="active" data-view="feedView"><span class="ico">#</span>Home</button>
-      <button data-view="challengesView"><span class="ico">VS</span>Challenge</button>
-      <button class="create-tab" data-view="createView"><span class="ico">+</span>Create</button>
-      <button data-view="rankingsView"><span class="ico">1</span>Rankings</button>
-      <button data-view="profileView"><span class="ico">@</span>Profile</button>
+    <nav class="nav" id="nav" aria-label="Primary">
+      <button class="active" data-view="feedView"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"></path><path d="M6.5 10.5V20h11v-9.5"></path><path d="M10 20v-5h4v5"></path></svg></span>Home</button>
+      <button data-view="challengesView"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 11a3.2 3.2 0 1 0 0-6.4A3.2 3.2 0 0 0 8 11Z"></path><path d="M16.5 10.5a2.8 2.8 0 1 0 0-5.6"></path><path d="M3.2 20c.7-3.7 2.4-5.5 4.8-5.5s4.1 1.8 4.8 5.5"></path><path d="M14.2 15c2.7.2 4.4 1.8 5 5"></path></svg></span>Challenge</button>
+      <button class="create-tab" data-view="createView"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></span>Create</button>
+      <button data-view="rankingsView"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"></path><path d="M7 7H4.5a2.5 2.5 0 0 0 2.8 3.3"></path><path d="M17 7h2.5a2.5 2.5 0 0 1-2.8 3.3"></path></svg></span>Rankings</button>
+      <button data-view="profileView"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path><path d="M4.5 21c1-4.2 3.5-6.2 7.5-6.2s6.5 2 7.5 6.2"></path></svg></span>Profile</button>
     </nav>
   </div>
   <div id="toast" class="toast"></div>
@@ -4446,6 +4968,7 @@
       {
         id: "arcade",
         label: "Arcade",
+        icon: "↯",
         detail: "Movement, hazards, score",
         questions: ["What does the player control?", "What moves automatically?", "What causes the player to lose?"],
         instruction: "Selected format: ARCADE. Generate a live visual arcade game. Use moving pieces, keyboard/tap controls, collisions, score, and lose conditions. Do not make it multiple choice."
@@ -4453,6 +4976,7 @@
       {
         id: "board_game",
         label: "Board game",
+        icon: "▦",
         detail: "Board, pieces, moves",
         questions: ["What pieces or spaces are on the board?", "What move should the player make?", "What should the computer or board do after a move?"],
         instruction: "Selected format: BOARD GAME. Generate a visual board with tappable cells or pieces, a start state, legal moves, and a clear win condition. Do not make it multiple choice."
@@ -4460,6 +4984,7 @@
       {
         id: "multiple_choice",
         label: "Multiple choice",
+        icon: "✓",
         detail: "Only when you want answers",
         questions: ["What question should be asked?", "What makes the wrong answers tempting?", "Should the answer be obvious or tricky?"],
         instruction: "Selected format: MULTIPLE CHOICE. Multiple-choice answers are allowed. Still make the card visual and phone-sized."
@@ -4467,6 +4992,7 @@
       {
         id: "other",
         label: "Other",
+        icon: "✦",
         detail: "Visual custom game",
         questions: ["What does the player physically tap, drag, type, or move?", "What visual state changes after each action?", "How does the player know they won?"],
         instruction: "Selected format: OTHER VISUAL GAME. Generate a visual interactive game. Use a board, tiles, pieces, typed input, or movement. Do not make it multiple choice unless the user's prompt explicitly asks for multiple choice."
@@ -4494,19 +5020,20 @@
       const questions = createQuestionsFor(prompt);
       const selected = createFormatById(state.createFormat);
       guide.innerHTML = `
-        <div>
+        <div class="create-step">
           <b>1. Pick the game format</b>
           <p class="muted">${selected ? `${selected.label}: ${selected.detail}` : "Choose how this game should play before generating."}</p>
         </div>
         <div class="format-grid">
           ${createFormatOptions.map(option => `
             <button class="format-chip ${state.createFormat === option.id ? "active" : ""}" type="button" onclick="setCreateFormat('${escAttr(option.id)}')">
+              <span class="format-icon">${esc(option.icon || "•")}</span>
               <span>${esc(option.label)}</span>
               <small>${esc(option.detail)}</small>
             </button>
           `).join("")}
         </div>
-        <div>
+        <div class="create-step">
           <b>2. Describe the game</b>
           <p class="muted">${prompt ? "Answer one or two questions if it helps." : "Now type the actual game idea above."}</p>
         </div>
@@ -4530,19 +5057,27 @@
     function renderCreate() {
       const items = createdItems();
       $("#draftList").innerHTML = items.length ? items.map((d) => `
-        <div class="mini-card">
-          <div style="display:grid; gap:10px; width:100%;">
+        <div class="mini-card draft-card">
+          <div class="draft-shell">
+            <div class="draft-card-head">
+              <div>
+                <div class="draft-badges">
+                  <span class="pill">${esc(d.status || "draft")}</span>
+                  <span class="pill">${esc(d.category || "Puzzle")}</span>
+                  <span class="pill">${d.playtested ? "playtested" : "untested"}</span>
+                </div>
+                <h3>${esc(d.title || "Untitled game")}</h3>
+                <p class="muted">${esc(d.prompt || "Created in Grapple")}</p>
+              </div>
+              <span class="format-icon">${d.game ? "▶" : "◇"}</span>
+            </div>
             <div>
-              <span class="pill">${esc(d.status || "draft")}</span>
-              <span class="pill">${esc(d.category || "Puzzle")}</span>
-              <span class="pill">${d.playtested ? "playtested" : "untested"}</span>
               <div class="draft-fields" style="margin-top:10px;">
                 <input class="input" value="${escAttr(d.title || "Untitled game")}" onchange="updateCreatedGame('${escAttr(d.id)}', 'title', this.value)">
                 <select class="input" onchange="updateCreatedGame('${escAttr(d.id)}', 'category', this.value)">
                   ${["Logic", "Language", "Strategy", "Math", "Memory", "History", "Arcade", "Trivia"].map(cat => `<option value="${escAttr(cat)}" ${cat === d.category ? "selected" : ""}>${esc(cat)}</option>`).join("")}
                 </select>
               </div>
-              <p class="muted">${esc(d.prompt || "Created in Grapple")}</p>
             </div>
             <textarea placeholder="Add a caption before you post" onchange="updateCreatedGame('${escAttr(d.id)}', 'caption', this.value)">${esc(d.caption || "")}</textarea>
             <div class="create-preview" data-preview-id="${escAttr(d.id)}">
@@ -4949,24 +5484,36 @@
           .limit(20);
         if (!error && data?.length) {
           $("#rankingsPanel").innerHTML = `
-            <div class="panel"><h3>Global</h3>${profileLeaderRows(data)}</div>
-            <div class="panel"><h3>You</h3>${currentProfile ? profileLeaderRows([currentProfile]) : `<p class="muted">Sign in to see your rank.</p>`}</div>
+            <div class="panel ranking-panel">
+              <div class="ranking-head"><div><p class="eyebrow">Live board</p><h3>Global</h3></div><span class="pill">${data.length} players</span></div>
+              <div class="leader-list">${profileLeaderRows(data)}</div>
+            </div>
+            <div class="panel ranking-panel">
+              <div class="ranking-head"><div><p class="eyebrow">Your pace</p><h3>You</h3></div><span class="pill">Today</span></div>
+              <div class="leader-list">${currentProfile ? profileLeaderRows([currentProfile]) : `<div class="profile-row"><span><b>Sign in</b><p class="muted">Your rank appears here after Google sign-in.</p></span></div>`}</div>
+            </div>
           `;
           return;
         }
       }
       $("#rankingsPanel").innerHTML = `
-        <div class="panel"><h3>Friends</h3>${leaderRows(["Mitch", "Avery", "Sam", "Jordan"], [8840, 8510, 8114, 7902])}</div>
-        <div class="panel"><h3>Global</h3>${leaderRows(["Nova", "Kira", "Mitch", "Theo"], [12940, 11820, 8840, 8720])}</div>
+        <div class="panel ranking-panel">
+          <div class="ranking-head"><div><p class="eyebrow">Friend league</p><h3>Friends</h3></div><span class="pill">Weekly</span></div>
+          <div class="leader-list">${leaderRows(["Mitch", "Avery", "Sam", "Jordan"], [8840, 8510, 8114, 7902])}</div>
+        </div>
+        <div class="panel ranking-panel">
+          <div class="ranking-head"><div><p class="eyebrow">Global pulse</p><h3>Global</h3></div><span class="pill">Top</span></div>
+          <div class="leader-list">${leaderRows(["Nova", "Kira", "Mitch", "Theo"], [12940, 11820, 8840, 8720])}</div>
+        </div>
       `;
     }
     function leaderRows(names, scores) {
-      return names.map((n, i) => `<div class="leader-row"><div class="avatar">${n[0]}</div><div><b>#${i + 1} ${n}</b><p class="muted">${i === 0 ? "Puzzle master" : "Weekly climber"}</p></div><b>${scores[i]}</b></div>`).join("");
+      return names.map((n, i) => `<div class="leader-row"><div class="rank-badge">${i + 1}</div><div class="avatar">${esc(n[0])}</div><div><b>${esc(n)}</b><p class="muted">${i === 0 ? "Puzzle master" : "Weekly climber"}</p></div><b class="leader-score">${scores[i]}</b></div>`).join("");
     }
     function profileLeaderRows(rows) {
       return rows.map((p, i) => {
         const name = p.username || p.display_name || "Player";
-        return `<div class="leader-row"><div class="avatar">${esc(name[0] || "P")}</div><div><b>#${i + 1} ${esc(name)}</b><p class="muted">Level ${p.brain_level || 1}</p></div><b>${p.total_points || 0}</b></div>`;
+        return `<div class="leader-row"><div class="rank-badge">${i + 1}</div><div class="avatar">${esc(name[0] || "P")}</div><div><b>${esc(name)}</b><p class="muted">Level ${p.brain_level || 1}</p></div><b class="leader-score">${p.total_points || 0}</b></div>`;
       }).join("");
     }
 
@@ -4993,22 +5540,28 @@
       const traits = ["Working Memory", "Pattern Recognition", "Processing Speed", "Verbal Reasoning", "Spatial Reasoning", "Focus", "Strategy", "Logic"];
       $("#brainStats").innerHTML = traits.map((t, i) => {
         const val = 58 + ((state.plays.filter(p => games.find(g => g.title === p.title)?.traits.join(" ").includes(t.split(" ")[0])).length * 9 + i * 5) % 38);
-        return `<div class="metric"><span>${t}</span><div class="bar"><span style="width:${val}%"></span></div><b>${val}</b></div>`;
+        return `<div class="stat-row"><div class="stat-label"><b>${t}</b><div class="bar"><span style="width:${val}%"></span></div></div><b>${val}</b></div>`;
       }).join("");
       const totalPoints = currentProfile?.total_points ?? state.points;
       const profileScore = $("#profileScorePill");
       if (profileScore) profileScore.textContent = `${totalPoints} pts`;
       const username = currentProfile?.username || (currentUser ? defaultUsername(currentUser) : "Sign in");
+      const profileName = $("#profileName");
+      const profileAvatar = $("#profileAvatar");
+      const profileMeta = $("#profileMeta");
+      if (profileName) profileName.textContent = username === "Sign in" ? "Profile" : username;
+      if (profileAvatar) profileAvatar.textContent = (username && username !== "Sign in" ? username[0] : "G").toUpperCase();
+      if (profileMeta) profileMeta.textContent = currentUser ? "Signed in and ready for challenges." : "Play free. Sign in for synced stats.";
       $("#historyList").innerHTML = `
-        <div class="metric">
+        <div class="profile-row">
           <span><b>Username</b><p class="muted">Used for friend challenges</p></span>
           <span style="display:flex; gap:6px; align-items:center;"><input class="input" value="${escAttr(username)}" style="min-height:36px; max-width:150px; padding:7px 9px;" onchange="saveUsername(this.value)"><button class="btn ghost" onclick="saveUsername(this.previousElementSibling.value)">Save</button></span>
         </div>
-        <div class="metric"><span><b>Total points</b><p class="muted">Synced when signed in</p></span><b>${totalPoints}</b></div>
-      ` + (state.plays.length ? state.plays.slice(0, 7).map(p => `<div class="metric"><span><b>${p.title}</b><p class="muted">${p.category}</p></span><b>+${p.points ?? Math.max(5, Math.round((p.score || 0) / 10))}</b></div>`).join("") : `<p class="muted">Played puzzles appear here.</p>`);
+        <div class="profile-row"><span><b>Total points</b><p class="muted">Synced when signed in</p></span><b>${totalPoints}</b></div>
+      ` + (state.plays.length ? state.plays.slice(0, 7).map(p => `<div class="profile-row"><span><b>${p.title}</b><p class="muted">${p.category}</p></span><b>+${p.points ?? Math.max(5, Math.round((p.score || 0) / 10))}</b></div>`).join("") : `<p class="muted">Played puzzles appear here.</p>`);
       const created = createdItems();
       $("#createdList").innerHTML = created.length ? created.slice(0, 8).map(d => `
-        <div class="metric">
+        <div class="profile-row">
           <span><b>${esc(d.title || "Untitled game")}</b><p class="muted">${esc(d.caption || d.category || "Created game")}</p></span>
           <span class="pill">${esc(d.status || "draft")}</span>
         </div>
