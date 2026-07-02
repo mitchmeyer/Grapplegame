@@ -1001,11 +1001,32 @@
       .sudoku-cell { width: 50px; height: 50px; font-size: 22px; }
       .sudoku-pad { gap: 6px; }
       .sudoku-pad button { min-height: 32px; }
+      .feed .game-body:has(.sudoku-shell),
+      .feed .game-body:has(.hard-sudoku-shell) { gap: 6px; }
+      .feed .sudoku-directions { display: none; }
+      .feed .sudoku-shell { width: min(100%, 198px); gap: 6px; }
+      .feed .sudoku-grid { grid-template-columns: repeat(4, 43px); grid-template-rows: repeat(4, 43px); border-width: 2px; }
+      .feed .sudoku-cell { width: 43px; height: 43px; font-size: 18px; }
+      .feed .sudoku-cell:nth-child(2n) { border-right-width: 2px; }
+      .feed .sudoku-cell:nth-child(n+5):nth-child(-n+8) { border-bottom-width: 2px; }
+      .feed .sudoku-pad { gap: 5px; }
+      .feed .sudoku-pad button { min-height: 28px; border-radius: 7px; font-size: 16px; }
+      .feed .sudoku-shell + .btn.check { min-height: 34px; font-size: 13px; }
+      .feed .game-body:has(.sudoku-shell) .hint-btn,
+      .feed .game-body:has(.hard-sudoku-shell) .hint-btn { min-height: 34px; font-size: 13px; }
       .hard-sudoku-shell { width: min(100%, 280px); gap: 8px; }
       .hard-sudoku-grid { grid-template-columns: repeat(6, 36px); grid-template-rows: repeat(6, 36px); }
       .hard-sudoku-cell { width: 36px; height: 36px; font-size: 16px; }
       .hard-sudoku-pad { gap: 5px; }
       .hard-sudoku-pad button { min-height: 28px; }
+      .feed .hard-sudoku-shell { width: min(100%, 228px); gap: 6px; }
+      .feed .hard-sudoku-grid { grid-template-columns: repeat(6, 30px); grid-template-rows: repeat(6, 30px); border-width: 2px; }
+      .feed .hard-sudoku-cell { width: 30px; height: 30px; font-size: 13px; }
+      .feed .hard-sudoku-cell:nth-child(3n) { border-right-width: 2px; }
+      .feed .hard-sudoku-cell:nth-child(n+13):nth-child(-n+18) { border-bottom-width: 2px; }
+      .feed .hard-sudoku-pad { gap: 4px; }
+      .feed .hard-sudoku-pad button { min-height: 25px; border-radius: 7px; font-size: 12px; }
+      .feed .hard-sudoku-shell + .btn.check { min-height: 34px; font-size: 13px; }
       .go-shell, .tetris-shell, .snake-shell, .arcade-shell, .scrabble-shell, .hexcells-shell, .flow-shell, .one-stroke-shell { width: min(100%, 300px); gap: 8px; }
       .go-board { grid-template-columns: repeat(7, 34px); grid-template-rows: repeat(7, 34px); padding: 6px; }
       .go-point { width: 34px; height: 34px; }
@@ -3577,7 +3598,7 @@
       const validGivens = specGivens.length === 16 && specGivens.every(n => n >= 0 && n <= 4);
       const solution = validSolution ? specSolution : [1,2,3,4,3,4,1,2,2,1,4,3,4,3,2,1];
       const givens = validGivens ? specGivens : [1,0,0,4,0,4,0,0,0,0,4,0,4,0,0,1];
-      root.innerHTML = `<p class="muted">Complete the 4x4 sudoku. Use 1-4 in each row, column, and 2x2 box.</p><div class="sudoku-shell"><div class="sudoku-grid"></div><div class="sudoku-pad">${[1,2,3,4].map(n => `<button data-num="${n}">${n}</button>`).join("")}</div></div><button class="btn primary check">Check</button>`;
+      root.innerHTML = `<p class="muted sudoku-directions">Complete the 4x4 sudoku. Use 1-4 in each row, column, and 2x2 box.</p><div class="sudoku-shell"><div class="sudoku-grid"></div><div class="sudoku-pad">${[1,2,3,4].map(n => `<button data-num="${n}">${n}</button>`).join("")}</div></div><button class="btn primary check">Check</button>`;
       const grid = $(".sudoku-grid", root);
       let activeCell = null;
       givens.forEach((n, i) => {
