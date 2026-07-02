@@ -687,8 +687,84 @@
     const SUPABASE_URL = "https://gwjdauzcprcpdwgoebmi.supabase.co";
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_eeB4Zne0rUThJtj7Q-4XzQ_hcMq0oH2";
     const supabaseClient = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) || null;
+    const APP_VERSION = "0.1.0";
     const storeKey = "grapple-state-v2";
+    const configStoreKey = "grapple-remote-config-v1";
     const today = new Date().toISOString().slice(0, 10);
+    const deepClone = value => JSON.parse(JSON.stringify(value));
+    const deepMerge = (base, override) => {
+      if (!override || typeof override !== "object" || Array.isArray(override)) return base;
+      Object.entries(override).forEach(([key, value]) => {
+        if (value && typeof value === "object" && !Array.isArray(value) && base[key] && typeof base[key] === "object" && !Array.isArray(base[key])) {
+          deepMerge(base[key], value);
+        } else {
+          base[key] = value;
+        }
+      });
+      return base;
+    };
+    const defaultRemoteConfig = {
+      appVersion: APP_VERSION,
+      minSupportedVersion: "0.1.0",
+      features: {
+        offlineFeed: true,
+        create: true,
+        aiCreate: true,
+        challenges: true,
+        rankings: true,
+        profile: true,
+        admin: true
+      },
+      games: {
+        disabledFamilies: ["Go Capture"],
+        disabledCategories: [],
+        disabledIds: [],
+        enabledFamilies: [],
+        allowLegacyGeneratedGames: false,
+        remoteOverridesLocal: true
+      },
+      feed: {
+        initialBatch: 24,
+        nextBatch: 18,
+        refillDistancePx: 900,
+        noBackToBackFamily: true,
+        scoring: {
+          difficultyFit: 16,
+          exactDifficultyBonus: 4,
+          difficultyMissPenalty: 7,
+          categoryAffinityWeight: 0.8,
+          likedFamilyWeight: 2.5,
+          likedCategoryWeight: 1.2,
+          maxLikeBoost: 8,
+          dislikedFamilyWeight: 4,
+          dislikedCategoryWeight: 2,
+          maxDislikePenalty: 12,
+          strongFamilyRankWeight: 1.8,
+          weakFamilyRankWeight: 1.8,
+          unseenFamilyBoost: 5,
+          explorationWeight: 1.2,
+          maxCategoryConfidence: 4,
+          immediateRepeatPenalty: 30,
+          recentRepeatPenalty: 8,
+          savedBoost: 4,
+          exactLikeBoost: 5,
+          exactDislikePenalty: 10,
+          corePuzzleBoost: 3,
+          randomJitter: 2.5
+        }
+      },
+      points: {
+        correctScoreThreshold: 700,
+        scoreDivisor: 10,
+        hintPenalty: 10
+      },
+      create: {
+        functionName: "create-game",
+        requireAuth: true
+      },
+      timedFamilies: ["Memory Grid", "Word Scramble"]
+    };
+    let remoteConfig = deepMerge(deepClone(defaultRemoteConfig), JSON.parse(localStorage.getItem(configStoreKey) || "null") || {});
     const baseState = {
       liked: ["Chess Mate in One", "Wordle"],
       saved: ["Mini Sudoku"],
@@ -751,6 +827,43 @@
     const difficultyRanks = { Easy: 1, Medium: 2, Hard: 3, Expert: 4 };
     const getDifficultyRank = (game) => Number(game.difficultyRank || game.difficulty_rank || difficultyRanks[game.difficulty] || 2);
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const cfg = (path, fallback) => path.split(".").reduce((value, key) => value?.[key], remoteConfig) ?? fallback;
+    const configList = path => {
+      const value = cfg(path, []);
+      return Array.isArray(value) ? value.map(item => String(item).toLowerCase()) : [];
+    };
+    const applyRemoteConfig = (config) => {
+      remoteConfig = deepMerge(deepClone(defaultRemoteConfig), config || {});
+      localStorage.setItem(configStoreKey, JSON.stringify(remoteConfig));
+      window.GrappleRemoteConfig = remoteConfig;
+    };
+    async function loadRemoteConfig() {
+      if (!supabaseClient) {
+        window.GrappleRemoteConfig = remoteConfig;
+        return;
+      }
+      try {
+        const { data, error } = await supabaseClient
+          .from("remote_config")
+          .select("key,value,enabled,updated_at")
+          .eq("enabled", true);
+        if (error || !Array.isArray(data) || !data.length) {
+          window.GrappleRemoteConfig = remoteConfig;
+          return;
+        }
+        const merged = {};
+        data
+          .sort((a, b) => String(a.key || "").localeCompare(String(b.key || "")))
+          .forEach(row => {
+            const value = typeof row.value === "string" ? JSON.parse(row.value) : row.value;
+            if (row.key === "app" || row.key === "grapple" || row.key === "default") deepMerge(merged, value || {});
+            else merged[row.key] = value;
+          });
+        applyRemoteConfig(merged);
+      } catch (err) {
+        window.GrappleRemoteConfig = remoteConfig;
+      }
+    }
     const canonicalGameId = (value) => String(value || "")
       .trim()
       .replace(/^chess(\d+)$/i, "ch$1")
@@ -888,6 +1001,17 @@
         ["go", "go_capture"].includes(type) ||
         title.includes("go capture");
     };
+    const isRemoteDisabledGame = (game) => {
+      const key = gameUniqueKey(game);
+      const family = gameFamilyName(game).toLowerCase();
+      const category = String(game?.category || "").toLowerCase();
+      const enabledFamilies = configList("games.enabledFamilies");
+      if (enabledFamilies.length && !enabledFamilies.includes(family)) return true;
+      if (configList("games.disabledFamilies").includes(family)) return true;
+      if (configList("games.disabledCategories").includes(category)) return true;
+      if (configList("games.disabledIds").includes(key)) return true;
+      return false;
+    };
     const isRemovedCatalogGame = (game) => {
       const id = canonicalGameId(game?.id || game?.game_key || game?.slug || "");
       const type = String(game?.game_type || game?.type || "").toLowerCase();
@@ -900,6 +1024,15 @@
         title.includes("poker") ||
         title.includes("pattern");
     };
+    const isPlayableCatalogGame = (game) =>
+      !isAdminDeletedGame(game) &&
+      !isRemoteDisabledGame(game) &&
+      !isMiniLogicGame(game) &&
+      !isRemovedCatalogGame(game) &&
+      (cfg("games.allowLegacyGeneratedGames", false) || !isLegacyGeneratedGame(game)) &&
+      isValidConnectionGame(game) &&
+      isValidCountryBiggerGame(game) &&
+      isValidCrosswordGame(game);
     state.playedGameIds = [...new Set((state.playedGameIds || []).map(id => gameUniqueKey({ id })))];
     state.likedGameIds = [...new Set((state.likedGameIds || []).map(id => gameUniqueKey({ id })))];
     state.dislikedGameIds = [...new Set((state.dislikedGameIds || []).map(id => gameUniqueKey({ id })))];
@@ -1622,13 +1755,7 @@
       const unique = [];
       games.forEach(game => {
         if (isTicTacToeGame(game)) return;
-        if (isMiniLogicGame(game)) return;
-        if (isRemovedCatalogGame(game)) return;
-        if (isLegacyGeneratedGame(game)) return;
-        if (!isValidConnectionGame(game)) return;
-        if (!isValidCountryBiggerGame(game)) return;
-        if (!isValidCrosswordGame(game)) return;
-        if (isAdminDeletedGame(game)) return;
+        if (!isPlayableCatalogGame(game)) return;
         const idKey = gameUniqueKey(game);
         const titleKey = gameTitleKey(game);
         if (seenIds.has(idKey) || seenTitles.has(titleKey)) return;
@@ -1637,6 +1764,21 @@
         unique.push(game);
       });
       games.splice(0, games.length, ...unique);
+    }
+
+    function upsertRemoteGames(remoteGames) {
+      const playable = remoteGames.filter(game => !isTicTacToeGame(game) && isPlayableCatalogGame(game));
+      playable.forEach(game => {
+        const idKey = gameUniqueKey(game);
+        const titleKey = gameTitleKey(game);
+        const existingIndex = games.findIndex(existing => gameUniqueKey(existing) === idKey || gameTitleKey(existing) === titleKey);
+        if (existingIndex >= 0) {
+          if (cfg("games.remoteOverridesLocal", true)) games.splice(existingIndex, 1, game);
+        } else {
+          games.unshift(game);
+        }
+      });
+      dedupeGameCatalog();
     }
 
     function normalizeGame(row) {
@@ -1697,18 +1839,14 @@
     }
 
     async function loadRemoteGames() {
-      if (!supabaseClient || !currentUser) return;
+      if (!supabaseClient) return;
       const { data, error } = await supabaseClient
         .from("games")
         .select("*")
         .eq("is_public", true)
         .order("created_at", { ascending: false });
       if (error || !data?.length) return;
-      const remote = data.map(normalizeGame).filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game) && !isRemovedCatalogGame(game) && !isLegacyGeneratedGame(game) && !hasCuratedCatalogId(game) && !isConnectionsLikeGame(game) && !isCountryBiggerLikeGame(game) && !isCrosswordLikeGame(game));
-      remote.forEach(game => {
-        if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(game) || gameTitleKey(existing) === gameTitleKey(game))) games.unshift(game);
-      });
-      dedupeGameCatalog();
+      upsertRemoteGames(data.map(normalizeGame));
       renderFeed();
       renderDaily();
       renderChallenges();
@@ -1783,21 +1921,22 @@
       const familyStats = profile.families[family];
       const categoryStats = profile.categories[category];
       const accuracy = familyStats?.attempts ? familyStats.correct / familyStats.attempts : 0.5;
-      const difficultyFit = 16 - Math.abs(rank - targetRank) * 7 + (rank === targetRank ? 4 : 0);
-      const categoryAffinity = clamp(Number(state.categoryAffinity?.[category] || 2), 0, 14) * 0.8;
-      const likedBoost = Math.min(8, (reactions.likedFamilies[family] || 0) * 2.5 + (reactions.likedCategories[category] || 0) * 1.2);
-      const dislikePenalty = Math.min(12, (reactions.dislikedFamilies[family] || 0) * 4 + (reactions.dislikedCategories[category] || 0) * 2);
-      const strengthRamp = familyStats?.attempts >= 4 && accuracy > 0.7 ? rank * 1.8 : 0;
-      const supportRamp = familyStats?.attempts >= 4 && accuracy < 0.42 ? (5 - rank) * 1.8 : 0;
-      const exploration = !familyStats ? 5 : Math.max(0, 3 - familyStats.attempts) * 1.2;
-      const categoryConfidence = categoryStats?.attempts ? Math.min(4, categoryStats.correct / categoryStats.attempts * 4) : 1.5;
+      const scoring = cfg("feed.scoring", defaultRemoteConfig.feed.scoring);
+      const difficultyFit = Number(scoring.difficultyFit) - Math.abs(rank - targetRank) * Number(scoring.difficultyMissPenalty) + (rank === targetRank ? Number(scoring.exactDifficultyBonus) : 0);
+      const categoryAffinity = clamp(Number(state.categoryAffinity?.[category] || 2), 0, 14) * Number(scoring.categoryAffinityWeight);
+      const likedBoost = Math.min(Number(scoring.maxLikeBoost), (reactions.likedFamilies[family] || 0) * Number(scoring.likedFamilyWeight) + (reactions.likedCategories[category] || 0) * Number(scoring.likedCategoryWeight));
+      const dislikePenalty = Math.min(Number(scoring.maxDislikePenalty), (reactions.dislikedFamilies[family] || 0) * Number(scoring.dislikedFamilyWeight) + (reactions.dislikedCategories[category] || 0) * Number(scoring.dislikedCategoryWeight));
+      const strengthRamp = familyStats?.attempts >= 4 && accuracy > 0.7 ? rank * Number(scoring.strongFamilyRankWeight) : 0;
+      const supportRamp = familyStats?.attempts >= 4 && accuracy < 0.42 ? (5 - rank) * Number(scoring.weakFamilyRankWeight) : 0;
+      const exploration = !familyStats ? Number(scoring.unseenFamilyBoost) : Math.max(0, 3 - familyStats.attempts) * Number(scoring.explorationWeight);
+      const categoryConfidence = categoryStats?.attempts ? Math.min(Number(scoring.maxCategoryConfidence), categoryStats.correct / categoryStats.attempts * Number(scoring.maxCategoryConfidence)) : 1.5;
       const recentIndex = profile.recentFamilies.indexOf(family);
-      const fatigue = recentIndex === 0 ? -30 : recentIndex > 0 ? -8 + recentIndex : 0;
-      const saved = state.saved?.includes(game.title) ? 4 : 0;
-      const exactLike = isGameLiked(game) ? 5 : 0;
-      const exactDislike = isGameDisliked(game) ? 10 : 0;
-      const puzzleBoost = ["Strategy", "Language", "Logic", "Math"].includes(category) ? 3 : 0;
-      return difficultyFit + categoryAffinity + likedBoost - dislikePenalty + strengthRamp + supportRamp + exploration + categoryConfidence + fatigue + saved + exactLike - exactDislike + puzzleBoost + Math.random() * 2.5;
+      const fatigue = recentIndex === 0 ? -Number(scoring.immediateRepeatPenalty) : recentIndex > 0 ? -Number(scoring.recentRepeatPenalty) + recentIndex : 0;
+      const saved = state.saved?.includes(game.title) ? Number(scoring.savedBoost) : 0;
+      const exactLike = isGameLiked(game) ? Number(scoring.exactLikeBoost) : 0;
+      const exactDislike = isGameDisliked(game) ? Number(scoring.exactDislikePenalty) : 0;
+      const puzzleBoost = ["Strategy", "Language", "Logic", "Math"].includes(category) ? Number(scoring.corePuzzleBoost) : 0;
+      return difficultyFit + categoryAffinity + likedBoost - dislikePenalty + strengthRamp + supportRamp + exploration + categoryConfidence + fatigue + saved + exactLike - exactDislike + puzzleBoost + Math.random() * Number(scoring.randomJitter);
     }
 
     function arrangeFeedOrder(candidates) {
@@ -1813,7 +1952,8 @@
       let lastFamily = "";
       const bestRankForFamily = family => rankIndex.get(gameUniqueKey(groups[family][0])) ?? 9999;
       const chooseFamily = () => {
-        const available = families.filter(family => groups[family]?.length && family !== lastFamily);
+        const avoidBackToBack = cfg("feed.noBackToBackFamily", true);
+        const available = families.filter(family => groups[family]?.length && (!avoidBackToBack || family !== lastFamily));
         const pool = available.length ? available : families.filter(family => groups[family]?.length);
         const coverageMode = ordered.length < families.length;
         return pool.sort((a, b) => {
@@ -1837,7 +1977,7 @@
       dedupeGameCatalog();
       const profile = buildPerformanceProfile();
       const reactions = buildReactionProfile();
-      const ranked = [...games].sort((a, b) => recommendationScore(b, profile, reactions) - recommendationScore(a, profile, reactions));
+      const ranked = [...games].filter(isPlayableCatalogGame).sort((a, b) => recommendationScore(b, profile, reactions) - recommendationScore(a, profile, reactions));
       return arrangeFeedOrder(ranked);
     };
 
@@ -1943,6 +2083,7 @@
       const button = $("#googleLogin");
       const createGate = $("#createAuthGate");
       const generateButton = $("#generateDraft");
+      const createEnabled = cfg("features.create", true) && cfg("features.aiCreate", true);
       if (!supabaseClient) {
         if (status) status.textContent = "Offline mode";
         if (button) button.style.display = "none";
@@ -1957,7 +2098,7 @@
           button.className = "signout";
         }
         createGate?.classList.remove("show");
-        if (generateButton) generateButton.disabled = false;
+        if (generateButton) generateButton.disabled = !createEnabled;
         $("#authModal")?.classList.remove("show");
       } else {
         if (status) status.textContent = "Sign in";
@@ -1966,7 +2107,7 @@
           button.className = "";
         }
         createGate?.classList.add("show");
-        if (generateButton) generateButton.disabled = false;
+        if (generateButton) generateButton.disabled = !createEnabled;
       }
     }
 
@@ -2065,6 +2206,7 @@
         renderAuth();
         return;
       }
+      await loadRemoteConfig();
       const { data } = await supabaseClient.auth.getSession();
       currentUser = data.session?.user || null;
       renderAuth();
@@ -2076,6 +2218,7 @@
       supabaseClient.auth.onAuthStateChange(async (_event, session) => {
         currentUser = session?.user || null;
         currentProfile = null;
+        await loadRemoteConfig();
         renderAuth();
         await loadProfile();
         await loadRemoteGames();
@@ -2104,7 +2247,7 @@
 
     function recordPlay(game, score, label, points) {
       const gameId = gameUniqueKey(game);
-      const correct = score >= 700;
+      const correct = score >= Number(cfg("points.correctScoreThreshold", 700));
       const family = gameFamilyName(game);
       const difficultyRank = clamp(getDifficultyRank(game), 1, 4);
       state.playedGameIds ||= [];
@@ -2132,9 +2275,9 @@
     }
 
     function isTimedGame(game) {
-      const id = String(game.id || "");
-      const title = String(game.title || "");
-      return /memory|number|math|scramble|shape/i.test(`${id} ${title}`);
+      const family = gameFamilyName(game).toLowerCase();
+      const timedFamilies = configList("timedFamilies");
+      return timedFamilies.includes(family);
     }
 
     function gameSeconds(game) {
@@ -2167,9 +2310,9 @@
       if (card.dataset.completed === "true") return;
       card.dataset.completed = "true";
       if (card._timer) clearInterval(card._timer);
-      const isCorrect = score >= 700;
+      const isCorrect = score >= Number(cfg("points.correctScoreThreshold", 700));
       const hintPenalty = Number(card.dataset.hintPenalty || 0);
-      const points = isCorrect ? Math.max(0, Math.round(score / 10) - hintPenalty) : 0;
+      const points = isCorrect ? Math.max(0, Math.round(score / Number(cfg("points.scoreDivisor", 10))) - hintPenalty) : 0;
       const isPlaytest = card.dataset.playtest === "true";
       if (!isPlaytest) state.points += points;
       $(".card-score", card).textContent = isPlaytest ? Math.max(0, Math.round(score) - hintPenalty) : points;
@@ -2217,7 +2360,7 @@
           <div class="game-stage"></div>
           <div class="feedback-box"></div>
           <div class="hint-output"></div>
-          <button class="hint-btn">Get Hint (-10 pts)</button>
+          <button class="hint-btn">Get Hint (-${Number(cfg("points.hintPenalty", 10))} pts)</button>
         </div>
       `;
       const stage = $(".game-stage", card);
@@ -2303,11 +2446,12 @@
         $(".dislike-btn", card).classList.toggle("disliked", index < 0);
       };
       $(".hint-btn", card).onclick = () => {
-        card.dataset.hintPenalty = String(Number(card.dataset.hintPenalty || 0) + 10);
+        const penalty = Number(cfg("points.hintPenalty", 10));
+        card.dataset.hintPenalty = String(Number(card.dataset.hintPenalty || 0) + penalty);
         const out = $(".hint-output", card);
         out.className = "hint-output show";
         out.textContent = hintForGame(game);
-        toast("Hint used: -10 pts");
+        toast(`Hint used: -${penalty} pts`);
       };
       if (timed) showStartCover();
       else mount();
@@ -2318,24 +2462,24 @@
     function renderFeed() {
       const feed = $("#feed");
       state.playedGameIds ||= [];
-      feedPool = rankedGames().filter(game => !isGoFeedGame(game) && !state.playedGameIds.includes(gameUniqueKey(game)));
+      feedPool = rankedGames().filter(game => isPlayableCatalogGame(game) && !state.playedGameIds.includes(gameUniqueKey(game)));
       feedCursor = 0;
       feedShownIds = new Set();
       feedLastFamily = "";
       feed.innerHTML = "";
-      appendFeedBatch(24);
+      appendFeedBatch(Number(cfg("feed.initialBatch", 24)));
       feed.onscroll = () => {
-        if (feed.scrollTop + feed.clientHeight > feed.scrollHeight - 900) appendFeedBatch(18);
+        if (feed.scrollTop + feed.clientHeight > feed.scrollHeight - Number(cfg("feed.refillDistancePx", 900))) appendFeedBatch(Number(cfg("feed.nextBatch", 18)));
       };
     }
 
     function appendFeedBatch(count = 18) {
       const feed = $("#feed");
       state.playedGameIds ||= [];
-      if (!feedPool.length) feedPool = rankedGames().filter(game => !isGoFeedGame(game) && !state.playedGameIds.includes(gameUniqueKey(game)));
+      if (!feedPool.length) feedPool = rankedGames().filter(game => isPlayableCatalogGame(game) && !state.playedGameIds.includes(gameUniqueKey(game)));
       let added = 0;
       while (added < count && feedCursor < feedPool.length) {
-        if (gameFamilyName(feedPool[feedCursor]) === feedLastFamily) {
+        if (cfg("feed.noBackToBackFamily", true) && gameFamilyName(feedPool[feedCursor]) === feedLastFamily) {
           const swapIndex = feedPool.findIndex((candidate, index) =>
             index > feedCursor &&
             !state.playedGameIds.includes(gameUniqueKey(candidate)) &&
@@ -4527,9 +4671,7 @@
       const item = findCreatedGame(id);
       if (!item?.game) return toast("Generate the game first, then preview it");
       const normalized = normalizeGame(item.game);
-      if (isTicTacToeGame(normalized)) return toast("That game type was removed");
-      if (isMiniLogicGame(normalized)) return toast("That game type was removed");
-      if (isRemovedCatalogGame(normalized)) return toast("That game type was removed");
+      if (isTicTacToeGame(normalized) || !isPlayableCatalogGame(normalized)) return toast("That game type is not available");
       if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(normalized) || gameTitleKey(existing) === gameTitleKey(normalized))) games.unshift(normalized);
       dedupeGameCatalog();
       renderFeed();
@@ -4544,9 +4686,7 @@
       item.status = "published";
       if (item.game) {
         const normalized = normalizeGame(item.game);
-        if (isTicTacToeGame(normalized)) return toast("That game type was removed");
-        if (isMiniLogicGame(normalized)) return toast("That game type was removed");
-        if (isRemovedCatalogGame(normalized)) return toast("That game type was removed");
+        if (isTicTacToeGame(normalized) || !isPlayableCatalogGame(normalized)) return toast("That game type is not available");
         if (!games.some(existing => gameUniqueKey(existing) === gameUniqueKey(normalized) || gameTitleKey(existing) === gameTitleKey(normalized))) games.unshift(normalized);
         dedupeGameCatalog();
         renderFeed();
@@ -4571,7 +4711,7 @@
     ];
 
     function challengeGameOptions() {
-      return rankedGames().filter(game => !isTicTacToeGame(game)).slice(0, 18);
+      return rankedGames().filter(game => !isTicTacToeGame(game) && isPlayableCatalogGame(game)).slice(0, 18);
     }
 
     function friendByName(name) {
@@ -4950,7 +5090,7 @@
     }
 
     function localAdminRows() {
-      return games.filter(game => !isAdminDeletedGame(game) && !isMiniLogicGame(game) && !isRemovedCatalogGame(game)).map(game => ({
+      return games.filter(isPlayableCatalogGame).map(game => ({
         id: canonicalGameId(game.id),
         title: game.title,
         category: game.category || "Uncategorized",
@@ -5269,6 +5409,11 @@
     }
 
     function showView(id) {
+      const feature = featureForView(id);
+      if (feature && !cfg(`features.${feature}`, true)) {
+        toast("This feature is temporarily unavailable");
+        id = "feedView";
+      }
       if (id === "adminView" && !isAdmin()) {
         toast("Admin access required");
         id = "profileView";
@@ -5278,9 +5423,21 @@
       $$("#nav button").forEach(b => b.classList.toggle("active", b.dataset.view === id));
       if (id === "adminView") renderAdmin();
     }
+    const featureForView = viewId => ({
+      createView: "create",
+      challengesView: "challenges",
+      rankingsView: "rankings",
+      profileView: "profile",
+      adminView: "admin"
+    }[viewId] || "");
     $("#nav").onclick = (e) => {
       const btn = e.target.closest("button[data-view]");
       if (!btn) return;
+      const feature = featureForView(btn.dataset.view);
+      if (feature && !cfg(`features.${feature}`, true)) {
+        toast("This feature is temporarily unavailable");
+        return;
+      }
       if (btn.dataset.view !== "feedView" && !currentUser) {
         showAuthModal("Sign in to unlock Create, Challenge, Rankings, and Profile.");
         return;
@@ -5302,12 +5459,17 @@
         toast("Pick Arcade, Board game, Multiple choice, or Other first");
         return;
       }
+      if (!cfg("features.create", true) || !cfg("features.aiCreate", true)) {
+        toast("Create is temporarily unavailable");
+        return;
+      }
       const prompt = [
         selectedFormat.instruction,
         `User game request:\n${basePrompt}`,
         notes ? `Builder notes:\n${notes}` : ""
       ].filter(Boolean).join("\n\n");
-      if (!supabaseClient || !currentUser) {
+      const createRequiresAuth = cfg("create.requireAuth", true);
+      if (!supabaseClient || (createRequiresAuth && !currentUser)) {
         showAuthModal("Sign in to create AI games.");
         return;
       }
@@ -5316,16 +5478,17 @@
       try {
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
-        if (!accessToken) {
+        if (createRequiresAuth && !accessToken) {
           showAuthModal("Sign in to create AI games.");
           return;
         }
-        const response = await fetch(`${SUPABASE_URL}/functions/v1/create-game`, {
+        const functionName = String(cfg("create.functionName", "create-game")).replace(/^\/+|\/+$/g, "");
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "apikey": SUPABASE_PUBLISHABLE_KEY,
-            "Authorization": `Bearer ${accessToken}`
+            ...(accessToken ? { "Authorization": `Bearer ${accessToken}` } : {})
           },
           body: JSON.stringify({ prompt, format: selectedFormat.id })
         });
